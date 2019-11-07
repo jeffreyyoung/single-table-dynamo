@@ -1,0 +1,44 @@
+{
+  "name": "single-table-dynamodb",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "",
+  "main": "dist/index.js",
+  "module": "dist/single-table-dynamodb.esm.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test",
+    "lint": "tsdx lint"
+  },
+  "peerDependencies": {
+    "aws-sdk": "^2.566.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsdx lint"
+    }
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.22",
+    "@types/lodash": "^4.14.145",
+    "husky": "^3.0.9",
+    "tsdx": "^0.11.0",
+    "tslib": "^1.10.0",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.566.0",
+    "lodash": "^4.17.15"
+  }
+}
