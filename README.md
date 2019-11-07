@@ -29,7 +29,10 @@ const userRepo = getRepository({
     hashKeyFields: ['id'], //specify which properties of the object make up the id
     objectName: 'User' //specify a unique name for this object
 });
+```
 
+Now use the newly create repository to save object to our database
+```javascript
 let user1 = await userRepo.create({id: 1, name: 'halpert'});
 let user2 = await userRepo.create({id: 2, name: 'beasley'});
 let halpert = await userRepo.get({id: 1});
@@ -42,6 +45,10 @@ console.log(await userRepo.get({id: 1})) //null
 
 ### Advanced usage with typescript
 
+Let's create a repo for tracking purchases. We will keep track of the item purchased, the user purchasing the item, and the location of the user when purchasing the item.
+
+
+First we will create an ID type and an ITEM type.  The ID type contains the fields required to get an entity.  The Item type contains all the fields present on the entity
 ```typescript
 
 import { getRepository} from 'single-table-dynamo';
@@ -62,9 +69,20 @@ type Purchase = PurchaseId & {
     city: string
 }
 
-type QueryKeys = 'getPurchasersOfItem' | 'latestPurchases' | 'location' | 'latestPurchasesByCountry'
+```
 
-const repo = getRepository<PurchaseID, Purchase, 'getPurchasersOfItem' | 'latestPurchases' | 'location' | 'latestPurchasesByCountry'>({
+Next we create our repo, we will define some queries that will be useful to our application.
+
+Our application requires that we be able to
+* get all purchases of a user ordered by recency
+* get the latest purchases in a country
+* get the latest purchasers of an item
+
+We should ensure that an index exists for each necessary query.  We can specify the indexes for this object below
+```typescript
+type QueryKeys = 'latestPurchases' | 'latestPurchasesInCountry' | 'latestPurchasersOfItem'
+
+const repo = getRepository<PurchaseID, Purchase, QueryKeys>({
     objectName: 'Purchase',
     hashKeyFields: ['userId'],
     sortKeyFields: ['itemId', 'id'],
@@ -73,15 +91,10 @@ const repo = getRepository<PurchaseID, Purchase, 'getPurchasersOfItem' | 'latest
             isPrimary: true
         },
         //these queries will use Global Secondary indexes
-        getPurchasersOfItem: {
+        latestPurchasersOfItem: {
             which: 0,
             hashKeyFields: ['itemId'],
-            sortKeyFields: ['purchaseDate', 'userId']
-        },
-        latestPurchasersOfItemByCountry: {
-            which: 1,
-            hashKeyFields: ['itemId'],
-            sortKeyFields: ['country', 'state', 'city']
+            sortKeyFields: ['purchaseDate']
         },
         latestPurchasesInCountry: {
             which: 2,
@@ -94,14 +107,6 @@ const repo = getRepository<PurchaseID, Purchase, 'getPurchasersOfItem' | 'latest
         latestPurchases: {
             sortKeyFields: ['purchaseDate', 'itemId'],
             which: 0
-        },
-        purchasesByLocation: {
-            which: 1,
-            sortKeyFields: ['country', 'state', 'city', 'purchaseDate', 'itemId']
-        },
-        latestPurchasesByCountry: {
-            which: 1,
-            sortKeyFields: ['country', 'purchaseDate']
         }
     }
 });
@@ -127,17 +132,30 @@ let purchase2 = await repo.create({
     city: 'otis'
 })
 
-//get the latest purchases purchased in the usa
-let {results} = await repo.queries.latestPurchasesInCountry({
-    args: {country: 'usa'}
-});
-console.log(results); // [ {id: '1', ...}, {id: '2', ...}]
-
 //get all of angela's latest purchases
 let {results} = await repo.queries.latestPurchases({
     args: {userId: 'angela'}
 });
 console.log(results); // [{id: '2',itemId: 'cat-food',userId: 'angela'...}]
+
+
+//get the latest purchases purchased in the usa
+let {results, nextPageArgs} = await repo.queries.latestPurchasesInCountry({
+    args: {country: 'usa'},
+    limit: 1
+});
+
+console.log(results); // [ {id: '1', ...}]
+//get the next page
+let {results} = await repo.queries.latestPurchasesInCountry(nextPageArgs);
+console.log(results); // [ {id: '2', ...}]
+
+
+//get the most recent purchasers of 'cat-food'
+let {results, nextPageArgs} = await repo.queries.latestPurchasersOfItem({
+    args: {itemId: 'cat-food'},
+    limit: 1
+});
 
 //you can also call repo.query() which will guess which index to use for a query
 let {results} = await repo.query({
@@ -156,13 +174,12 @@ let {results} = await repo.query({
 
 
 
-
-
 ## How it works
 
-Everything stored in the table have the below shape.
+Everything stored in our dynamodb table has the same below shape.
 
-The dynamo table is configured to have a local secondary index on the fields `lsi0`, `lsi1`,...`lsi4`.  And a global secondary index on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`
+The dynamo table is configured to have a local secondary index on the fields `lsi0`, `lsi1`,...`lsi4`.  And a global secondary index on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`.
+The actual object data stored at the `data` property
 ```typescript
 
 export type SingleTableDocument<T> = {
@@ -218,7 +235,7 @@ export type SingleTableDocument<T> = {
 }
 ```
 
-When we create and save an object, depending on the indexes defined for an object, we add values to some of the indexed properties
+When we create and save an object, depending on the indexes defined for an object, we set some of the indexed properties
 
 So for the following repo:
 
