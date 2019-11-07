@@ -7,7 +7,7 @@ There are a few other dynamodb clients that help simplify using dynamodb in a no
 ## Getting Started
 
 
-### First create a table
+#### First create a table
 ```javascript
 import { createTable } from 'single-table-dynamo';
 
@@ -17,7 +17,7 @@ await createTable();
 ```
 
 
-### Next create a repository
+#### Next create a repository
 For each type of object (e.g. user, event, post) there should be a different repo (e.g. userRepo, eventRepo, postRepo)
 
 ```javascript
