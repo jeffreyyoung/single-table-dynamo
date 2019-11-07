@@ -175,7 +175,7 @@ let {results} = await repo.query({
 
 Everything stored in our dynamodb table has the same below shape.
 
-The dynamo table is configured to have a local secondary index on the fields `lsi0`, `lsi1`,...`lsi4`.  And a global secondary index on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`.
+The dynamo table is configured to have local secondary indexes on the fields `lsi0`, `lsi1`,...`lsi4`.  And global secondary indexes on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`.
 The actual object data is stored at the `data` property
 ```typescript
 
