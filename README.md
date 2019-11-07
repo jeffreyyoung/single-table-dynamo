@@ -45,15 +45,13 @@ console.log(await userRepo.get({id: 1})) //null
 
 ### Advanced usage with typescript
 
-Let's create a repo for tracking purchases. We will keep track of the item purchased, the user purchasing the item, and the location of the user when purchasing the item.
+Let's create a repo for tracking purchases.
 
-
-First we will create an ID type and an ITEM type.  The ID type contains the fields required to get an entity.  The Item type contains all the fields present on the entity
+With typescript, we will create an ID type and an ITEM type.  The ID type contains the fields required to get an entity.  The Item type contains all the fields present on the entity
 ```typescript
 
 import { getRepository} from 'single-table-dynamo';
 
-//create a type the represent the ID for this object
 //these fields are required to get/update an item
 type PurchaseId = {
     id: string
@@ -173,13 +171,12 @@ let {results} = await repo.query({
 ```
 
 
-
 ## How it works
 
 Everything stored in our dynamodb table has the same below shape.
 
 The dynamo table is configured to have a local secondary index on the fields `lsi0`, `lsi1`,...`lsi4`.  And a global secondary index on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`.
-The actual object data stored at the `data` property
+The actual object data is stored at the `data` property
 ```typescript
 
 export type SingleTableDocument<T> = {
@@ -191,51 +188,19 @@ export type SingleTableDocument<T> = {
 
     //sparse local secondary indexes that may or not be defined
     lsi0?: string
-    lsi1?: string
-    lsi2?: string
-    lsi3?: string
+    ...
     lsi4?: string
 
     //sparse global indexes that may or not be defined
     gsiHash0?: string
     gsiSort0?: string
-
-    gsiHash1?: string
-    gsiSort1?: string
-
-    gsiHash2?: string
-    gsiSort2?: string
-
-    gsiHash3?: string
-    gsiSort3?: string
-
-    gsiHash4?: string
-    gsiSort4?: string
-
-    gsiHash5?: string
-    gsiSort5?: string
-
-    gsiHash6?: string
-    gsiSort6?: string
-
-    gsiHash7?: string
-    gsiSort7?: string
-
-    gsiHash8?: string
-    gsiSort8?: string
-
-    gsiHash9?: string
-    gsiSort9?: string
-
-    gsiHash10?: string
-    gsiSort10?: string
-
-    gsiHash11?: string
-    gsiSort11?: string
+    ...
+    gsiHash19?: string
+    gsiSort19?: string
 }
 ```
 
-When we create and save an object, depending on the indexes defined for an object, we set some of the indexed properties
+When we create and save an object, depending on the indexes defined for the object, we set some of the indexed properties
 
 So for the following repo:
 
