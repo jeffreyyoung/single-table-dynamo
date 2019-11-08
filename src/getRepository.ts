@@ -28,19 +28,19 @@ let docClient = new aws.DynamoDB.DocumentClient({
  * 
  * @param i 
  */
-export function getLSIName<ID, T>(which: number): KeyOfStr<SingleTableDocument<T>> {
+export function getLSIName<T>(which: number): KeyOfStr<SingleTableDocument<T>> {
     return `lsi${which}` as any;
 }
 
-export function getLSISortKeyAttribute<ID, T>(which: number): KeyOfStr<SingleTableDocument<T>> {
+export function getLSISortKeyAttribute<T>(which: number): KeyOfStr<SingleTableDocument<T>> {
     return `lsi${which}` as any;
 }
 
-export function getGSIName<ID, T>(which: number): KeyOfStr<SingleTableDocument<T>> {
+export function getGSIName<T>(which: number): KeyOfStr<SingleTableDocument<T>> {
     return `gsi${which}` as any;
 }
 
-export function getGSIAttributeName<ID, T>(which: number, type: 'Sort' | 'Hash'): KeyOfStr<SingleTableDocument<T>> {
+export function getGSIAttributeName<T>(which: number, type: 'Sort' | 'Hash'): KeyOfStr<SingleTableDocument<T>> {
     return `gsi${type}${which}` as any;
 }
 
@@ -151,7 +151,7 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
     getKey: (id: ID) => any,
     get: (id: ID) => Promise<T>,
     update: (id: ID, updates: Partial<T>) => Promise<T>,
-    overwrite: (id: ID, thing: T) => Promise<T>,
+    overwrite: (thing: T) => Promise<T>,
     delete: (id: ID) => Promise<boolean>,
     formatForDDB: (thing: T) => SingleTableDocument<T>,
     executeQuery: (where: WhereClause<T>, index: Index<ID, T>) => Promise<QueryResult<T>>,
@@ -179,10 +179,10 @@ export function getRepository<ID, T, QueryNames = string>(args: ConfigArgs<ID, T
         update: async (id: ID, thing: Partial<T>): Promise<T> => {
             let old = await repo.get(id);
             let updated = { ...old, ...thing };
-            return repo.overwrite(id, updated);
+            return repo.overwrite(updated);
         },
-        overwrite: async (id: ID, thing: T): Promise<T> => {
-            let res = await docClient.put({
+        overwrite: async (thing: T): Promise<T> => {
+            await docClient.put({
                 TableName: config.tableName,
                 Item: repo.formatForDDB(thing)
             }).promise();
@@ -190,7 +190,7 @@ export function getRepository<ID, T, QueryNames = string>(args: ConfigArgs<ID, T
             return thing;
         },
         delete: async (id: ID): Promise<boolean> => {
-            let res = await docClient.delete({
+            await docClient.delete({
                 TableName: config.tableName,
                 Key: repo.getKey(id)
             }).promise();
@@ -200,9 +200,10 @@ export function getRepository<ID, T, QueryNames = string>(args: ConfigArgs<ID, T
         executeQuery: async (where: WhereClause<T>, index: Index<ID, T>): Promise<QueryResult<T>> => {
             const hashKey = getCompositeKeyValue<ID, T>(where.args as T, index.hashKeyFields, index.hashKeyDescriptor, config.compositeKeySeparator);
             const sortKey = index.sortKeyFields && getSortkeyForBeginsWithQuery<ID, T>(where.args, index.sortKeyFields, index.sortKeyDescriptor, config.compositeKeySeparator);
+            
             let res = await docClient.query({
                 TableName: config.tableName,
-                ...(index.indexName && { IndexName: index.indexName }),
+                ...((index as any).indexName && { IndexName: (index as any).indexName }),
                 Limit: where.limit || 5,
                 KeyConditionExpression: `${index.hashKeyAttribute} = :hKey and begins_with(${index.sortKeyAttribute}, :sKey) `,
                 ExpressionAttributeValues: {

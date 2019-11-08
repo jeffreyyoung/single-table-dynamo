@@ -1,6 +1,7 @@
-import { createTable } from "createTable";
 import { getRepository } from 'getRepository';
+import {ensureTableAndIndexesExist} from './ensureTableAndIndexesAreCreated';
+
 export {
-  createTable,
+  ensureTableAndIndexesExist,
   getRepository  
 }

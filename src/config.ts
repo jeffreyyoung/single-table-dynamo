@@ -5,12 +5,7 @@ import { getDefaultTableName } from "./createTable";
 export type KeyOfStr<T> = Extract<keyof T, string>
 export type PropList<T> = KeyOfStr<T>[];
 export type PropList2<A,B> = (KeyOfStr<A> | KeyOfStr<B>)[]
-
-export type Index<ID, T> = {
-
-    type: 'localSecondaryIndex' | 'globalSecondaryIndex' | 'primaryIndex'
-    indexName?: string
-
+type BaseIndex<ID, T> = {
     hashKeyFields: PropList2<ID, T>
     hashKeyDescriptor: string
     hashKeyAttribute: keyof SingleTableDocument<T>
@@ -19,8 +14,12 @@ export type Index<ID, T> = {
     sortKeyDescriptor: string
     sortKeyAttribute: keyof SingleTableDocument<T>
 
-    tag?: string //some indexes are tagged so we can easily find them later
+    tag?: string 
 }
+export type Index<ID, T> = ({type: 'primaryIndex'} | {
+    type: 'localSecondaryIndex' | 'globalSecondaryIndex'
+    indexName: string
+}) & BaseIndex<ID, T>;
 
 export function getPrimaryIndex<ID, T>(config: ConfigArgs<ID, T>, tag: string = ''): Index<ID, T> {
     return {
@@ -38,7 +37,7 @@ export function getPrimaryIndex<ID, T>(config: ConfigArgs<ID, T>, tag: string = 
     }
 }
 
-function isPrimaryQueryArg<T>(thing: any): thing is PrimaryQueryArg<T> {
+function isPrimaryQueryArg(thing: any): thing is PrimaryQueryArg {
     return thing && thing.isPrimary;
 }
 
@@ -71,7 +70,7 @@ export function getLSIIndex<ID,T>(queryName: string, i: LSIQueryArg<T>, config: 
 
         sortKeyFields: i.sortKeyFields,
         sortKeyDescriptor: queryName,
-        sortKeyAttribute: getLSISortKeyAttribute<ID, T>(i.which) as keyof SingleTableDocument<T>,
+        sortKeyAttribute: getLSISortKeyAttribute<T>(i.which) as keyof SingleTableDocument<T>,
 
         indexName: getLSIName(i.which),
 
@@ -99,7 +98,7 @@ export function getGSIIndex<ID,T>(queryName: string, i: GSIQueryArg<T>, config: 
     }
 }
 
-type PrimaryQueryArg<T> = {
+type PrimaryQueryArg = {
     isPrimary: true
 }
 
@@ -122,7 +121,7 @@ export type ConfigArgs<ID, T, QueryNames = string> = {
     hashKeyFields: PropList<ID>,
     sortKeyFields?: PropList<ID>,
     compositeKeySeparator?: '#',
-    queries?: Record<Extract<QueryNames, string>,   GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg<T>>
+    queries?: Record<Extract<QueryNames, string>,   GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg>
 }
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>

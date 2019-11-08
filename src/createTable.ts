@@ -1,10 +1,11 @@
-import { getLSIName, getLSISortKeyAttribute, getGSIName, getGSIAttributeName } from "./getRepository"
+import { getLSIName, getLSISortKeyAttribute } from "./getRepository"
 import AWS from "aws-sdk";
 export type CreateTableArgs = {
     tableName?: string
 }
-import { CreateTableInput, LocalSecondaryIndex, GlobalSecondaryIndex, AttributeDefinition, AttributeDefinitions } from "aws-sdk/clients/dynamodb";
-import {flatten} from 'lodash';
+import { CreateTableInput, LocalSecondaryIndex } from "aws-sdk/clients/dynamodb";
+import { Index } from 'config';
+
 
 let defaultTableName = 'SingleTable';
 
@@ -30,17 +31,35 @@ type LSI = {
     sortKeyAttributeName: string
 }
 
-type GSI = {
-    indexName: string
-    sortKeyAttributeName: string
-    hashKeyAttributeName: string
+export function getGSIDef(index: Index<any, any>) {
+    if (index.type === 'globalSecondaryIndex') {
+        return {
+            IndexName: index.indexName,
+            KeySchema: [
+                {AttributeName: index.hashKeyAttribute, KeyType: 'HASH'},
+                {AttributeName: index.sortKeyAttribute, KeyType: 'Range'}
+            ],
+            Projection: {
+                ProjectionType: 'INCLUDE',
+                NonKeyAttributes: ['data', 'objectType']
+            }
+        } 
+    }
+
+    throw `given index of type ${index.type}, expecting globalSecondaryIndex`;
 }
+
+// type GSI = {
+//     indexName: string
+//     sortKeyAttributeName: string
+//     hashKeyAttributeName: string
+// }
 /**
  * 
- * Creates a table with 5 local secondary indexes, and 20 global secondary indexes
+ * Creates a table with 5 local secondary indexes
  * 
  */
-export function createTable(args: {tableName: string}) {
+export function createTable(args: {tableName: string, indexes?: Index<any, any>[]}) {
     var client = new AWS.DynamoDB();
 
     let localSecondaryIndexes = range(0,4).map<LSI>(i => ({
@@ -48,12 +67,7 @@ export function createTable(args: {tableName: string}) {
         sortKeyAttributeName: getLSISortKeyAttribute(i)
     }));
 
-    let globalSecondaryIndexes = range(0,19).map<GSI>(i => ({
-        indexName: getGSIName(i),
-        sortKeyAttributeName: getGSIAttributeName(i, 'Sort'),
-        hashKeyAttributeName: getGSIAttributeName(i, 'Hash'),
-    }));
-
+    let globalSecondaryIndexes = (args.indexes || []).map((i) => getGSIDef(i));
 
     let createTableInput: CreateTableInput = {
         TableName: args.tableName || getDefaultTableName(),
@@ -64,13 +78,6 @@ export function createTable(args: {tableName: string}) {
         AttributeDefinitions: [
             {AttributeName: "hashKey", AttributeType: "string"},
             {AttributeName: "sortKey", AttributeType: "string"},
-            ...localSecondaryIndexes.map<AttributeDefinition>(i => ({
-                AttributeName: i.sortKeyAttributeName, AttributeType: "string"
-            })),
-            ...flatten(globalSecondaryIndexes.map<AttributeDefinitions>(i => ([
-                {AttributeName: i.hashKeyAttributeName, AttributeType: 'string'},
-                {AttributeName: i.sortKeyAttributeName, AttributeType: 'string'}
-            ])))
         ],
         LocalSecondaryIndexes: [
             ...localSecondaryIndexes.map<LocalSecondaryIndex>(i => ({
@@ -81,23 +88,11 @@ export function createTable(args: {tableName: string}) {
                 ],
                 Projection: {
                     ProjectionType: 'INCLUDE',
-                    NonKeyAttributes: ['data']
+                    NonKeyAttributes: ['data', 'objectType']
                 }
             }))
         ],
-        GlobalSecondaryIndexes: [
-            ...globalSecondaryIndexes.map<GlobalSecondaryIndex>(i => ({
-                IndexName: i.indexName,
-                KeySchema: [
-                    {AttributeName: i.hashKeyAttributeName, KeyType: 'HASH'},
-                    {AttributeName: i.sortKeyAttributeName, KeyType: 'Range'}
-                ],
-                Projection: {
-                    ProjectionType: 'INCLUDE',
-                    NonKeyAttributes: ['data']
-                },
-            }))
-        ],
+        GlobalSecondaryIndexes: globalSecondaryIndexes,
         BillingMode: 'PAY_PER_REQUEST'
     }
     

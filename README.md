@@ -7,17 +7,8 @@ There are a few other dynamodb clients that help simplify using dynamodb in a no
 ## Getting Started
 
 
-#### First create a table
-```javascript
-import { createTable } from 'single-table-dynamo';
 
-//create a table, you should only run this function once to setup the table
-await createTable();
-
-```
-
-
-#### Next create a repository
+#### First create a repository
 For each type of object (e.g. user, event, post) there should be a different repo (e.g. userRepo, eventRepo, postRepo)
 
 ```javascript
@@ -31,13 +22,21 @@ const userRepo = getRepository({
 });
 ```
 
+#### Before running our application lets ensure our table exists
+```javascript
+import {ensureTableAndIndexesExist} from 'single-table-dynamo';
+
+ensureTableAndIndexesExist([userRepo]);
+```
+
 Now use the newly create repository to save object to our database
+
 ```javascript
 let user1 = await userRepo.create({id: 1, name: 'halpert'});
 let user2 = await userRepo.create({id: 2, name: 'beasley'});
 let halpert = await userRepo.get({id: 1});
 
-console.log(halper)// {id:1, name: 'halper'}
+console.log(halpert)// {id:1, name: 'halpert'}
 
 await userRepo.delete({id: 1}); //bye jim
 console.log(await userRepo.get({id: 1})) //null
