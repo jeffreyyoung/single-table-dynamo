@@ -5,5 +5,4 @@ node_modules
 .rts2_cache_esm
 .rts2_cache_umd
 .rts2_cache_system
-dist
 .env
