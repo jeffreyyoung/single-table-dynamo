@@ -90,7 +90,9 @@ function getGSIDef(index) {
     };
   }
 
-  throw "given index of type " + index.type + ", expecting globalSecondaryIndex";
+  throw {
+    message: "given index of type " + index.type + ", expecting globalSecondaryIndex"
+  };
 } // type GSI = {
 //     indexName: string
 //     sortKeyAttributeName: string
@@ -117,32 +119,32 @@ function createTable(args) {
   var createTableInput = {
     TableName: args.tableName || getDefaultTableName(),
     KeySchema: [{
-      AttributeName: "hashKey",
-      KeyType: "HASH"
+      AttributeName: 'hashKey',
+      KeyType: 'HASH'
     }, {
-      AttributeName: "sortKey",
-      KeyType: "RANGE"
+      AttributeName: 'sortKey',
+      KeyType: 'RANGE'
     }],
     AttributeDefinitions: [{
-      AttributeName: "hashKey",
-      AttributeType: "S"
+      AttributeName: 'hashKey',
+      AttributeType: 'S'
     }, {
-      AttributeName: "sortKey",
-      AttributeType: "S"
+      AttributeName: 'sortKey',
+      AttributeType: 'S'
     }].concat(localSecondaryIndexes.map(function (i) {
       return {
         AttributeName: i.sortKeyAttributeName,
-        AttributeType: "S"
+        AttributeType: 'S'
       };
     }), args.indexes.map(function (i) {
       return {
         AttributeName: i.sortKeyAttribute,
-        AttributeType: "S"
+        AttributeType: 'S'
       };
     }), args.indexes.map(function (i) {
       return {
         AttributeName: i.hashKeyAttribute,
-        AttributeType: "S"
+        AttributeType: 'S'
       };
     })),
     LocalSecondaryIndexes: [].concat(localSecondaryIndexes.map(function (i) {
@@ -206,7 +208,9 @@ function convertQueryArgToIndex(queryName, config) {
   } else if (isGSIQueryArg(index)) {
     return getGSIIndex(queryName, index, config);
   } else {
-    throw queryName + " is not valid";
+    throw {
+      message: queryName + " is not valid"
+    };
   }
 }
 function getLSIIndex(queryName, i, config) {
@@ -308,7 +312,9 @@ function _findIndexForQuery(where, config) {
     if (config.indexesByTag[where.index]) {
       return config.indexesByTag[where.index];
     } else {
-      throw "The index \"" + where.index + "\" does not exist, the following are valid indexes: " + Object.keys(config.indexesByTag).join(',');
+      throw {
+        message: "The index \"" + where.index + "\" does not exist, the following are valid indexes: " + Object.keys(config.indexesByTag).join(',')
+      };
     }
   }
 
@@ -435,6 +441,7 @@ function getRepository(args) {
           IndexName: index.indexName
         }, {
           Limit: where.limit || 5,
+          ScanIndexForward: where.sort === 'asc',
           KeyConditionExpression: index.hashKeyAttribute + " = :hKey and begins_with(" + index.sortKeyAttribute + ", :sKey) ",
           ExpressionAttributeValues: {
             ':hKey': hashKey,
@@ -463,7 +470,9 @@ function getRepository(args) {
         var index = _findIndexForQuery(where, config);
 
         if (!index) {
-          throw 'there isnt an index configured for this query';
+          throw {
+            message: 'there isnt an index configured for this query'
+          };
         }
 
         return Promise.resolve(repo.executeQuery(where, index));

@@ -1,5 +1,5 @@
-import { SingleTableDocument } from "./SingleTableDocument";
-import { KeyOfStr } from "./utils";
+import { SingleTableDocument } from './SingleTableDocument';
+import { KeyOfStr } from './utils';
 export declare type PropList<T> = KeyOfStr<T>[];
 export declare type PropList2<A, B> = (KeyOfStr<A> | KeyOfStr<B>)[];
 declare type BaseIndex<ID, T> = {

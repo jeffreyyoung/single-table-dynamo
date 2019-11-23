@@ -1,8 +1,8 @@
 import { AWS } from './AWS';
+import { Index } from './config';
 export declare type CreateTableArgs = {
     tableName?: string;
 };
-import { Index } from './config';
 export declare function getDefaultTableName(): string;
 export declare function setDefaultTableName(newName: string): void;
 export declare function getGSIDef(index: Index<any, any>): {
