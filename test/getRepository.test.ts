@@ -164,5 +164,6 @@ test('should handle null sortIndex', () => {
     data: { id: '1', name: 'jim' },
     objectType: 'User',
     hashKey: 'User#id-1',
+    sortKey: "User"
   });
 });
