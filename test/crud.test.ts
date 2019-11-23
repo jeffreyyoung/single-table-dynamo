@@ -65,7 +65,7 @@ const userRepo = getRepository<
   { id: string },
   { id: string; stripeId: string; email: string }
 >({
-  objectName: 'User',
+  objectName: 'User'+Math.random(),
   hashKeyFields: ['id'],
 });
 //const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -91,6 +91,7 @@ test('should create items', async () => {
 
 test('local secondary index query should work', async () => {
   let jimsPurchases = await purchaseRepo.queries.mostRecentPurchases({
+    sort: 'asc',
     args: {
       userId: 'jim',
     },
@@ -101,6 +102,7 @@ test('local secondary index query should work', async () => {
 
 test('next page args should work', async () => {
   let r1 = await purchaseRepo.queries.mostRecentPurchases({
+    sort: 'asc',
     args: {
       userId: 'jim',
     },
@@ -114,13 +116,23 @@ test('next page args should work', async () => {
     r1.nextPageArgs as any
   );
   expect(r2.results).toEqual([purchase3]);
-  expect(r2.nextPageArgs).toBeTruthy();
+  expect(r2.nextPageArgs).not.toBeTruthy();
+});
 
-  let r3 = await purchaseRepo.queries.mostRecentPurchases(
-    r2.nextPageArgs as any
-  );
-  expect(r3.results).toEqual([]);
-  expect(r3.nextPageArgs).not.toBeTruthy();
+test('pagination sort descending should work', async () => {
+  let desc1 = await purchaseRepo.queries.mostRecentPurchases({
+    sort: 'desc',
+    args: {
+      userId: 'jim',
+    },
+    limit: 1
+  });
+
+  expect(desc1.results).toEqual([purchase3]);
+  expect(desc1.nextPageArgs).toBeTruthy();
+
+  expect((await purchaseRepo.queries.mostRecentPurchases(desc1.nextPageArgs!)).results)
+    .toEqual([purchase1]);
 });
 
 test('global secondary index should work', async () => {

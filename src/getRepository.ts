@@ -253,6 +253,7 @@ export function getRepository<ID, T, QueryNames = string>(
             IndexName: (index as any).indexName,
           }),
           Limit: where.limit || 5,
+          ScanIndexForward: where.sort === 'asc',
           KeyConditionExpression: `${index.hashKeyAttribute} = :hKey and begins_with(${index.sortKeyAttribute}, :sKey) `,
           ExpressionAttributeValues: {
             ':hKey': hashKey,
