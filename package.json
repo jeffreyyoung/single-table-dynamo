@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "author": "",
+  "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
   "main": "dist/index.js",
   "module": "dist/single-table-dynamo.esm.js",
   "typings": "dist/index.d.ts",
