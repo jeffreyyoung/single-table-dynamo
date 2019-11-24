@@ -31,14 +31,21 @@ export function getCompositeKeyValue<ID, T>(
   thing: T,
   properties: (keyof T | keyof ID)[],
   descriptor: string,
-  separator: string
+  separator: string,
+  shouldPadNumbersInIndexes: boolean
 ) {
   return [
     descriptor,
     ...properties.map(k =>
-      dynamoProperty(k as string, (thing[k as keyof T] as unknown) as string)
+      dynamoProperty(k as string, thing[k as keyof T], shouldPadNumbersInIndexes)
     ),
   ].join(separator);
+}
+
+function padDecimalNumber(value: number) {
+  let [before,after] = String(value).split('.');
+
+  return [(before || '').padStart(18, '0'), (after || '').padEnd(2, '0')].join('.')
 }
 
 /**
@@ -51,21 +58,26 @@ export function getCompositeKeyValue<ID, T>(
  * @param key
  * @param value
  */
-export function dynamoProperty(key: string, value: string) {
-  return `${key}-${value}`;
+export function dynamoProperty(key: string, value: any, shouldPadNumbersInIndexes: boolean) {
+  let stringified = String(value);
+  if (typeof value === 'number' && value >= 0 && shouldPadNumbersInIndexes) {
+    stringified = padDecimalNumber(value as number);
+  }
+  return `${key}-${stringified}`;
 }
 
 export function getSortkeyForBeginsWithQuery<ID, T>(
   thing: Partial<T>,
   indexFields: (keyof T | keyof ID)[],
   descriptor: string,
-  compositeKeySeparator: string
+  compositeKeySeparator: string,
+  shouldPadNumbersInIndexes: boolean
 ) {
   let fields = [descriptor];
   for (let i = 0; i < indexFields.length; i++) {
     let k = indexFields[i];
     if (k in thing) {
-      fields.push(dynamoProperty(k as string, String(thing[k as keyof T])));
+      fields.push(dynamoProperty(k as string, String(thing[k as keyof T]), shouldPadNumbersInIndexes));
     } else {
       break;
     }
@@ -134,20 +146,23 @@ type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 function getKey<ID, T>(
   id: ID | T,
   i: Index<ID, T>,
-  separator: string
+  separator: string,
+  shouldPadNumbersInIndexes: boolean
 ): Partial<Omit<SingleTableDocument<T>, 'data'>> {
   return {
     [i.hashKeyAttribute]: getCompositeKeyValue(
       id as any,
       i.hashKeyFields as (keyof ID)[],
       i.hashKeyDescriptor,
-      separator
+      separator,
+      shouldPadNumbersInIndexes
     ),
     [i.sortKeyAttribute]: getCompositeKeyValue(
       id as any,
       i.sortKeyFields as (keyof ID)[],
       i.sortKeyDescriptor,
-      separator
+      separator,
+      shouldPadNumbersInIndexes
     ),
   };
 }
@@ -188,7 +203,7 @@ export function getRepository<ID, T, QueryNames = string>(
       return config;
     },
     getKey: (id: ID) => {
-      return getKey(id, config.primaryIndex, config.compositeKeySeparator);
+      return getKey(id, config.primaryIndex, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
     },
     get: async (id: ID): Promise<T | null> => {
       let res = await getDocClient()
@@ -234,7 +249,8 @@ export function getRepository<ID, T, QueryNames = string>(
         where.args as T,
         index.hashKeyFields,
         index.hashKeyDescriptor,
-        config.compositeKeySeparator
+        config.compositeKeySeparator,
+        config.shouldPadNumbersInIndexes
       );
       const sortKey =
         index.sortKeyFields &&
@@ -242,7 +258,8 @@ export function getRepository<ID, T, QueryNames = string>(
           where.args,
           index.sortKeyFields,
           index.sortKeyDescriptor,
-          config.compositeKeySeparator
+          config.compositeKeySeparator,
+          config.shouldPadNumbersInIndexes
         );
 
       return {
@@ -311,7 +328,7 @@ export function getRepository<ID, T, QueryNames = string>(
       config.indexes.forEach(i => {
         obj = {
           ...obj,
-          ...getKey(thing, i, config.compositeKeySeparator),
+          ...getKey(thing, i, config.compositeKeySeparator, config.shouldPadNumbersInIndexes),
         };
       });
 

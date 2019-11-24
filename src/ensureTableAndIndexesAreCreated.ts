@@ -37,12 +37,13 @@ async function getTableDescription(
   tableName: string
 ): Promise<AWS.DynamoDB.TableDescription | null> {
   try {
+    console.log('calling for describeTable');
     let description = await client
       .describeTable({ TableName: tableName })
       .promise();
 
     if (description.Table) {
-      console.log('returning table description!!!!');
+      console.log('returning table description');
       return description.Table;
     }
   } catch (e) {
@@ -61,6 +62,7 @@ async function ensureTableIsConfigured(
   console.log(`checking if the table "${tableName}" has already been created`);
 
   let table = await getTableDescription(client, tableName);
+  console.log('got the description', table);
   let indexesToBeCreated = { ...indexes };
 
   if (!table) {
@@ -92,6 +94,15 @@ async function ensureTableIsConfigured(
     await client
       .updateTable({
         TableName: tableName,
+        AttributeDefinitions: toCreate.reduce<{AttributeName: string, AttributeType: string}[]>((prev, index) => {
+          return prev.concat([{
+              AttributeName: index.sortKeyAttribute as string,
+              AttributeType: 'S',
+          },{
+            AttributeName: index.hashKeyAttribute as string,
+            AttributeType: 'S'
+          }])
+        },[]),
         GlobalSecondaryIndexUpdates: toCreate.map(i => ({
           Create: getGSIDef(i),
         })),

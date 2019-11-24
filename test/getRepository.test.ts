@@ -51,6 +51,7 @@ const repo = getRepository<
   sortKeyFields: ['itemId', 'id'],
   compositeKeySeparator: '#',
   objectName: 'Purchase',
+  shouldPadNumbersInIndexes: false,
   queries: {
     getPurchasersOfItem: {
       which: 0,
@@ -125,7 +126,8 @@ test('should properly format sort key for begins with query', () => {
     where.args,
     (index && index.sortKeyFields) || [],
     (index && index.sortKeyDescriptor) || '',
-    repo.config.compositeKeySeparator
+    repo.config.compositeKeySeparator,
+    false
   );
   expect(key).toBe('location#country-usa#state-ut#city-provo');
 });

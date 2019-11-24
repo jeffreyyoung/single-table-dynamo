@@ -48,6 +48,7 @@ let purchaseRepo = getRepository<PurchaseId, Purchase, PurchaseQueries>({
   objectName: 'purchase' + Math.random(),
   hashKeyFields: ['userId'],
   sortKeyFields: ['itemId'],
+  shouldPadNumbersInIndexes: false,
   queries: {
     mostRecentPurchases: {
       sortKeyFields: ['createdAt'],
@@ -67,6 +68,7 @@ const userRepo = getRepository<
 >({
   objectName: 'User'+Math.random(),
   hashKeyFields: ['id'],
+  shouldPadNumbersInIndexes: false
 });
 //const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

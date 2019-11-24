@@ -170,6 +170,8 @@ export type ConfigArgs<ID, T, QueryNames = string> = {
   hashKeyFields: PropList<ID>;
   sortKeyFields?: PropList<ID>;
   compositeKeySeparator?: '#';
+  shouldPadNumbersInIndexes?: boolean,
+  paddedNumberLength?: number,
   queries?: Record<
     Extract<QueryNames, string>,
     GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg
@@ -181,7 +183,11 @@ type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export function getConfig<ID, T>(
   argsIn: PartialBy<ConfigArgs<ID, T>, 'queries'>
 ): Config<ID, T> {
-  const args: ConfigArgs<ID, T> = Object.assign({ queries: {} }, argsIn);
+  const args: ConfigArgs<ID, T> = Object.assign({
+    shouldPadNumbersInIndexes: true,
+    paddedNumberLength: 20,
+    queries: {}
+  }, argsIn);
   let indexes = [
     getPrimaryIndex(args),
     ...(args.queries
@@ -202,6 +208,8 @@ export function getConfig<ID, T>(
     {
       tableName: args.tableName || getDefaultTableName(),
       compositeKeySeparator: args.compositeKeySeparator || '#',
+      shouldPadNumbersInIndexes: args.shouldPadNumbersInIndexes!,
+      paddedNumberLength: args.paddedNumberLength || 20
     },
     {
       objectName: args.objectName,
@@ -217,6 +225,8 @@ export type Config<ID, T, QueryNames = string> = Readonly<{
   objectName: string;
   primaryIndex: Index<ID, T>;
   indexes: Index<ID, T>[];
+  paddedNumberLength: number
+  shouldPadNumbersInIndexes: boolean
   indexesByTag: Record<Extract<QueryNames, string>, Index<ID, T>>;
   compositeKeySeparator: string;
 }>;
