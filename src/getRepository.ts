@@ -2,6 +2,7 @@ import { getDocClient } from './AWS';
 import { SingleTableDocument } from './SingleTableDocument';
 import { ConfigArgs, Index, Config, getConfig } from './config';
 import { KeyOfStr } from './utils';
+import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 
 export type WhereClause<T = any, QueryNames = string> = {
   sort?: 'asc' | 'desc';
@@ -169,6 +170,7 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
     where: WhereClause<T>,
     index: Index<ID, T>
   ) => Promise<QueryResult<T>>;
+  getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput 
   query: (where: WhereClause<T>) => Promise<QueryResult<T>>;
   queryOne: (where: WhereClause<T>) => Promise<T | null>;
   findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
@@ -227,10 +229,7 @@ export function getRepository<ID, T, QueryNames = string>(
 
       return true;
     },
-    executeQuery: async (
-      where: WhereClause<T>,
-      index: Index<ID, T>
-    ): Promise<QueryResult<T>> => {
+    getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput {
       const hashKey = getCompositeKeyValue<ID, T>(
         where.args as T,
         index.hashKeyFields,
@@ -246,8 +245,7 @@ export function getRepository<ID, T, QueryNames = string>(
           config.compositeKeySeparator
         );
 
-      let res = await getDocClient()
-        .query({
+      return {
           TableName: config.tableName,
           ...((index as any).indexName && {
             IndexName: (index as any).indexName,
@@ -262,7 +260,15 @@ export function getRepository<ID, T, QueryNames = string>(
           ...(where.cursor && {
             ExclusiveStartKey: where.cursor,
           }),
-        })
+        };
+    },
+    executeQuery: async (
+      where: WhereClause<T>,
+      index: Index<ID, T>
+    ): Promise<QueryResult<T>> => {
+      
+      let res = await getDocClient()
+        .query(repo.getQueryArgs(where, index))
         .promise();
 
       let nextWhere: WhereClause<T> | undefined = res &&
