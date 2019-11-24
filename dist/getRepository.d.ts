@@ -1,6 +1,7 @@
 import { SingleTableDocument } from './SingleTableDocument';
 import { ConfigArgs, Index, Config } from './config';
 import { KeyOfStr } from './utils';
+import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 export declare type WhereClause<T = any, QueryNames = string> = {
     sort?: 'asc' | 'desc';
     args: Partial<T>;
@@ -47,6 +48,7 @@ export declare type Repository<ID = any, T = any, QueryNames = string> = {
     delete: (id: ID) => Promise<boolean>;
     formatForDDB: (thing: T) => SingleTableDocument<T>;
     executeQuery: (where: WhereClause<T>, index: Index<ID, T>) => Promise<QueryResult<T>>;
+    getQueryArgs(where: WhereClause<T>, index: Index<ID, T>): DocumentClient.QueryInput;
     query: (where: WhereClause<T>) => Promise<QueryResult<T>>;
     queryOne: (where: WhereClause<T>) => Promise<T | null>;
     findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;

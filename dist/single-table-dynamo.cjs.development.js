@@ -431,25 +431,28 @@ function getRepository(args) {
         return Promise.reject(e);
       }
     },
+    getQueryArgs: function getQueryArgs(where, index) {
+      var hashKey = getCompositeKeyValue(where.args, index.hashKeyFields, index.hashKeyDescriptor, config.compositeKeySeparator);
+      var sortKey = index.sortKeyFields && getSortkeyForBeginsWithQuery(where.args, index.sortKeyFields, index.sortKeyDescriptor, config.compositeKeySeparator);
+      return _extends({
+        TableName: config.tableName
+      }, index.indexName && {
+        IndexName: index.indexName
+      }, {
+        Limit: where.limit || 5,
+        ScanIndexForward: where.sort === 'asc',
+        KeyConditionExpression: index.hashKeyAttribute + " = :hKey and begins_with(" + index.sortKeyAttribute + ", :sKey) ",
+        ExpressionAttributeValues: {
+          ':hKey': hashKey,
+          ':sKey': sortKey
+        }
+      }, where.cursor && {
+        ExclusiveStartKey: where.cursor
+      });
+    },
     executeQuery: function (where, index) {
       try {
-        var hashKey = getCompositeKeyValue(where.args, index.hashKeyFields, index.hashKeyDescriptor, config.compositeKeySeparator);
-        var sortKey = index.sortKeyFields && getSortkeyForBeginsWithQuery(where.args, index.sortKeyFields, index.sortKeyDescriptor, config.compositeKeySeparator);
-        return Promise.resolve(getDocClient().query(_extends({
-          TableName: config.tableName
-        }, index.indexName && {
-          IndexName: index.indexName
-        }, {
-          Limit: where.limit || 5,
-          ScanIndexForward: where.sort === 'asc',
-          KeyConditionExpression: index.hashKeyAttribute + " = :hKey and begins_with(" + index.sortKeyAttribute + ", :sKey) ",
-          ExpressionAttributeValues: {
-            ':hKey': hashKey,
-            ':sKey': sortKey
-          }
-        }, where.cursor && {
-          ExclusiveStartKey: where.cursor
-        })).promise()).then(function (res) {
+        return Promise.resolve(getDocClient().query(repo.getQueryArgs(where, index)).promise()).then(function (res) {
           var nextWhere = res && res.LastEvaluatedKey && _extends({}, where, {
             cursor: res.LastEvaluatedKey
           });
