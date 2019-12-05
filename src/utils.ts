@@ -8,23 +8,23 @@ export type KeyOfStr<T> = Extract<keyof T, string>;
  *
  * @param i
  */
-export function getLSIName<T>(which: number): KeyOfStr<SingleTableDocument<T>> {
-  return `lsi${which}` as any;
+export function getLSIName(which: number): KeyOfStr<SingleTableDocument> {
+  return `__lsi${which}` as any;
 }
 
-export function getLSISortKeyAttribute<T>(
+export function getLSISortKeyAttribute(
   which: number
-): KeyOfStr<SingleTableDocument<T>> {
-  return `lsi${which}` as any;
+): KeyOfStr<SingleTableDocument> {
+  return `__lsi${which}` as any;
 }
 
-export function getGSIName<T>(which: number): KeyOfStr<SingleTableDocument<T>> {
-  return `gsi${which}` as any;
+export function getGSIName(which: number): KeyOfStr<SingleTableDocument> {
+  return `__gsi${which}` as any;
 }
 
-export function getGSIAttributeName<T>(
+export function getGSIAttributeName(
   which: number,
   type: 'Sort' | 'Hash'
-): KeyOfStr<SingleTableDocument<T>> {
-  return `gsi${type}${which}` as any;
+): KeyOfStr<SingleTableDocument> {
+  return `__gsi${type}${which}` as any;
 }

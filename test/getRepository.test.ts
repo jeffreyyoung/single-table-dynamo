@@ -2,6 +2,7 @@ import {
   getSortkeyForBeginsWithQuery,
   getRepository,
 } from '../src/getRepository';
+import { tableName } from './config';
 
 type PurchaseID = {
   id: string;
@@ -46,7 +47,7 @@ const repo = getRepository<
   | 'location'
   | 'latestPurchasesByCountry'
 >({
-  tableName: 'Global_Table',
+  tableName: tableName,
   hashKeyFields: ['userId'],
   sortKeyFields: ['itemId', 'id'],
   compositeKeySeparator: '#',
@@ -77,9 +78,8 @@ test('should format object for dynamodb properly', () => {
   let formatted = repo.formatForDDB(getDefaultObject());
 
   expect(formatted).toEqual({
-    hashKey: 'Purchase#userId-1208493',
-    sortKey: 'Purchase#itemId-awesomecouch#id-1234',
-    data: {
+    __hashKey: 'Purchase#userId-1208493',
+    __sortKey: 'Purchase#itemId-awesomecouch#id-1234',
       id: '1234',
       purchaseDate: 1572481596741,
       city: 'provo',
@@ -87,14 +87,13 @@ test('should format object for dynamodb properly', () => {
       country: 'usa',
       itemId: 'awesomecouch',
       userId: '1208493',
-    },
-    objectType: 'Purchase',
-    gsiHash0: 'Purchase-getPurchasersOfItem#itemId-awesomecouch',
-    gsiSort0: 'getPurchasersOfItem#purchaseDate-1572481596741#userId-1208493',
-    lsi1: 'latestPurchases#purchaseDate-1572481596741#itemId-awesomecouch',
-    lsi2:
+    __objectType: 'Purchase',
+    __gsiHash0: 'Purchase-getPurchasersOfItem#itemId-awesomecouch',
+    __gsiSort0: 'getPurchasersOfItem#purchaseDate-1572481596741#userId-1208493',
+    __lsi1: 'latestPurchases#purchaseDate-1572481596741#itemId-awesomecouch',
+    __lsi2:
       'location#country-usa#state-ut#city-provo#purchaseDate-1572481596741#itemId-awesomecouch',
-    lsi3: 'latestPurchasesByCountry#country-usa#purchaseDate-1572481596741',
+    __lsi3: 'latestPurchasesByCountry#country-usa#purchaseDate-1572481596741',
   });
 });
 
@@ -163,9 +162,10 @@ test('should handle null sortIndex', () => {
     name: 'jim',
   });
   expect(res).toEqual({
-    data: { id: '1', name: 'jim' },
-    objectType: 'User',
-    hashKey: 'User#id-1',
-    sortKey: "User"
+    id: '1',
+    name: 'jim',
+    __objectType: 'User',
+    __hashKey: 'User#id-1',
+    __sortKey: "User"
   });
 });

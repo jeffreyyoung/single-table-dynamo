@@ -1,8 +1,7 @@
 import {
     getRepository,
   } from '../src/getRepository';
-
-
+import { tableName } from './config';
 
 
 type PurchasedLinkId = {
@@ -25,16 +24,17 @@ type QueryNames = 'linksByEmail' | 'boardIdSortedByPrice' | 'boardIdSortedByDate
 export const purchasedLinkRepo = getRepository<PurchasedLinkId, PurchasedLink, QueryNames>({
     objectName: 'PurchasedLink',
     hashKeyFields: ['boardOwnerId'],
+    tableName: tableName,
     sortKeyFields: ['boardId', 'id'],
     queries: {
         'boardIdSortedByPrice': {
-            type: 'globalSeconaryIndex',
+            type: 'globalSecondaryIndex',
             hashKeyFields: ['boardOwnerId', 'boardId'],
             sortKeyFields: ['hidden', 'priceInUsd', 'createdAt'],
             which: 0
         },
         'boardIdSortedByDate': {
-            type: 'globalSeconaryIndex',
+            type: 'globalSecondaryIndex',
             hashKeyFields: ['boardOwnerId', 'boardId'],
             sortKeyFields: ['hidden', 'createdAt', 'priceInUsd'],
             which: 1
@@ -50,7 +50,7 @@ export const purchasedLinkRepo = getRepository<PurchasedLinkId, PurchasedLink, Q
             which: 1
         },
         'linksByEmail': {
-            type: 'globalSeconaryIndex',
+            type: 'globalSecondaryIndex',
             hashKeyFields: ['email'],
             sortKeyFields: ['createdAt'],
             which: 2

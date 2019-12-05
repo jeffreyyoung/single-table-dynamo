@@ -3,17 +3,12 @@ import {
   getRepository,
   ensureTableAndIndexesExist,
 } from './../src/index';
+import { tableName, awsConfig } from './config';
 
 require('dotenv').config();
 
 WORKAROUND_updateAWSConfig({
-  region: 'us-west-2',
-  accessKeyId: process.env.AWS_KEY,
-  secretAccessKey: process.env.AWS_SECRET,
-
-  // accessKeyId: 'wat',//process.env.AWS_KEY,
-  // secretAccessKey: 'yay',//process.env.AWS_SECRET,
-  // endpoint: "http://localhost:8000"
+  ...awsConfig
 } as any);
 
 type PurchaseId = {
@@ -48,6 +43,7 @@ let purchaseRepo = getRepository<PurchaseId, Purchase, PurchaseQueries>({
   objectName: 'purchase' + Math.random(),
   hashKeyFields: ['userId'],
   sortKeyFields: ['itemId'],
+  tableName: tableName,
   shouldPadNumbersInIndexes: false,
   queries: {
     mostRecentPurchases: {
@@ -66,6 +62,7 @@ const userRepo = getRepository<
   { id: string },
   { id: string; stripeId: string; email: string }
 >({
+  tableName: tableName,
   objectName: 'User'+Math.random(),
   hashKeyFields: ['id'],
   shouldPadNumbersInIndexes: false
@@ -73,7 +70,7 @@ const userRepo = getRepository<
 //const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 test('should create table', async () => {
-  await ensureTableAndIndexesExist([purchaseRepo]);
+  await ensureTableAndIndexesExist([purchaseRepo, userRepo]);
   //wait(30000);
 }, 60000);
 

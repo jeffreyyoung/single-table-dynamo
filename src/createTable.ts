@@ -41,8 +41,7 @@ export function getGSIDef(index: Index<any, any>) {
         { AttributeName: index.sortKeyAttribute, KeyType: 'RANGE' },
       ],
       Projection: {
-        ProjectionType: 'INCLUDE',
-        NonKeyAttributes: ['data', 'objectType'],
+        ProjectionType: 'ALL',
       },
     };
   }
@@ -78,12 +77,12 @@ export function createTable(args: {
   let createTableInput: CreateTableInput = {
     TableName: args.tableName || getDefaultTableName(),
     KeySchema: [
-      { AttributeName: 'hashKey', KeyType: 'HASH' },
-      { AttributeName: 'sortKey', KeyType: 'RANGE' },
+      { AttributeName: '__hashKey', KeyType: 'HASH' },
+      { AttributeName: '__sortKey', KeyType: 'RANGE' },
     ],
     AttributeDefinitions: [
-      { AttributeName: 'hashKey', AttributeType: 'S' },
-      { AttributeName: 'sortKey', AttributeType: 'S' },
+      { AttributeName: '__hashKey', AttributeType: 'S' },
+      { AttributeName: '__sortKey', AttributeType: 'S' },
       ...localSecondaryIndexes.map(i => {
         return { AttributeName: i.sortKeyAttributeName, AttributeType: 'S' };
       }),
@@ -100,12 +99,11 @@ export function createTable(args: {
       ...localSecondaryIndexes.map<LocalSecondaryIndex>(i => ({
         IndexName: i.indexName,
         KeySchema: [
-          { AttributeName: 'hashKey', KeyType: 'HASH' },
+          { AttributeName: '__hashKey', KeyType: 'HASH' },
           { AttributeName: i.sortKeyAttributeName, KeyType: 'RANGE' },
         ],
         Projection: {
-          ProjectionType: 'INCLUDE',
-          NonKeyAttributes: ['data', 'objectType'],
+          ProjectionType: 'ALL',
         },
       })),
     ],

@@ -4,17 +4,12 @@
     getRepository,
     ensureTableAndIndexesExist
   } from './../src/index';
+import { tableName, awsConfig } from './config';
   
   require('dotenv').config();
   
   WORKAROUND_updateAWSConfig({
-    region: 'us-west-2',
-    accessKeyId: process.env.AWS_KEY,
-    secretAccessKey: process.env.AWS_SECRET,
-  
-    // accessKeyId: 'wat',//process.env.AWS_KEY,
-    // secretAccessKey: 'yay',//process.env.AWS_SECRET,
-    //endpoint: "http://localhost:8000"
+    ...awsConfig
   } as any);
 
 
@@ -38,15 +33,16 @@ export const postRepo = getRepository<PostId, Post, QueryNames>({
     objectName: 'Post'+Math.random(),
     hashKeyFields: ['authorId'],
     sortKeyFields: ['id'],
+    tableName: tableName,
     queries: {
         'byCategorySortedByUpvoteCount': {
-            type: 'globalSeconaryIndex',
+            type: 'globalSecondaryIndex',
             hashKeyFields: ['category'],
             sortKeyFields: ['upvoteCount'],
             which: 0
         },
         'sortedByShareCountThenShareCount': {
-            type: 'globalSeconaryIndex',
+            type: 'globalSecondaryIndex',
             hashKeyFields: ['category'],
             sortKeyFields: ['shareCount', 'upvoteCount'],
             which: 1

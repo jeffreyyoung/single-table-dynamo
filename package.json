@@ -13,7 +13,7 @@
   "scripts": {
     "start": "tsdx watch",
     "build": "tsdx build",
-    "test": "tsdx test sortingNumbers.test.ts",
+    "test": "tsdx test",
     "lint": "tsdx lint"
   },
   "prettier": {

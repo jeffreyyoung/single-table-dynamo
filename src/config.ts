@@ -13,11 +13,11 @@ export type PropList2<A, B> = (KeyOfStr<A> | KeyOfStr<B>)[];
 type BaseIndex<ID, T> = {
   hashKeyFields: PropList2<ID, T>;
   hashKeyDescriptor: string;
-  hashKeyAttribute: keyof SingleTableDocument<T>;
+  hashKeyAttribute: keyof SingleTableDocument;
 
   sortKeyFields: PropList2<ID, T>;
   sortKeyDescriptor: string;
-  sortKeyAttribute: keyof SingleTableDocument<T>;
+  sortKeyAttribute: keyof SingleTableDocument;
 
   tag?: string;
 };
@@ -36,11 +36,11 @@ export function getPrimaryIndex<ID, T>(
   return {
     hashKeyFields: config.hashKeyFields,
     hashKeyDescriptor: config.objectName,
-    hashKeyAttribute: 'hashKey',
+    hashKeyAttribute: '__hashKey',
 
     sortKeyFields: config.sortKeyFields || [],
     sortKeyDescriptor: config.objectName,
-    sortKeyAttribute: 'sortKey',
+    sortKeyAttribute: '__sortKey',
 
     type: 'primaryIndex',
 
@@ -83,13 +83,13 @@ export function getLSIIndex<ID, T>(
   return {
     hashKeyFields: config.hashKeyFields,
     hashKeyDescriptor: config.objectName,
-    hashKeyAttribute: 'hashKey',
+    hashKeyAttribute: '__hashKey',
 
     sortKeyFields: i.sortKeyFields,
     sortKeyDescriptor: queryName,
-    sortKeyAttribute: getLSISortKeyAttribute<T>(
+    sortKeyAttribute: getLSISortKeyAttribute(
       i.which
-    ) as keyof SingleTableDocument<T>,
+    ) as keyof SingleTableDocument,
 
     indexName: getLSIName(i.which),
 
@@ -110,14 +110,14 @@ export function getGSIIndex<ID, T>(
     hashKeyAttribute: getGSIAttributeName(
       i.which,
       'Hash'
-    ) as keyof SingleTableDocument<T>,
+    ) as keyof SingleTableDocument,
 
     sortKeyFields: i.sortKeyFields,
     sortKeyDescriptor: queryName,
     sortKeyAttribute: getGSIAttributeName(
       i.which,
       'Sort'
-    ) as keyof SingleTableDocument<T>,
+    ) as keyof SingleTableDocument,
 
     indexName: getGSIName(i.which),
 
@@ -137,10 +137,17 @@ type LSIQueryArg<T> = {
   which: 0 | 1 | 2 | 3 | 4;
 };
 
+// type CustomGSIQueryArg<T> = {
+//   type: 'globalSecondaryIndex'
+//   hashKeyAttributeName: keyof<T>,
+//   sortKeyAttributeName: keyof<T>,
+//   indexName: string
+// }
+
 type GSIQueryArg<T> = {
   sortKeyFields: PropList<T>;
   hashKeyFields: PropList<T>;
-  type?: 'globalSeconaryIndex';
+  type?: 'globalSecondaryIndex';
   which:
     | 0
     | 1

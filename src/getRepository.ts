@@ -1,5 +1,5 @@
 import { getDocClient } from './AWS';
-import { SingleTableDocument } from './SingleTableDocument';
+import { SingleTableDocument, SingleTableDocumentWithData, getDataFromDocument } from './SingleTableDocument';
 import { ConfigArgs, Index, Config, getConfig } from './config';
 import { KeyOfStr } from './utils';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
@@ -141,14 +141,14 @@ export function findIndexForQuery<ID, T, QueryNames>(
   return null;
 }
 
-type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+//type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 function getKey<ID, T>(
   id: ID | T,
   i: Index<ID, T>,
   separator: string,
   shouldPadNumbersInIndexes: boolean
-): Partial<Omit<SingleTableDocument<T>, 'data'>> {
+): Partial<SingleTableDocument> {
   return {
     [i.hashKeyAttribute]: getCompositeKeyValue(
       id as any,
@@ -180,7 +180,7 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
   overwrite: (thing: T) => Promise<T>;
   put: (thing: T) => Promise<T>;
   delete: (id: ID) => Promise<boolean>;
-  formatForDDB: (thing: T) => SingleTableDocument<T>;
+  formatForDDB: (thing: T) => SingleTableDocumentWithData<T>;
   executeQuery: (
     where: WhereClause<T>,
     index: Index<ID, T>
@@ -203,19 +203,21 @@ export function getRepository<ID, T, QueryNames = string>(
       return config;
     },
     getKey: (id: ID) => {
-      return getKey(id, config.primaryIndex, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
+      const key = getKey(id, config.primaryIndex, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
+      return key;
     },
     get: async (id: ID): Promise<T | null> => {
+      const request = {
+        TableName: config.tableName,
+        Key: repo.getKey(id),
+      };
       let res = await getDocClient()
-        .get({
-          TableName: config.tableName,
-          Key: repo.getKey(id),
-        })
+        .get(request)
         .promise();
       if (!res.Item) {
         return null;
       }
-      return (res.Item as any).data;
+      return getDataFromDocument((res.Item as SingleTableDocumentWithData<T>));
     },
     update: async (id: ID, thing: Partial<T>): Promise<T> => {
       let old = (await repo.get(id)) as T;
@@ -269,7 +271,11 @@ export function getRepository<ID, T, QueryNames = string>(
           }),
           Limit: where.limit || 5,
           ScanIndexForward: where.sort === 'asc',
-          KeyConditionExpression: `${index.hashKeyAttribute} = :hKey and begins_with(${index.sortKeyAttribute}, :sKey) `,
+          KeyConditionExpression: `#hKeyAttribute = :hKey and begins_with(#sKeyAttribute, :sKey) `,
+          ExpressionAttributeNames: {
+            '#hKeyAttribute': index.hashKeyAttribute,
+            '#sKeyAttribute': index.sortKeyAttribute,
+          },
           ExpressionAttributeValues: {
             ':hKey': hashKey,
             ':sKey': sortKey,
@@ -283,7 +289,6 @@ export function getRepository<ID, T, QueryNames = string>(
       where: WhereClause<T>,
       index: Index<ID, T>
     ): Promise<QueryResult<T>> => {
-      
       let res = await getDocClient()
         .query(repo.getQueryArgs(where, index))
         .promise();
@@ -295,8 +300,8 @@ export function getRepository<ID, T, QueryNames = string>(
         };
 
       return {
-        results: (res as any).Items.map((i: SingleTableDocument<T>) => {
-          return i.data;
+        results: (res as any).Items.map((i: SingleTableDocumentWithData<T>) => {
+          return getDataFromDocument(i);
         }),
         nextPageArgs: nextWhere,
       };
@@ -320,9 +325,9 @@ export function getRepository<ID, T, QueryNames = string>(
       }
     },
     formatForDDB(thing: T) {
-      let obj: Partial<SingleTableDocument<T>> = {
-        data: thing,
-        objectType: config.objectName,
+      let obj: Partial<SingleTableDocumentWithData<T>> = {
+        ...thing,
+        __objectType: config.objectName,
       };
 
       config.indexes.forEach(i => {
@@ -332,7 +337,7 @@ export function getRepository<ID, T, QueryNames = string>(
         };
       });
 
-      return obj as SingleTableDocument<T>;
+      return obj as SingleTableDocumentWithData<T>;
     },
     findIndexForQuery: (where: WhereClause<T>) => {
       return findIndexForQuery<ID, T, QueryNames>(where, config);
