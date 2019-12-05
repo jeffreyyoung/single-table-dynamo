@@ -28,3 +28,6 @@ export function getGSIAttributeName(
 ): KeyOfStr<SingleTableDocument> {
   return `__gsi${type}${which}` as any;
 }
+
+
+export const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

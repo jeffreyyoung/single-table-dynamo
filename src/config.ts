@@ -11,13 +11,14 @@ import { getDefaultTableName } from './createTable';
 export type PropList<T> = KeyOfStr<T>[];
 export type PropList2<A, B> = (KeyOfStr<A> | KeyOfStr<B>)[];
 type BaseIndex<ID, T> = {
+  isCustomIndex: boolean,
   hashKeyFields: PropList2<ID, T>;
   hashKeyDescriptor: string;
-  hashKeyAttribute: keyof SingleTableDocument;
+  hashKeyAttribute: keyof SingleTableDocument | KeyOfStr<T>;
 
   sortKeyFields: PropList2<ID, T>;
   sortKeyDescriptor: string;
-  sortKeyAttribute: keyof SingleTableDocument;
+  sortKeyAttribute: keyof SingleTableDocument | KeyOfStr<T>;
 
   tag?: string;
 };
@@ -34,6 +35,7 @@ export function getPrimaryIndex<ID, T>(
   tag: string = ''
 ): Index<ID, T> {
   return {
+    isCustomIndex: false,
     hashKeyFields: config.hashKeyFields,
     hashKeyDescriptor: config.objectName,
     hashKeyAttribute: '__hashKey',
@@ -60,6 +62,10 @@ function isGSIQueryArg<T>(thing: any): thing is GSIQueryArg<T> {
   return thing && thing.sortKeyFields && thing.hashKeyFields;
 }
 
+function isCustomGSIQueryArg<T>(thing: any): thing is CustomGSIQueryArg<T> {
+  return thing && thing.hashKeyAttributeName && thing.sortKeyAttributeName;
+}
+
 export function convertQueryArgToIndex<ID, T>(
   queryName: string,
   config: ConfigArgs<ID, T>
@@ -71,6 +77,8 @@ export function convertQueryArgToIndex<ID, T>(
     return getLSIIndex<ID, T>(queryName, index, config);
   } else if (isGSIQueryArg(index)) {
     return getGSIIndex<ID, T>(queryName, index, config);
+  } else if (isCustomGSIQueryArg(index)) {
+    return getCustomGSIIndex<ID, T>(queryName, index, config);
   } else {
     throw { message: `${queryName} is not valid` };
   }
@@ -81,6 +89,7 @@ export function getLSIIndex<ID, T>(
   config: ConfigArgs<ID, T>
 ): Index<ID, T> {
   return {
+    isCustomIndex: false,
     hashKeyFields: config.hashKeyFields,
     hashKeyDescriptor: config.objectName,
     hashKeyAttribute: '__hashKey',
@@ -99,12 +108,36 @@ export function getLSIIndex<ID, T>(
   };
 }
 
+export function getCustomGSIIndex<ID, T>(
+  queryName: string,
+  i: CustomGSIQueryArg<T>,
+  config: ConfigArgs<ID, T>
+): Index<ID, T> {
+  return {
+    isCustomIndex: true,
+    hashKeyFields: [],
+    hashKeyDescriptor: config.objectName + '-' + queryName,
+    hashKeyAttribute: i.hashKeyAttributeName,
+
+    sortKeyFields: [],
+    sortKeyDescriptor: queryName,
+    sortKeyAttribute: i.sortKeyAttributeName,
+
+    indexName: i.indexName || queryName,
+
+    type: 'globalSecondaryIndex',
+
+    tag: queryName,
+  }
+}
+
 export function getGSIIndex<ID, T>(
   queryName: string,
   i: GSIQueryArg<T>,
   config: ConfigArgs<ID, T>
 ): Index<ID, T> {
   return {
+    isCustomIndex: false,
     hashKeyFields: i.hashKeyFields,
     hashKeyDescriptor: config.objectName + '-' + queryName,
     hashKeyAttribute: getGSIAttributeName(
@@ -137,12 +170,12 @@ type LSIQueryArg<T> = {
   which: 0 | 1 | 2 | 3 | 4;
 };
 
-// type CustomGSIQueryArg<T> = {
-//   type: 'globalSecondaryIndex'
-//   hashKeyAttributeName: keyof<T>,
-//   sortKeyAttributeName: keyof<T>,
-//   indexName: string
-// }
+type CustomGSIQueryArg<T> = {
+  type: 'globalSecondaryIndex'
+  hashKeyAttributeName: KeyOfStr<T>,
+  sortKeyAttributeName: KeyOfStr<T>,
+  indexName?: string
+}
 
 type GSIQueryArg<T> = {
   sortKeyFields: PropList<T>;
@@ -181,9 +214,10 @@ export type ConfigArgs<ID, T, QueryNames = string> = {
   paddedNumberLength?: number,
   queries?: Record<
     Extract<QueryNames, string>,
-    GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg
+    GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg | CustomGSIQueryArg<T>
   >;
 };
+
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 

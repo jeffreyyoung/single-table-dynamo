@@ -42,6 +42,13 @@ export function getCompositeKeyValue<ID, T>(
   ].join(separator);
 }
 
+export function getCustomKeyValue<T>(
+  thing: T,
+  propertyName: (keyof T)
+) {
+  return thing[propertyName];
+}
+
 function padDecimalNumber(value: number) {
   let [before,after] = String(value).split('.');
 
@@ -185,10 +192,12 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
     where: WhereClause<T>,
     index: Index<ID, T>
   ) => Promise<QueryResult<T>>;
+  getSortKeyAndHashKeyForQuery(where: WhereClause<T>, index: Index<ID,T>): {sortKey: string, hashKey: string}
   getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput 
   query: (where: WhereClause<T>) => Promise<QueryResult<T>>;
   queryOne: (where: WhereClause<T>) => Promise<T | null>;
   findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
+  getDocClient: () => AWS.DynamoDB.DocumentClient
   queries: Queries<T, QueryNames>;
 };
 
@@ -199,6 +208,7 @@ export function getRepository<ID, T, QueryNames = string>(
 ): Repository<ID, T, QueryNames> {
   let config = getConfig(args);
   let repo: Repository<ID, T, QueryNames> = {
+    getDocClient: getDocClient,
     get config() {
       return config;
     },
@@ -246,44 +256,62 @@ export function getRepository<ID, T, QueryNames = string>(
 
       return true;
     },
-    getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput {
-      const hashKey = getCompositeKeyValue<ID, T>(
-        where.args as T,
-        index.hashKeyFields,
-        index.hashKeyDescriptor,
-        config.compositeKeySeparator,
-        config.shouldPadNumbersInIndexes
-      );
-      const sortKey =
-        index.sortKeyFields &&
-        getSortkeyForBeginsWithQuery<ID, T>(
-          where.args,
-          index.sortKeyFields,
-          index.sortKeyDescriptor,
+    getSortKeyAndHashKeyForQuery(where: WhereClause<T>, index: Index<ID,T>) {
+      if (index.isCustomIndex) {
+        const hashKey = where.args[index.hashKeyAttribute as any];
+        const sortKey = where.args[index.sortKeyAttribute as any];
+        return {hashKey, sortKey};
+      } else {
+        const hashKey = getCompositeKeyValue<ID, T>(
+          where.args as T,
+          index.hashKeyFields,
+          index.hashKeyDescriptor,
           config.compositeKeySeparator,
           config.shouldPadNumbersInIndexes
         );
+        
+  
+        const sortKey =
+          index.sortKeyFields &&
+          getSortkeyForBeginsWithQuery<ID, T>(
+            where.args,
+            index.sortKeyFields,
+            index.sortKeyDescriptor,
+            config.compositeKeySeparator,
+            config.shouldPadNumbersInIndexes
+          );
 
-      return {
+        return {sortKey, hashKey};
+      }
+
+    },
+    getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput {
+      const {sortKey, hashKey} = this.getSortKeyAndHashKeyForQuery(where, index);
+      const args = {
           TableName: config.tableName,
           ...((index as any).indexName && {
             IndexName: (index as any).indexName,
           }),
           Limit: where.limit || 5,
           ScanIndexForward: where.sort === 'asc',
-          KeyConditionExpression: `#hKeyAttribute = :hKey and begins_with(#sKeyAttribute, :sKey) `,
+          KeyConditionExpression: `#hKeyAttribute = :hKey ${sortKey ? 'and begins_with(#sKeyAttribute, :sKey)' : ''}`,
           ExpressionAttributeNames: {
             '#hKeyAttribute': index.hashKeyAttribute,
-            '#sKeyAttribute': index.sortKeyAttribute,
+            ...(sortKey && {
+              '#sKeyAttribute': index.sortKeyAttribute,
+            })
           },
           ExpressionAttributeValues: {
             ':hKey': hashKey,
-            ':sKey': sortKey,
+            ...(sortKey && {
+              ':sKey': sortKey,
+            })
           },
           ...(where.cursor && {
             ExclusiveStartKey: where.cursor,
           }),
-        };
+        }
+        return args;
     },
     executeQuery: async (
       where: WhereClause<T>,
@@ -330,7 +358,7 @@ export function getRepository<ID, T, QueryNames = string>(
         __objectType: config.objectName,
       };
 
-      config.indexes.forEach(i => {
+      config.indexes.filter(i => !i.isCustomIndex).forEach(i => {
         obj = {
           ...obj,
           ...getKey(thing, i, config.compositeKeySeparator, config.shouldPadNumbersInIndexes),

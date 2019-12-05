@@ -83,9 +83,10 @@ export function createTable(args: {
     AttributeDefinitions: [
       { AttributeName: '__hashKey', AttributeType: 'S' },
       { AttributeName: '__sortKey', AttributeType: 'S' },
-      ...localSecondaryIndexes.map(i => {
-        return { AttributeName: i.sortKeyAttributeName, AttributeType: 'S' };
-      }),
+      ...localSecondaryIndexes.map(i => ({
+        AttributeName: i.sortKeyAttributeName,
+        AttributeType: 'S' }
+      )),
       ...(args.indexes as Index<any, any>[]).map(i => ({
         AttributeName: i.sortKeyAttribute,
         AttributeType: 'S',
