@@ -108,6 +108,7 @@ async function ensureTableIsConfigured(
         })),
       })
       .promise();
+    await client.waitFor('tableExists', {TableName: tableName});
   } else {
     console.log(`the table ${tableName} has all the necessary indexes`);
   }

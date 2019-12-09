@@ -7,7 +7,8 @@ export declare type KeyOfStr<T> = Extract<keyof T, string>;
  *
  * @param i
  */
-export declare function getLSIName<T>(which: number): KeyOfStr<SingleTableDocument<T>>;
-export declare function getLSISortKeyAttribute<T>(which: number): KeyOfStr<SingleTableDocument<T>>;
-export declare function getGSIName<T>(which: number): KeyOfStr<SingleTableDocument<T>>;
-export declare function getGSIAttributeName<T>(which: number, type: 'Sort' | 'Hash'): KeyOfStr<SingleTableDocument<T>>;
+export declare function getLSIName(which: number): KeyOfStr<SingleTableDocument>;
+export declare function getLSISortKeyAttribute(which: number): KeyOfStr<SingleTableDocument>;
+export declare function getGSIName(which: number): KeyOfStr<SingleTableDocument>;
+export declare function getGSIAttributeName(which: number, type: 'Sort' | 'Hash'): KeyOfStr<SingleTableDocument>;
+export declare const wait: (ms: number) => Promise<unknown>;

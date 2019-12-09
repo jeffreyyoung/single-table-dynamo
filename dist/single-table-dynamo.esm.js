@@ -31,6 +31,20 @@ function WORKAROUND_updateAWSConfig(ops) {
   _docClient = new AWS.DynamoDB.DocumentClient(ops);
 }
 
+function getDataFromDocument(doc) {
+  if (!doc) {
+    return null;
+  }
+
+  var res = {};
+  Object.keys(doc).forEach(function (key) {
+    if (!key.startsWith('__')) {
+      res[key] = doc[key];
+    }
+  });
+  return res;
+}
+
 /**
  *
  * Each Local Secondary Index is named lsi1, lsi2, ... or lsi3
@@ -39,16 +53,16 @@ function WORKAROUND_updateAWSConfig(ops) {
  * @param i
  */
 function getLSIName(which) {
-  return "lsi" + which;
+  return "__lsi" + which;
 }
 function getLSISortKeyAttribute(which) {
-  return "lsi" + which;
+  return "__lsi" + which;
 }
 function getGSIName(which) {
-  return "gsi" + which;
+  return "__gsi" + which;
 }
 function getGSIAttributeName(which, type) {
-  return "gsi" + type + which;
+  return "__gsi" + type + which;
 }
 
 var defaultTableName = 'SingleTable';
@@ -81,8 +95,7 @@ function getGSIDef(index) {
         KeyType: 'RANGE'
       }],
       Projection: {
-        ProjectionType: 'INCLUDE',
-        NonKeyAttributes: ['data', 'objectType']
+        ProjectionType: 'ALL'
       }
     };
   }
@@ -116,17 +129,17 @@ function createTable(args) {
   var createTableInput = {
     TableName: args.tableName || getDefaultTableName(),
     KeySchema: [{
-      AttributeName: 'hashKey',
+      AttributeName: '__hashKey',
       KeyType: 'HASH'
     }, {
-      AttributeName: 'sortKey',
+      AttributeName: '__sortKey',
       KeyType: 'RANGE'
     }],
     AttributeDefinitions: [{
-      AttributeName: 'hashKey',
+      AttributeName: '__hashKey',
       AttributeType: 'S'
     }, {
-      AttributeName: 'sortKey',
+      AttributeName: '__sortKey',
       AttributeType: 'S'
     }].concat(localSecondaryIndexes.map(function (i) {
       return {
@@ -148,22 +161,27 @@ function createTable(args) {
       return {
         IndexName: i.indexName,
         KeySchema: [{
-          AttributeName: 'hashKey',
+          AttributeName: '__hashKey',
           KeyType: 'HASH'
         }, {
           AttributeName: i.sortKeyAttributeName,
           KeyType: 'RANGE'
         }],
         Projection: {
-          ProjectionType: 'INCLUDE',
-          NonKeyAttributes: ['data', 'objectType']
+          ProjectionType: 'ALL'
         }
       };
     })),
     GlobalSecondaryIndexes: globalSecondaryIndexes,
     BillingMode: 'PAY_PER_REQUEST'
   };
-  return client.createTable(createTableInput).promise();
+  return client.createTable(createTableInput).promise().then(function () {
+    return client.waitFor('tableExists', {
+      TableName: createTableInput.TableName
+    });
+  }).then(function () {
+    return console.log(createTableInput.TableName + " has been created");
+  });
 }
 
 function getPrimaryIndex(config, tag) {
@@ -172,12 +190,13 @@ function getPrimaryIndex(config, tag) {
   }
 
   return {
+    isCustomIndex: false,
     hashKeyFields: config.hashKeyFields,
     hashKeyDescriptor: config.objectName,
-    hashKeyAttribute: 'hashKey',
+    hashKeyAttribute: '__hashKey',
     sortKeyFields: config.sortKeyFields || [],
     sortKeyDescriptor: config.objectName,
-    sortKeyAttribute: 'sortKey',
+    sortKeyAttribute: '__sortKey',
     type: 'primaryIndex',
     tag: tag
   };
@@ -195,6 +214,10 @@ function isGSIQueryArg(thing) {
   return thing && thing.sortKeyFields && thing.hashKeyFields;
 }
 
+function isCustomGSIQueryArg(thing) {
+  return thing && thing.hashKeyAttributeName && thing.sortKeyAttributeName;
+}
+
 function convertQueryArgToIndex(queryName, config) {
   var index = (config.queries || {})[queryName];
 
@@ -204,6 +227,8 @@ function convertQueryArgToIndex(queryName, config) {
     return getLSIIndex(queryName, index, config);
   } else if (isGSIQueryArg(index)) {
     return getGSIIndex(queryName, index, config);
+  } else if (isCustomGSIQueryArg(index)) {
+    return getCustomGSIIndex(queryName, index, config);
   } else {
     throw {
       message: queryName + " is not valid"
@@ -212,9 +237,10 @@ function convertQueryArgToIndex(queryName, config) {
 }
 function getLSIIndex(queryName, i, config) {
   return {
+    isCustomIndex: false,
     hashKeyFields: config.hashKeyFields,
     hashKeyDescriptor: config.objectName,
-    hashKeyAttribute: 'hashKey',
+    hashKeyAttribute: '__hashKey',
     sortKeyFields: i.sortKeyFields,
     sortKeyDescriptor: queryName,
     sortKeyAttribute: getLSISortKeyAttribute(i.which),
@@ -223,8 +249,23 @@ function getLSIIndex(queryName, i, config) {
     tag: queryName
   };
 }
+function getCustomGSIIndex(queryName, i, config) {
+  return {
+    isCustomIndex: true,
+    hashKeyFields: [],
+    hashKeyDescriptor: config.objectName + '-' + queryName,
+    hashKeyAttribute: i.hashKeyAttributeName,
+    sortKeyFields: [],
+    sortKeyDescriptor: queryName,
+    sortKeyAttribute: i.sortKeyAttributeName,
+    indexName: i.indexName || queryName,
+    type: 'globalSecondaryIndex',
+    tag: queryName
+  };
+}
 function getGSIIndex(queryName, i, config) {
   return {
+    isCustomIndex: false,
     hashKeyFields: i.hashKeyFields,
     hashKeyDescriptor: config.objectName + '-' + queryName,
     hashKeyAttribute: getGSIAttributeName(i.which, 'Hash'),
@@ -238,6 +279,8 @@ function getGSIIndex(queryName, i, config) {
 }
 function getConfig(argsIn) {
   var args = Object.assign({
+    shouldPadNumbersInIndexes: true,
+    paddedNumberLength: 20,
     queries: {}
   }, argsIn);
   var indexes = [getPrimaryIndex(args)].concat(args.queries ? Object.keys(args.queries).map(function (queryName) {
@@ -250,7 +293,9 @@ function getConfig(argsIn) {
   }, {});
   return Object.assign({
     tableName: args.tableName || getDefaultTableName(),
-    compositeKeySeparator: args.compositeKeySeparator || '#'
+    compositeKeySeparator: args.compositeKeySeparator || '#',
+    shouldPadNumbersInIndexes: args.shouldPadNumbersInIndexes,
+    paddedNumberLength: args.paddedNumberLength || 20
   }, {
     objectName: args.objectName,
     primaryIndex: indexes[0],
@@ -269,10 +314,18 @@ function getConfig(argsIn) {
  * return "{descriptor}#{properties[0]}-{thing[properties[0]]}#..."
  */
 
-function getCompositeKeyValue(thing, properties, descriptor, separator) {
+function getCompositeKeyValue(thing, properties, descriptor, separator, shouldPadNumbersInIndexes) {
   return [descriptor].concat(properties.map(function (k) {
-    return dynamoProperty(k, thing[k]);
+    return dynamoProperty(k, thing[k], shouldPadNumbersInIndexes);
   })).join(separator);
+}
+
+function padDecimalNumber(value) {
+  var _String$split = String(value).split('.'),
+      before = _String$split[0],
+      after = _String$split[1];
+
+  return [(before || '').padStart(18, '0'), (after || '').padEnd(2, '0')].join('.');
 }
 /**
  *
@@ -285,17 +338,24 @@ function getCompositeKeyValue(thing, properties, descriptor, separator) {
  * @param value
  */
 
-function dynamoProperty(key, value) {
-  return key + "-" + value;
+
+function dynamoProperty(key, value, shouldPadNumbersInIndexes) {
+  var stringified = String(value);
+
+  if (typeof value === 'number' && value >= 0 && shouldPadNumbersInIndexes) {
+    stringified = padDecimalNumber(value);
+  }
+
+  return key + "-" + stringified;
 }
-function getSortkeyForBeginsWithQuery(thing, indexFields, descriptor, compositeKeySeparator) {
+function getSortkeyForBeginsWithQuery(thing, indexFields, descriptor, compositeKeySeparator, shouldPadNumbersInIndexes) {
   var fields = [descriptor];
 
   for (var i = 0; i < indexFields.length; i++) {
     var k = indexFields[i];
 
     if (k in thing) {
-      fields.push(dynamoProperty(k, String(thing[k])));
+      fields.push(dynamoProperty(k, String(thing[k]), shouldPadNumbersInIndexes));
     } else {
       break;
     }
@@ -359,32 +419,37 @@ function _findIndexForQuery(where, config) {
   }
 
   return null;
-}
+} //type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-function _getKey(id, i, separator) {
+function _getKey(id, i, separator, shouldPadNumbersInIndexes) {
   var _ref;
 
-  return _ref = {}, _ref[i.hashKeyAttribute] = getCompositeKeyValue(id, i.hashKeyFields, i.hashKeyDescriptor, separator), _ref[i.sortKeyAttribute] = getCompositeKeyValue(id, i.sortKeyFields, i.sortKeyDescriptor, separator), _ref;
+  return _ref = {}, _ref[i.hashKeyAttribute] = getCompositeKeyValue(id, i.hashKeyFields, i.hashKeyDescriptor, separator, shouldPadNumbersInIndexes), _ref[i.sortKeyAttribute] = getCompositeKeyValue(id, i.sortKeyFields, i.sortKeyDescriptor, separator, shouldPadNumbersInIndexes), _ref;
 } //const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 function getRepository(args) {
   var config = getConfig(args);
   var repo = {
+    getDocClient: getDocClient,
+
     get config() {
       return config;
     },
 
     getKey: function getKey(id) {
-      return _getKey(id, config.primaryIndex, config.compositeKeySeparator);
+      var key = _getKey(id, config.primaryIndex, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
+
+      return key;
     },
     get: function (id) {
       try {
-        return Promise.resolve(getDocClient().get({
+        var request = {
           TableName: config.tableName,
           Key: repo.getKey(id)
-        }).promise()).then(function (res) {
-          return res.Item ? res.Item.data : null;
+        };
+        return Promise.resolve(getDocClient().get(request).promise()).then(function (res) {
+          return res.Item ? getDataFromDocument(res.Item) : null;
         });
       } catch (e) {
         return Promise.reject(e);
@@ -428,24 +493,53 @@ function getRepository(args) {
         return Promise.reject(e);
       }
     },
+    getSortKeyAndHashKeyForQuery: function getSortKeyAndHashKeyForQuery(where, index) {
+      if (index.isCustomIndex) {
+        var hashKey = where.args[index.hashKeyAttribute];
+        var sortKey = where.args[index.sortKeyAttribute];
+        return {
+          hashKey: hashKey,
+          sortKey: sortKey
+        };
+      } else {
+        var _hashKey = getCompositeKeyValue(where.args, index.hashKeyFields, index.hashKeyDescriptor, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
+
+        var _sortKey = index.sortKeyFields && getSortkeyForBeginsWithQuery(where.args, index.sortKeyFields, index.sortKeyDescriptor, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
+
+        return {
+          sortKey: _sortKey,
+          hashKey: _hashKey
+        };
+      }
+    },
     getQueryArgs: function getQueryArgs(where, index) {
-      var hashKey = getCompositeKeyValue(where.args, index.hashKeyFields, index.hashKeyDescriptor, config.compositeKeySeparator);
-      var sortKey = index.sortKeyFields && getSortkeyForBeginsWithQuery(where.args, index.sortKeyFields, index.sortKeyDescriptor, config.compositeKeySeparator);
-      return _extends({
+      var _this$getSortKeyAndHa = this.getSortKeyAndHashKeyForQuery(where, index),
+          sortKey = _this$getSortKeyAndHa.sortKey,
+          hashKey = _this$getSortKeyAndHa.hashKey;
+
+      var args = _extends({
         TableName: config.tableName
       }, index.indexName && {
         IndexName: index.indexName
       }, {
         Limit: where.limit || 5,
         ScanIndexForward: where.sort === 'asc',
-        KeyConditionExpression: index.hashKeyAttribute + " = :hKey and begins_with(" + index.sortKeyAttribute + ", :sKey) ",
-        ExpressionAttributeValues: {
-          ':hKey': hashKey,
+        KeyConditionExpression: "#hKeyAttribute = :hKey " + (sortKey ? 'and begins_with(#sKeyAttribute, :sKey)' : ''),
+        ExpressionAttributeNames: _extends({
+          '#hKeyAttribute': index.hashKeyAttribute
+        }, sortKey && {
+          '#sKeyAttribute': index.sortKeyAttribute
+        }),
+        ExpressionAttributeValues: _extends({
+          ':hKey': hashKey
+        }, sortKey && {
           ':sKey': sortKey
-        }
+        })
       }, where.cursor && {
         ExclusiveStartKey: where.cursor
       });
+
+      return args;
     },
     executeQuery: function (where, index) {
       try {
@@ -456,7 +550,7 @@ function getRepository(args) {
 
           return {
             results: res.Items.map(function (i) {
-              return i.data;
+              return getDataFromDocument(i);
             }),
             nextPageArgs: nextWhere
           };
@@ -498,12 +592,14 @@ function getRepository(args) {
       }
     },
     formatForDDB: function formatForDDB(thing) {
-      var obj = {
-        data: thing,
-        objectType: config.objectName
-      };
-      config.indexes.forEach(function (i) {
-        obj = _extends({}, obj, {}, _getKey(thing, i, config.compositeKeySeparator));
+      var obj = _extends({}, thing, {
+        __objectType: config.objectName
+      });
+
+      config.indexes.filter(function (i) {
+        return !i.isCustomIndex;
+      }).forEach(function (i) {
+        obj = _extends({}, obj, {}, _getKey(thing, i, config.compositeKeySeparator, config.shouldPadNumbersInIndexes));
       });
       return obj;
     },
@@ -660,12 +756,25 @@ var ensureTableIsConfigured = function ensureTableIsConfigured(tableName, indexe
             console.log("creating the following indexes " + Object.keys(indexesToBeCreated).join(',') + " to table " + tableName);
             return Promise.resolve(client.updateTable({
               TableName: tableName,
+              AttributeDefinitions: toCreate.reduce(function (prev, index) {
+                return prev.concat([{
+                  AttributeName: index.sortKeyAttribute,
+                  AttributeType: 'S'
+                }, {
+                  AttributeName: index.hashKeyAttribute,
+                  AttributeType: 'S'
+                }]);
+              }, []),
               GlobalSecondaryIndexUpdates: toCreate.map(function (i) {
                 return {
                   Create: getGSIDef(i)
                 };
               })
-            }).promise()).then(function () {});
+            }).promise()).then(function () {
+              return Promise.resolve(client.waitFor('tableExists', {
+                TableName: tableName
+              })).then(function () {});
+            });
           } else {
             console.log("the table " + tableName + " has all the necessary indexes");
           }
@@ -673,6 +782,8 @@ var ensureTableIsConfigured = function ensureTableIsConfigured(tableName, indexe
 
         if (_temp7 && _temp7.then) return _temp7.then(function () {});
       }
+
+      console.log('got the description', table);
 
       var indexesToBeCreated = _extends({}, indexes);
 
@@ -708,11 +819,12 @@ var getTableDescription = function getTableDescription(client, tableName) {
     var _exit2 = false;
 
     var _temp6 = _catch(function () {
+      console.log('calling for describeTable');
       return Promise.resolve(client.describeTable({
         TableName: tableName
       }).promise()).then(function (description) {
         if (description.Table) {
-          console.log('returning table description!!!!');
+          console.log('returning table description');
           _exit2 = true;
           return description.Table;
         }

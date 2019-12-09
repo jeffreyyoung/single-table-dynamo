@@ -5,6 +5,7 @@ import {
   LocalSecondaryIndex,
 } from 'aws-sdk/clients/dynamodb';
 import { Index } from './config';
+
 export type CreateTableArgs = {
   tableName?: string;
 };
@@ -112,5 +113,7 @@ export function createTable(args: {
     BillingMode: 'PAY_PER_REQUEST',
   };
 
-  return client.createTable(createTableInput).promise();
+  return client.createTable(createTableInput).promise()
+    .then(() => client.waitFor('tableExists', {TableName: createTableInput.TableName}))
+    .then(() => console.log(`${createTableInput.TableName} has been created`));
 }

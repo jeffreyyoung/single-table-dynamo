@@ -1,4 +1,4 @@
-import { SingleTableDocument } from './SingleTableDocument';
+import { SingleTableDocumentWithData } from './SingleTableDocument';
 import { ConfigArgs, Index, Config } from './config';
 import { KeyOfStr } from './utils';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
@@ -23,7 +23,8 @@ export declare type QueryResult<T> = {
  *
  * return "{descriptor}#{properties[0]}-{thing[properties[0]]}#..."
  */
-export declare function getCompositeKeyValue<ID, T>(thing: T, properties: (keyof T | keyof ID)[], descriptor: string, separator: string): string;
+export declare function getCompositeKeyValue<ID, T>(thing: T, properties: (keyof T | keyof ID)[], descriptor: string, separator: string, shouldPadNumbersInIndexes: boolean): string;
+export declare function getCustomKeyValue<T>(thing: T, propertyName: (keyof T)): T[keyof T];
 /**
  *
  * To make generic dynamo fields more readable, they are saved in the following format
@@ -34,8 +35,8 @@ export declare function getCompositeKeyValue<ID, T>(thing: T, properties: (keyof
  * @param key
  * @param value
  */
-export declare function dynamoProperty(key: string, value: string): string;
-export declare function getSortkeyForBeginsWithQuery<ID, T>(thing: Partial<T>, indexFields: (keyof T | keyof ID)[], descriptor: string, compositeKeySeparator: string): string;
+export declare function dynamoProperty(key: string, value: any, shouldPadNumbersInIndexes: boolean): string;
+export declare function getSortkeyForBeginsWithQuery<ID, T>(thing: Partial<T>, indexFields: (keyof T | keyof ID)[], descriptor: string, compositeKeySeparator: string, shouldPadNumbersInIndexes: boolean): string;
 export declare function findIndexForQuery<ID, T, QueryNames>(where: WhereClause<T>, config: Config<ID, T, QueryNames>): Index<ID, T> | null;
 declare type Queries<T, QueryNames> = Record<Extract<QueryNames, string>, (where: WhereClause<T>) => Promise<QueryResult<T>>>;
 export declare type Repository<ID = any, T = any, QueryNames = string> = {
@@ -46,12 +47,17 @@ export declare type Repository<ID = any, T = any, QueryNames = string> = {
     overwrite: (thing: T) => Promise<T>;
     put: (thing: T) => Promise<T>;
     delete: (id: ID) => Promise<boolean>;
-    formatForDDB: (thing: T) => SingleTableDocument<T>;
+    formatForDDB: (thing: T) => SingleTableDocumentWithData<T>;
     executeQuery: (where: WhereClause<T>, index: Index<ID, T>) => Promise<QueryResult<T>>;
+    getSortKeyAndHashKeyForQuery(where: WhereClause<T>, index: Index<ID, T>): {
+        sortKey: string;
+        hashKey: string;
+    };
     getQueryArgs(where: WhereClause<T>, index: Index<ID, T>): DocumentClient.QueryInput;
     query: (where: WhereClause<T>) => Promise<QueryResult<T>>;
     queryOne: (where: WhereClause<T>) => Promise<T | null>;
     findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
+    getDocClient: () => AWS.DynamoDB.DocumentClient;
     queries: Queries<T, QueryNames>;
 };
 export declare function getRepository<ID, T, QueryNames = string>(args: ConfigArgs<ID, T, QueryNames>): Repository<ID, T, QueryNames>;
