@@ -113,6 +113,12 @@ export function createTable(args: {
     BillingMode: 'PAY_PER_REQUEST',
   };
 
+  if (createTableInput?.LocalSecondaryIndexes?.length === 0) {
+    delete createTableInput.LocalSecondaryIndexes;
+  }
+  if (createTableInput?.GlobalSecondaryIndexes?.length ===0) {
+    delete createTableInput.GlobalSecondaryIndexes;
+  }
   return client.createTable(createTableInput).promise()
     .then(() => client.waitFor('tableExists', {TableName: createTableInput.TableName}))
     .then(() => console.log(`${createTableInput.TableName} has been created`));
