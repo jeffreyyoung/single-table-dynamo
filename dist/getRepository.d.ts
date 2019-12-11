@@ -59,6 +59,7 @@ export declare type Repository<ID = any, T = any, QueryNames = string> = {
     findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
     getDocClient: () => AWS.DynamoDB.DocumentClient;
     queries: Queries<T, QueryNames>;
+    getCursor: (thing: T, index?: Index<ID, T>) => Record<string, any>;
 };
 export declare function getRepository<ID, T, QueryNames = string>(args: ConfigArgs<ID, T, QueryNames>): Repository<ID, T, QueryNames>;
 export {};

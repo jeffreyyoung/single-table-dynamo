@@ -446,6 +446,15 @@ function getRepository(args) {
       return config;
     },
 
+    getCursor: function getCursor(thing, index) {
+      var _extends2, _ref2, _ref3;
+
+      var formatted = repo.formatForDDB(thing);
+
+      var cursor = _extends((_extends2 = {}, _extends2[config.primaryIndex.hashKeyAttribute] = formatted[config.primaryIndex.hashKeyAttribute], _extends2[config.primaryIndex.sortKeyAttribute] = formatted[config.primaryIndex.sortKeyAttribute], _extends2), index && (_ref2 = {}, _ref2[index.hashKeyAttribute] = formatted[index.hashKeyAttribute], _ref2), {}, index && (_ref3 = {}, _ref3[index.sortKeyAttribute] = formatted[index.sortKeyAttribute], _ref3));
+
+      return cursor;
+    },
     getKey: function getKey(id) {
       var key = _getKey(id, config.primaryIndex, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
 
