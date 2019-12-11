@@ -1,7 +1,8 @@
+import { tableName } from './config';
 import {
     getRepository,
   } from '../src/getRepository';
-import { tableName } from './config';
+
 
 
 type PurchasedLinkId = {

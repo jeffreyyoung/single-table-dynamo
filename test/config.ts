@@ -1,5 +1,8 @@
+require('dotenv').config();
 export const tableName = 'test5';
-
+import {
+    WORKAROUND_updateAWSConfig,
+} from './../src/index';
 export const awsConfig = {
     region: 'us-west-2',
     accessKeyId: process.env.AWS_KEY,
@@ -10,3 +13,7 @@ export const awsConfig = {
     // secretAccessKey: 'yay',//process.env.AWS_SECRET,
     // endpoint: "http://localhost:8000"
 }
+
+WORKAROUND_updateAWSConfig(awsConfig, {
+    convertEmptyValues: true
+});

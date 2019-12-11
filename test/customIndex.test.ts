@@ -1,15 +1,9 @@
 import {
-    WORKAROUND_updateAWSConfig,
     getRepository,
     ensureTableAndIndexesExist,
 } from './../src/index';
-import { tableName, awsConfig } from './config';
+import { tableName } from './config';
 
-require('dotenv').config();
-
-WORKAROUND_updateAWSConfig({
-    ...awsConfig
-} as any);
 
 
 type LikeId = {
