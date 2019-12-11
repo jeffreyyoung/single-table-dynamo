@@ -199,6 +199,7 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
   findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
   getDocClient: () => AWS.DynamoDB.DocumentClient
   queries: Queries<T, QueryNames>;
+  getCursor: (thing: T, index?: Index<ID,T>) => Record<string, any>
 };
 
 //const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -211,6 +212,18 @@ export function getRepository<ID, T, QueryNames = string>(
     getDocClient: getDocClient,
     get config() {
       return config;
+    },
+    getCursor: (thing, index) => {
+      const formatted = repo.formatForDDB(thing);
+
+      const cursor = {
+        [config.primaryIndex.hashKeyAttribute]: formatted[config.primaryIndex.hashKeyAttribute],
+        [config.primaryIndex.sortKeyAttribute]: formatted[config.primaryIndex.sortKeyAttribute],
+        ...(index && {[index.hashKeyAttribute]: formatted[index.hashKeyAttribute]}),
+        ...(index && {[index.sortKeyAttribute]: formatted[index.sortKeyAttribute]})
+      };
+
+      return cursor;
     },
     getKey: (id: ID) => {
       const key = getKey(id, config.primaryIndex, config.compositeKeySeparator, config.shouldPadNumbersInIndexes);
