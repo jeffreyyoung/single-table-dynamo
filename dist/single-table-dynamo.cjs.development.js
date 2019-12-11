@@ -29,9 +29,9 @@ new AWS.DynamoDB.DocumentClient();
 function getDocClient() {
   return _docClient;
 }
-function WORKAROUND_updateAWSConfig(ops) {
+function WORKAROUND_updateAWSConfig(ops, docClientOptions) {
   AWS.config.update(ops);
-  _docClient = new AWS.DynamoDB.DocumentClient(ops);
+  _docClient = new AWS.DynamoDB.DocumentClient(_extends({}, ops, {}, docClientOptions));
 }
 
 function getDataFromDocument(doc) {

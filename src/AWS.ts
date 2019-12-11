@@ -9,7 +9,10 @@ function getDocClient() {
 
 export { AWS, getDocClient };
 
-export function WORKAROUND_updateAWSConfig(ops: ConfigurationOptions) {
+export function WORKAROUND_updateAWSConfig(ops: ConfigurationOptions, docClientOptions?: AWS.DynamoDB.DocumentClient.DocumentClientOptions) {
   AWS.config.update(ops);
-  _docClient = new AWS.DynamoDB.DocumentClient(ops);
+  _docClient = new AWS.DynamoDB.DocumentClient({
+    ...ops,
+    ...docClientOptions
+  });
 }
