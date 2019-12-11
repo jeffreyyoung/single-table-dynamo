@@ -113,10 +113,10 @@ export function createTable(args: {
     BillingMode: 'PAY_PER_REQUEST',
   };
 
-  if (createTableInput?.LocalSecondaryIndexes?.length === 0) {
+  if (createTableInput.LocalSecondaryIndexes!.length === 0) {
     delete createTableInput.LocalSecondaryIndexes;
   }
-  if (createTableInput?.GlobalSecondaryIndexes?.length ===0) {
+  if (createTableInput.GlobalSecondaryIndexes!.length ===0) {
     delete createTableInput.GlobalSecondaryIndexes;
   }
   return client.createTable(createTableInput).promise()

@@ -178,6 +178,15 @@ function createTable(args) {
     GlobalSecondaryIndexes: globalSecondaryIndexes,
     BillingMode: 'PAY_PER_REQUEST'
   };
+
+  if (createTableInput.LocalSecondaryIndexes.length === 0) {
+    delete createTableInput.LocalSecondaryIndexes;
+  }
+
+  if (createTableInput.GlobalSecondaryIndexes.length === 0) {
+    delete createTableInput.GlobalSecondaryIndexes;
+  }
+
   return client.createTable(createTableInput).promise().then(function () {
     return client.waitFor('tableExists', {
       TableName: createTableInput.TableName
