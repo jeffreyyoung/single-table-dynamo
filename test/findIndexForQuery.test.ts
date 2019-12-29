@@ -27,7 +27,7 @@ export const purchasedLinkRepo = getRepository<PurchasedLinkId, PurchasedLink, Q
     hashKeyFields: ['boardOwnerId'],
     tableName: tableName,
     sortKeyFields: ['boardId', 'id'],
-    queries: {
+    indexes: {
         'boardIdSortedByPrice': {
             type: 'globalSecondaryIndex',
             hashKeyFields: ['boardOwnerId', 'boardId'],

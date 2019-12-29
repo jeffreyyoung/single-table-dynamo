@@ -83,7 +83,7 @@ const repo = getRepository<PurchaseID, Purchase, QueryKeys>({
     objectName: 'Purchase',
     hashKeyFields: ['userId'],
     sortKeyFields: ['itemId', 'id'],
-    queries: {
+    indexes: {
         getMyPurchases: {
             isPrimary: true
         },
@@ -130,42 +130,47 @@ let purchase2 = await repo.create({
 })
 
 //get all of angela's latest purchases
-let {results} = await repo.queries.latestPurchases({
-    args: {userId: 'angela'}
-});
+let {results} = await repo.query()
+    .index('latestPurchases')
+    .where({userId: 'angela'})
+    .get()
 console.log(results); // [{id: '2',itemId: 'cat-food',userId: 'angela'...}]
 
 
 //get the latest purchases purchased in the usa
-let {results, nextPageArgs} = await repo.queries.latestPurchasesInCountry({
-    args: {country: 'usa'},
-    limit: 1
-});
+let {results, nextPageArgs} = await repo.query()
+    .index('latestPurchasesInCountry')
+    .where({country: 'usa'})
+    .limit(1)
+    .get();
 
 console.log(results); // [ {id: '1', ...}]
 //get the next page
-let {results} = await repo.queries.latestPurchasesInCountry(nextPageArgs);
+let {results} = await repo.query().withArgs(naxPageArgs).get();
 console.log(results); // [ {id: '2', ...}]
 
 
 //get the most recent purchasers of 'cat-food'
-let {results, nextPageArgs} = await repo.queries.latestPurchasersOfItem({
-    args: {itemId: 'cat-food'},
-    limit: 1
-});
+let {results, nextPageArgs} = await repo.query()
+    .index('latestPurchasersOfItem')
+    .where({itemId: 'cat-food'})
+    .limit(1)
+    .get();
 
 //you can also call repo.query() which will guess which index to use for a query
-let {results} = await repo.query({
-    args: {userId: 'creed'}
-});
+let {results} = await repo.query()
+    .where({userId: 'creed'})
+    .get();
 //returns creed's purchases
 console.log(results) // [{id: '1', userId: 'creed', ...}];
 
 //if you call repo.query(), and not enough information is passed in to find
 //an suitable index, an error will be thrown
-let {results} = await repo.query({
-    args: {city: 'scranton'}
-})
+let {results} = await repo
+    .query()
+    .where({city: 'scranton'})
+    .get()
+
 //throws 'there is not a suitable index for this query'
 ```
 
@@ -174,29 +179,29 @@ let {results} = await repo.query({
 
 Everything stored in our dynamodb table has the same below shape.
 
-The dynamo table is configured to have local secondary indexes on the fields `lsi0`, `lsi1`,...`lsi4`.  And global secondary indexes on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`.
-The actual object data is stored at the `data` property
+The dynamo table is configured to have local secondary indexes on the fields `lsi0`, `lsi1`,...`lsi4`.  And global secondary indexes on the fields `gsiHash0`, `gsiSort0`,...`gsiHash19`, `gsiSort19`
+
 ```typescript
 
 export type SingleTableDocument<T> = {
-    hashKey: string
-    sortKey?: string
+    __hashKey: string
+    __sortKey?: string
 
-    data: T
-    objectType: string
+    
+    __objectType: string
 
     //sparse local secondary indexes that may or not be defined
-    lsi0?: string
+    __lsi0?: string
     ...
-    lsi4?: string
+    __lsi4?: string
 
     //sparse global indexes that may or not be defined
-    gsiHash0?: string
-    gsiSort0?: string
+    __gsiHash0?: string
+    __gsiSort0?: string
     ...
-    gsiHash19?: string
-    gsiSort19?: string
-}
+    __gsiHash19?: string
+    __gsiSort19?: string
+} & T
 ```
 
 When we create and save an object, depending on the indexes defined for the object, we set some of the indexed properties
@@ -249,24 +254,21 @@ This is what is stored in dynamodb
 
 ```javascript
 let json ={
-    hashKey: 'Purchase#userId-1208493',
-    sortKey: 'Purchase#itemId-awesomecouch#id-1234',
-    data:
-    {
-        id: '1234',
-        purchaseDate: 1572481596741,
-        city: 'provo',
-        state: 'ut',
-        country: 'usa',
-        itemId: 'awesomecouch',
-        userId: '1208493'
-    },
-    objectType: 'Purchase',
-    gsiHash0: "Purchase-getPurchasersOfItem#itemId-awesomecouch",
-    gsiSort0: "getPurchasersOfItem#purchaseDate-1572481596741#userId-1208493",
-    lsi1: 'latestPurchases#purchaseDate-1572481596741#itemId-awesomecouch',
-    lsi2: 'location#country-usa#state-ut#city-provo#purchaseDate-1572481596741#itemId-awesomecouch',
-    lsi3: 'latestPurchasesByCountry#country-usa#purchaseDate-1572481596741'
+    __hashKey: 'Purchase#userId-1208493',
+    __sortKey: 'Purchase#itemId-awesomecouch#id-1234',
+    id: '1234',
+    purchaseDate: 1572481596741,
+    city: 'provo',
+    state: 'ut',
+    country: 'usa',
+    itemId: 'awesomecouch',
+    userId: '1208493'
+    __objectType: 'Purchase',
+    __gsiHash0: "Purchase-getPurchasersOfItem#itemId-awesomecouch",
+    __gsiSort0: "getPurchasersOfItem#purchaseDate-1572481596741#userId-1208493",
+    __lsi1: 'latestPurchases#purchaseDate-1572481596741#itemId-awesomecouch',
+    __lsi2: 'location#country-usa#state-ut#city-provo#purchaseDate-1572481596741#itemId-awesomecouch',
+    __lsi3: 'latestPurchasesByCountry#country-usa#purchaseDate-1572481596741'
 }
 ```
 
@@ -295,12 +297,10 @@ userRepo.create({
 The following is stored in dynamodb
 ```javascript
 { 
-    data: {
-        id: '1',
-        name: 'jim'
-    },
-    objectType: 'User',
-    hashKey: 'User#id-1'
+    id: '1',
+    name: 'jim'
+    __objectType: 'User',
+    __hashKey: 'User#id-1'
 }
 ```
 

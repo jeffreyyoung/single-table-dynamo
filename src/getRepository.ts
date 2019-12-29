@@ -70,7 +70,7 @@ class QueryBuilder<ID = any, T = any, IndexNames = string> {
   }
 
   /**
-   * Repeatedly gets all items for the given query until all items have been queried
+   * Repeatedly pages over the given query until all items have been queried
    * If a query has more pages than fit in memory, errors will happen
    */
   async getAll() {
@@ -88,11 +88,9 @@ class QueryBuilder<ID = any, T = any, IndexNames = string> {
   async deleteAll() {
     let hasMore = true;
     //the max items for batch delete is 25
-    //todo make this better
+    //todo: limit paging to 25 in batchDelete
     let res = await this.limit(25).get();
     while (hasMore) {
-      //delete all
-      //todo
       await this.repo.batchDelete(res.results as any);
       if (res.nextPageArgs) {
         res = await this.setClause(res.nextPageArgs as any).get();
@@ -105,10 +103,10 @@ class QueryBuilder<ID = any, T = any, IndexNames = string> {
 }
 
 
-export type WhereClause<T = any, QueryNames = string> = {
+export type WhereClause<T = any, IndexNames = string> = {
   sort?: 'asc' | 'desc';
   args: Partial<T>;
-  index?: QueryNames;
+  index?: IndexNames;
   sortBy?: KeyOfStr<T>;
   cursor?: Record<string, any>;
   limit?: number;
@@ -275,12 +273,12 @@ function getKey<ID, T>(
   };
 }
 
-type Queries<ID, T, QueryNames> = Record<
+type IndexQueryBuilderMap<ID, T, QueryNames> = Record<
   Extract<QueryNames, string>,
   () => QueryBuilder<ID, T, QueryNames>
 >;
 
-export type Repository<ID = any, T = any, QueryNames = string> = {
+export type Repository<ID = any, T = any, IndexNames = string> = {
   config: Config<ID, T>;
   getKey: (id: ID) => any;
   get: (id: ID) => Promise<T | null>;
@@ -292,15 +290,15 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
   batchGet: (ids: ID[]) => Promise<(T | null)[]>;
   formatForDDB: (thing: T) => SingleTableDocumentWithData<T>;
   executeQuery: (
-    where: WhereClause<T, QueryNames | any>,
+    where: WhereClause<T, IndexNames | any>,
     index: Index<ID, T>
   ) => Promise<QueryResult<T>>;
-  getSortKeyAndHashKeyForQuery(where: WhereClause<T, QueryNames | any>, index: Index<ID, T>): { sortKey: string, hashKey: string }
-  getQueryArgs(where: WhereClause<T, QueryNames | any>, index: Index<ID, T>): DocumentClient.QueryInput
-  query: () => QueryBuilder<ID, T, QueryNames>
-  findIndexForQuery: (where: WhereClause<T, QueryNames | any>) => Index<ID, T> | null;
+  getSortKeyAndHashKeyForQuery(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): { sortKey: string, hashKey: string }
+  getQueryArgs(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): DocumentClient.QueryInput
+  query: () => QueryBuilder<ID, T, IndexNames>
+  findIndexForQuery: (where: WhereClause<T, IndexNames | any>) => Index<ID, T> | null;
   getDocClient: () => AWS.DynamoDB.DocumentClient
-  queries: Queries<ID, T, QueryNames | any>;
+  indexes: IndexQueryBuilderMap<ID, T, IndexNames | any>;
   getCursor: (thing: T, index?: Index<ID, T>) => Record<string, any>
 };
 
@@ -383,7 +381,7 @@ export function getRepository<ID, T, QueryNames = string>(
       await getDocClient()
         .batchWrite({
           RequestItems: {
-            'Delete': ids.map(id => ({
+            [config.tableName]: ids.map(id => ({
               DeleteRequest: {
                 Key: repo.getKey(id)
               }
@@ -492,13 +490,13 @@ export function getRepository<ID, T, QueryNames = string>(
     findIndexForQuery: (where: WhereClause<T, QueryNames>) => {
       return findIndexForQuery<ID, T, QueryNames>(where, config);
     },
-    queries: Object.keys(config.indexesByTag).reduce(
+    indexes: Object.keys(config.indexesByTag).reduce(
       (obj: any, key: string) => {
         obj[key] = () => repo.query().index(key as any);
         return obj;
       },
       {}
-    ) as Queries<ID, T, QueryNames>,
+    ) as IndexQueryBuilderMap<ID, T, QueryNames>,
   };
   return repo;
 }

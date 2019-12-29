@@ -53,7 +53,7 @@ const repo = getRepository<
   compositeKeySeparator: '#',
   objectName: 'Purchase',
   shouldPadNumbersInIndexes: false,
-  queries: {
+  indexes: {
     getPurchasersOfItem: {
       which: 0,
       hashKeyFields: ['itemId'],

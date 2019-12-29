@@ -25,7 +25,7 @@ export const postRepo = getRepository<PostId, Post, QueryNames>({
     hashKeyFields: ['authorId'],
     sortKeyFields: ['id'],
     tableName: tableName,
-    queries: {
+    indexes: {
         'byCategorySortedByUpvoteCount': {
             type: 'globalSecondaryIndex',
             hashKeyFields: ['category'],
@@ -66,13 +66,13 @@ test('should properly sort', async () => {
     await postRepo.put(post1)
     await postRepo.put(post2)
 
-    let response = await postRepo.queries.byCategorySortedByUpvoteCount().where({
+    let response = await postRepo.indexes.byCategorySortedByUpvoteCount().where({
         category: 'food'
     }).get();
 
     expect(response.results).toEqual([post1, post2]);
 
-    let response2 = await postRepo.queries.sortedByShareCountThenShareCount().where({
+    let response2 = await postRepo.indexes.sortedByShareCountThenShareCount().where({
         category: 'food'
     }).get();
     expect(response2.results).toEqual([post2, post1]);

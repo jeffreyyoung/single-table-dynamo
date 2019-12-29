@@ -22,7 +22,7 @@ let likeRepo = getRepository<LikeId, Like, 'myMostRecentLikes' | 'peopleThatLike
     hashKeyFields: ['likerId'],
     sortKeyFields: ['likedId'],
     tableName: tableName,
-    queries: {
+    indexes: {
         myMostRecentLikes: {
             type: 'globalSecondaryIndex',
             hashKeyFields: ['likerId'],
@@ -59,7 +59,7 @@ test('custom index should work', async () => {
     });
 
     expect(created).toBeTruthy();
-    let res = await likeRepo.queries.peopleThatLikedMe().where({
+    let res = await likeRepo.indexes.peopleThatLikedMe().where({
         sparseLikedId: likedId
     }).get();
 
@@ -77,7 +77,7 @@ test('custom index should work', async () => {
     // });
     // expect(update).toBeTruthy();
 
-    expect((await likeRepo.queries.peopleThatLikedMe().where({
+    expect((await likeRepo.indexes.peopleThatLikedMe().where({
         sparseLikedId: likedId
     }).get()).results.length).toBe(0);
 });

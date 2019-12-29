@@ -39,7 +39,7 @@ let purchaseRepo = getRepository<PurchaseId, Purchase, PurchaseQueries>({
   sortKeyFields: ['itemId'],
   tableName: tableName,
   shouldPadNumbersInIndexes: false,
-  queries: {
+  indexes: {
     mostRecentPurchases: {
       sortKeyFields: ['createdAt'],
       which: 0,
@@ -57,7 +57,7 @@ const userRepo = getRepository<
   { id: string; stripeId: string; email: string }
 >({
   tableName: tableName,
-  objectName: 'User'+Math.random(),
+  objectName: 'User' + Math.random(),
   hashKeyFields: ['id'],
   shouldPadNumbersInIndexes: false
 });
@@ -83,26 +83,26 @@ test('should create items', async () => {
 });
 
 test('local secondary index query should work', async () => {
-  let jimsPurchases = await purchaseRepo.queries.mostRecentPurchases()
+  let jimsPurchases = await purchaseRepo.indexes.mostRecentPurchases()
     .sortDirection('asc')
-    .where({userId: 'jim'})
+    .where({ userId: 'jim' })
     .get();
-    
+
   expect(jimsPurchases.results).toEqual([purchase1, purchase3]);
   expect(jimsPurchases.nextPageArgs).not.toBeTruthy();
 });
 
 test('next page args should work', async () => {
-  let r1 = await purchaseRepo.queries.mostRecentPurchases()
+  let r1 = await purchaseRepo.indexes.mostRecentPurchases()
     .sortDirection('asc')
-    .where({userId: 'jim'})
+    .where({ userId: 'jim' })
     .limit(1)
     .get();
 
   expect(r1.results).toEqual([purchase1]);
   expect(r1.nextPageArgs).toBeTruthy();
 
-  let r2 = await purchaseRepo.queries.mostRecentPurchases()
+  let r2 = await purchaseRepo.indexes.mostRecentPurchases()
     .setClause(r1.nextPageArgs as any)
     .get();
   expect(r2.results).toEqual([purchase3]);
@@ -110,8 +110,8 @@ test('next page args should work', async () => {
 });
 
 test('pagination sort descending should work', async () => {
-  let desc1 = await purchaseRepo.queries.mostRecentPurchases()
-    .where({userId: 'jim'})
+  let desc1 = await purchaseRepo.indexes.mostRecentPurchases()
+    .where({ userId: 'jim' })
     .sortDirection('desc')
     .limit(1)
     .get();
@@ -119,15 +119,16 @@ test('pagination sort descending should work', async () => {
   expect(desc1.results).toEqual([purchase3]);
   expect(desc1.nextPageArgs).toBeTruthy();
 
-  expect((await purchaseRepo.queries.mostRecentPurchases().setClause(desc1.nextPageArgs!).get()).results)
+  expect((await purchaseRepo.indexes.mostRecentPurchases().setClause(desc1.nextPageArgs!).get()).results)
     .toEqual([purchase1]);
 });
 
 test('global secondary index should work', async () => {
-  let peopleThatPurchasedJello = await purchaseRepo.queries.purchasersOfItem()
-    .where({itemId: 'jello'})
+  let peopleThatPurchasedJello = await purchaseRepo.indexes
+    .purchasersOfItem()
+    .where({ itemId: 'jello' })
     .get();
-  
+
   expect(peopleThatPurchasedJello.results).toEqual([purchase1]);
 });
 
@@ -157,4 +158,28 @@ test('update should work', async () => {
   );
   expect(await get()).toEqual(updated);
   expect(updated.createdAt).toBe(5);
+  await purchaseRepo.delete(updated);
+});
+
+test('delete all should work', async () => {
+  let original = { userId: 'meow', itemId: 'whoa', createdAt: 1 };
+  let original1 = { userId: 'meow', itemId: 'whoa2', createdAt: 1 };
+  let original2 = { userId: 'meow', itemId: 'whoa3', createdAt: 3 }
+  let original3 = { userId: 'meow1', itemId: 'whoa3', createdAt: 3 }
+
+  await Promise.all([original, original1, original2, original3].map(t => purchaseRepo.put(t)));
+
+  let res = await purchaseRepo.indexes.mostRecentPurchases().where({ userId: 'meow' }).limit(100).get();
+  expect(res.results.length).toBe(3);
+
+  await purchaseRepo.indexes
+    .mostRecentPurchases()
+    .where({ userId: 'meow' })
+    .limit(1)
+    .deleteAll();
+
+  expect(
+    await (await (purchaseRepo.indexes.mostRecentPurchases().where({ userId: 'meow' }).get())).results.length
+  ).toBe(0);
+  await purchaseRepo.delete({ userId: 'meow1', itemId: 'whoa3' });
 });

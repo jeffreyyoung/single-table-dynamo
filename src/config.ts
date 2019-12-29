@@ -70,7 +70,7 @@ export function convertQueryArgToIndex<ID, T>(
   queryName: string,
   config: ConfigArgs<ID, T>
 ): Index<ID, T> {
-  let index = (config.queries || {})[queryName];
+  let index = (config.indexes || {})[queryName];
   if (isPrimaryQueryArg(index)) {
     return getPrimaryIndex(config, queryName);
   } else if (isLSIQueryArg(index)) {
@@ -212,7 +212,7 @@ export type ConfigArgs<ID, T, QueryNames = string> = {
   compositeKeySeparator?: '#';
   shouldPadNumbersInIndexes?: boolean,
   paddedNumberLength?: number,
-  queries?: Record<
+  indexes?: Record<
     Extract<QueryNames, string>,
     GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg | CustomGSIQueryArg<T>
   >;
@@ -222,7 +222,7 @@ type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export function getConfig<ID, T>(
-  argsIn: PartialBy<ConfigArgs<ID, T>, 'queries'>
+  argsIn: PartialBy<ConfigArgs<ID, T>, 'indexes'>
 ): Config<ID, T> {
   const args: ConfigArgs<ID, T> = Object.assign({
     shouldPadNumbersInIndexes: true,
@@ -231,8 +231,8 @@ export function getConfig<ID, T>(
   }, argsIn);
   let indexes = [
     getPrimaryIndex(args),
-    ...(args.queries
-      ? Object.keys(args.queries).map(queryName =>
+    ...(args.indexes
+      ? Object.keys(args.indexes).map(queryName =>
           convertQueryArgToIndex(queryName, args)
         )
       : []),
