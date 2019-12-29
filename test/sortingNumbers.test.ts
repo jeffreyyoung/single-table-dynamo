@@ -1,10 +1,10 @@
 
-  import {
+import {
     getRepository,
     ensureTableAndIndexesExist
-  } from './../src/index';
+} from './../src/index';
 import { tableName } from './config';
-  
+
 type PostId = {
     id: string
     authorId: string
@@ -21,7 +21,7 @@ type Post = {
 type QueryNames = 'byCategorySortedByUpvoteCount' | 'sortedByShareCountThenShareCount'
 
 export const postRepo = getRepository<PostId, Post, QueryNames>({
-    objectName: 'Post'+Math.random(),
+    objectName: 'Post' + Math.random(),
     hashKeyFields: ['authorId'],
     sortKeyFields: ['id'],
     tableName: tableName,
@@ -46,38 +46,34 @@ beforeAll(async () => {
 }, 30000);
 
 test('should properly sort', async () => {
-    
-   let post1: Post = {
-       upvoteCount: 10,
-       shareCount: 1,
-       id: '1',
-       authorId: 'me',
-       category: 'food',
-   }
 
-   let post2: Post = {
-       upvoteCount: 9,
-       shareCount: 9,
-       id: '2',
-       authorId: 'me',
-       category: 'food'
-   }
+    let post1: Post = {
+        upvoteCount: 10,
+        shareCount: 1,
+        id: '1',
+        authorId: 'me',
+        category: 'food',
+    }
 
-   await postRepo.put(post1)
-   await postRepo.put(post2)
+    let post2: Post = {
+        upvoteCount: 9,
+        shareCount: 9,
+        id: '2',
+        authorId: 'me',
+        category: 'food'
+    }
 
-   let response = await postRepo.queries.byCategorySortedByUpvoteCount({
-       args: {
-           category: 'food'
-       },
-   });
+    await postRepo.put(post1)
+    await postRepo.put(post2)
 
-   expect(response.results).toEqual([post1, post2]);
+    let response = await postRepo.queries.byCategorySortedByUpvoteCount().where({
+        category: 'food'
+    }).get();
 
-   let response2 = await postRepo.queries.sortedByShareCountThenShareCount({
-       args: {
-           category: 'food'
-       }
-   });
-   expect(response2.results).toEqual([post2,post1]);
+    expect(response.results).toEqual([post1, post2]);
+
+    let response2 = await postRepo.queries.sortedByShareCountThenShareCount().where({
+        category: 'food'
+    }).get();
+    expect(response2.results).toEqual([post2, post1]);
 }, 15000);

@@ -49,7 +49,7 @@ beforeAll(async () => {
 
 test('custom index should work', async () => {
     let time = (new Date()).getTime();
-    let likedId =  time+'1';
+    let likedId = time + '1';
     let created = await likeRepo.put({
         likedId,
         likerId: '2',
@@ -59,17 +59,15 @@ test('custom index should work', async () => {
     });
 
     expect(created).toBeTruthy();
-    let res = await likeRepo.queries.peopleThatLikedMe({
-        args: {
-            sparseLikedId: likedId
-        }
-    });
+    let res = await likeRepo.queries.peopleThatLikedMe().where({
+        sparseLikedId: likedId
+    }).get();
 
     expect(res.results.length).toBe(1);
 
     await likeRepo.getDocClient().update({
         TableName: likeRepo.config.tableName,
-        Key: likeRepo.getKey({likedId, likerId: created.likerId}),
+        Key: likeRepo.getKey({ likedId, likerId: created.likerId }),
         UpdateExpression: 'REMOVE sparseLikedId, sparseDateStr',
     }).promise();
     // let update = await likeRepo.put({
@@ -79,9 +77,7 @@ test('custom index should work', async () => {
     // });
     // expect(update).toBeTruthy();
 
-    expect((await likeRepo.queries.peopleThatLikedMe({
-        args: {
-            sparseLikedId: likedId
-        }
-    })).results.length).toBe(0);
+    expect((await likeRepo.queries.peopleThatLikedMe().where({
+        sparseLikedId: likedId
+    }).get()).results.length).toBe(0);
 });

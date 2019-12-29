@@ -83,57 +83,51 @@ test('should create items', async () => {
 });
 
 test('local secondary index query should work', async () => {
-  let jimsPurchases = await purchaseRepo.queries.mostRecentPurchases({
-    sort: 'asc',
-    args: {
-      userId: 'jim',
-    },
-  });
+  let jimsPurchases = await purchaseRepo.queries.mostRecentPurchases()
+    .sortDirection('asc')
+    .where({userId: 'jim'})
+    .get();
+    
   expect(jimsPurchases.results).toEqual([purchase1, purchase3]);
   expect(jimsPurchases.nextPageArgs).not.toBeTruthy();
 });
 
 test('next page args should work', async () => {
-  let r1 = await purchaseRepo.queries.mostRecentPurchases({
-    sort: 'asc',
-    args: {
-      userId: 'jim',
-    },
-    limit: 1,
-  });
+  let r1 = await purchaseRepo.queries.mostRecentPurchases()
+    .sortDirection('asc')
+    .where({userId: 'jim'})
+    .limit(1)
+    .get();
 
   expect(r1.results).toEqual([purchase1]);
   expect(r1.nextPageArgs).toBeTruthy();
 
-  let r2 = await purchaseRepo.queries.mostRecentPurchases(
-    r1.nextPageArgs as any
-  );
+  let r2 = await purchaseRepo.queries.mostRecentPurchases()
+    .setClause(r1.nextPageArgs as any)
+    .get();
   expect(r2.results).toEqual([purchase3]);
   //expect(r2.nextPageArgs).not.toBeTruthy();
 });
 
 test('pagination sort descending should work', async () => {
-  let desc1 = await purchaseRepo.queries.mostRecentPurchases({
-    sort: 'desc',
-    args: {
-      userId: 'jim',
-    },
-    limit: 1
-  });
+  let desc1 = await purchaseRepo.queries.mostRecentPurchases()
+    .where({userId: 'jim'})
+    .sortDirection('desc')
+    .limit(1)
+    .get();
 
   expect(desc1.results).toEqual([purchase3]);
   expect(desc1.nextPageArgs).toBeTruthy();
 
-  expect((await purchaseRepo.queries.mostRecentPurchases(desc1.nextPageArgs!)).results)
+  expect((await purchaseRepo.queries.mostRecentPurchases().setClause(desc1.nextPageArgs!).get()).results)
     .toEqual([purchase1]);
 });
 
 test('global secondary index should work', async () => {
-  let peopleThatPurchasedJello = await purchaseRepo.queries.purchasersOfItem({
-    args: {
-      itemId: 'jello',
-    },
-  });
+  let peopleThatPurchasedJello = await purchaseRepo.queries.purchasersOfItem()
+    .where({itemId: 'jello'})
+    .get();
+  
   expect(peopleThatPurchasedJello.results).toEqual([purchase1]);
 });
 

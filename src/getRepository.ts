@@ -4,6 +4,107 @@ import { ConfigArgs, Index, Config, getConfig } from './config';
 import { KeyOfStr } from './utils';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 
+class QueryBuilder<ID = any, T = any, IndexNames = string> {
+  clause: WhereClause<T, IndexNames>;
+  repo: Repository<ID, T, IndexNames>
+
+  constructor(repo: Repository<ID, T, IndexNames>) {
+    this.clause = {
+      args: {},
+    }
+    this.repo = repo;
+  }
+
+  where(parts: Partial<T>) {
+    this.clause.args = parts;
+    return this;
+  }
+
+  sortBy(key: KeyOfStr<T>) {
+    this.clause.sortBy = key;
+    return this;
+  }
+
+  sortDirection(direction: 'asc' | 'desc') {
+    this.clause.sort = direction;
+    return this;
+  }
+
+  index(index: IndexNames) {
+    this.clause.index = index;
+    return this;
+  }
+
+  cursor(cursor: Record<string,any>) {
+    this.clause.cursor = cursor;
+    return this;
+  }
+
+  limit(limit: number) {
+    this.clause.limit = limit;
+    return this;
+  }
+
+  setClause(clause: WhereClause<T, IndexNames>) {
+    this.clause = clause;
+    return this;
+  }
+
+  get() {
+    let index = this.repo.findIndexForQuery(this.clause);
+
+    if (!index) {
+      throw { message: 'there isnt an index configured for this query' };
+    }
+
+    return this.repo.executeQuery(this.clause, index);
+  }
+
+  async getOne(): Promise<T | null> {
+    const res = await this.limit(1).get();
+    if (res.results.length > 0) {
+      return res.results[0];
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Repeatedly gets all items for the given query until all items have been queried
+   * If a query has more pages than fit in memory, errors will happen
+   */
+  async getAll() {
+    let res = await this.get();
+    while (res.nextPageArgs) {
+      let next = await this.setClause(res.nextPageArgs as any).get();
+      res = {
+        results: res.results.concat(next.results),
+        nextPageArgs: next.nextPageArgs
+      }
+    };
+    return res;
+  }
+
+  async deleteAll() {
+    let hasMore = true;
+    //the max items for batch delete is 25
+    //todo make this better
+    let res = await this.limit(25).get();
+    while (hasMore) {
+      //delete all
+      //todo
+      await this.repo.batchDelete(res.results as any);
+      if (res.nextPageArgs) {
+        res = await this.setClause(res.nextPageArgs as any).get();
+      } else {
+        hasMore = false;
+      }
+    };
+    return true;
+  }
+}
+
+
 export type WhereClause<T = any, QueryNames = string> = {
   sort?: 'asc' | 'desc';
   args: Partial<T>;
@@ -50,7 +151,7 @@ export function getCustomKeyValue<T>(
 }
 
 function padDecimalNumber(value: number) {
-  let [before,after] = String(value).split('.');
+  let [before, after] = String(value).split('.');
 
   return [(before || '').padStart(18, '0'), (after || '').padEnd(2, '0')].join('.')
 }
@@ -93,7 +194,7 @@ export function getSortkeyForBeginsWithQuery<ID, T>(
 }
 
 export function findIndexForQuery<ID, T, QueryNames>(
-  where: WhereClause<T>,
+  where: WhereClause<T, QueryNames>,
   config: Config<ID, T, QueryNames>
 ): Index<ID, T> | null {
   if (where.index) {
@@ -103,9 +204,9 @@ export function findIndexForQuery<ID, T, QueryNames>(
       throw {
         message: `The index "${
           where.index
-        }" does not exist, the following are valid indexes: ${Object.keys(
-          config.indexesByTag
-        ).join(',')}`,
+          }" does not exist, the following are valid indexes: ${Object.keys(
+            config.indexesByTag
+          ).join(',')}`,
       };
     }
   }
@@ -174,9 +275,9 @@ function getKey<ID, T>(
   };
 }
 
-type Queries<T, QueryNames> = Record<
+type Queries<ID, T, QueryNames> = Record<
   Extract<QueryNames, string>,
-  (where: WhereClause<T>) => Promise<QueryResult<T>>
+  () => QueryBuilder<ID, T, QueryNames>
 >;
 
 export type Repository<ID = any, T = any, QueryNames = string> = {
@@ -187,19 +288,20 @@ export type Repository<ID = any, T = any, QueryNames = string> = {
   overwrite: (thing: T) => Promise<T>;
   put: (thing: T) => Promise<T>;
   delete: (id: ID) => Promise<boolean>;
+  batchDelete: (ids: ID[]) => Promise<boolean[]>;
+  batchGet: (ids: ID[]) => Promise<(T | null)[]>;
   formatForDDB: (thing: T) => SingleTableDocumentWithData<T>;
   executeQuery: (
-    where: WhereClause<T>,
+    where: WhereClause<T, QueryNames | any>,
     index: Index<ID, T>
   ) => Promise<QueryResult<T>>;
-  getSortKeyAndHashKeyForQuery(where: WhereClause<T>, index: Index<ID,T>): {sortKey: string, hashKey: string}
-  getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput 
-  query: (where: WhereClause<T>) => Promise<QueryResult<T>>;
-  queryOne: (where: WhereClause<T>) => Promise<T | null>;
-  findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
+  getSortKeyAndHashKeyForQuery(where: WhereClause<T, QueryNames | any>, index: Index<ID, T>): { sortKey: string, hashKey: string }
+  getQueryArgs(where: WhereClause<T, QueryNames | any>, index: Index<ID, T>): DocumentClient.QueryInput
+  query: () => QueryBuilder<ID, T, QueryNames>
+  findIndexForQuery: (where: WhereClause<T, QueryNames | any>) => Index<ID, T> | null;
   getDocClient: () => AWS.DynamoDB.DocumentClient
-  queries: Queries<T, QueryNames>;
-  getCursor: (thing: T, index?: Index<ID,T>) => Record<string, any>
+  queries: Queries<ID, T, QueryNames | any>;
+  getCursor: (thing: T, index?: Index<ID, T>) => Record<string, any>
 };
 
 //const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -219,8 +321,8 @@ export function getRepository<ID, T, QueryNames = string>(
       const cursor = {
         [config.primaryIndex.hashKeyAttribute]: formatted[config.primaryIndex.hashKeyAttribute],
         [config.primaryIndex.sortKeyAttribute]: formatted[config.primaryIndex.sortKeyAttribute],
-        ...(index && {[index.hashKeyAttribute]: formatted[index.hashKeyAttribute]}),
-        ...(index && {[index.sortKeyAttribute]: formatted[index.sortKeyAttribute]})
+        ...(index && { [index.hashKeyAttribute]: formatted[index.hashKeyAttribute] }),
+        ...(index && { [index.sortKeyAttribute]: formatted[index.sortKeyAttribute] })
       };
 
       return cursor;
@@ -230,17 +332,31 @@ export function getRepository<ID, T, QueryNames = string>(
       return key;
     },
     get: async (id: ID): Promise<T | null> => {
-      const request = {
-        TableName: config.tableName,
-        Key: repo.getKey(id),
-      };
+
+      let res = await repo.batchGet([id]);
+      return res[0];
+    },
+    batchGet: async (ids: ID[]): Promise<(T | null)[]> => {
       let res = await getDocClient()
-        .get(request)
+        .batchGet({
+          RequestItems: {
+            [config.tableName]: {
+              Keys: ids.map(repo.getKey)
+            }
+          }
+        })
         .promise();
-      if (!res.Item) {
-        return null;
+      if (res.Responses && res.Responses[config.tableName]) {
+        return res.Responses[config.tableName].map(doc => {
+          if (doc) {
+            return getDataFromDocument(doc as SingleTableDocumentWithData<T>);
+          } else {
+            return null;
+          }
+        })
       }
-      return getDataFromDocument((res.Item as SingleTableDocumentWithData<T>));
+
+      return [];
     },
     update: async (id: ID, thing: Partial<T>): Promise<T> => {
       let old = (await repo.get(id)) as T;
@@ -260,20 +376,28 @@ export function getRepository<ID, T, QueryNames = string>(
       return thing;
     },
     delete: async (id: ID): Promise<boolean> => {
-      await getDocClient()
-        .delete({
-          TableName: config.tableName,
-          Key: repo.getKey(id),
-        })
-        .promise();
-
+      await repo.batchDelete([id]);
       return true;
     },
-    getSortKeyAndHashKeyForQuery(where: WhereClause<T>, index: Index<ID,T>) {
+    batchDelete: async (ids: ID[]): Promise<boolean[]> => {
+      await getDocClient()
+        .batchWrite({
+          RequestItems: {
+            'Delete': ids.map(id => ({
+              DeleteRequest: {
+                Key: repo.getKey(id)
+              }
+            }))
+          }
+        })
+        .promise()
+      return ids.map(() => true);
+    },
+    getSortKeyAndHashKeyForQuery(where: WhereClause<T, QueryNames>, index: Index<ID, T>) {
       if (index.isCustomIndex) {
         const hashKey = where.args[index.hashKeyAttribute as any];
         const sortKey = where.args[index.sortKeyAttribute as any];
-        return {hashKey, sortKey};
+        return { hashKey, sortKey };
       } else {
         const hashKey = getCompositeKeyValue<ID, T>(
           where.args as T,
@@ -282,8 +406,8 @@ export function getRepository<ID, T, QueryNames = string>(
           config.compositeKeySeparator,
           config.shouldPadNumbersInIndexes
         );
-        
-  
+
+
         const sortKey =
           index.sortKeyFields &&
           getSortkeyForBeginsWithQuery<ID, T>(
@@ -294,76 +418,61 @@ export function getRepository<ID, T, QueryNames = string>(
             config.shouldPadNumbersInIndexes
           );
 
-        return {sortKey, hashKey};
+        return { sortKey, hashKey };
       }
 
     },
-    getQueryArgs(where: WhereClause<T>, index: Index<ID,T>): DocumentClient.QueryInput {
-      const {sortKey, hashKey} = this.getSortKeyAndHashKeyForQuery(where, index);
+    getQueryArgs(where: WhereClause<T, QueryNames>, index: Index<ID, T>): DocumentClient.QueryInput {
+      const { sortKey, hashKey } = this.getSortKeyAndHashKeyForQuery(where, index);
       const args = {
-          TableName: config.tableName,
-          ...((index as any).indexName && {
-            IndexName: (index as any).indexName,
-          }),
-          Limit: where.limit || 5,
-          ScanIndexForward: where.sort === 'asc',
-          KeyConditionExpression: `#hKeyAttribute = :hKey ${sortKey ? 'and begins_with(#sKeyAttribute, :sKey)' : ''}`,
-          ExpressionAttributeNames: {
-            '#hKeyAttribute': index.hashKeyAttribute,
-            ...(sortKey && {
-              '#sKeyAttribute': index.sortKeyAttribute,
-            })
-          },
-          ExpressionAttributeValues: {
-            ':hKey': hashKey,
-            ...(sortKey && {
-              ':sKey': sortKey,
-            })
-          },
-          ...(where.cursor && {
-            ExclusiveStartKey: where.cursor,
-          }),
-        }
-        return args;
+        TableName: config.tableName,
+        ...((index as any).indexName && {
+          IndexName: (index as any).indexName,
+        }),
+        Limit: where.limit || 5,
+        ScanIndexForward: where.sort === 'asc',
+        KeyConditionExpression: `#hKeyAttribute = :hKey ${sortKey ? 'and begins_with(#sKeyAttribute, :sKey)' : ''}`,
+        ExpressionAttributeNames: {
+          '#hKeyAttribute': index.hashKeyAttribute,
+          ...(sortKey && {
+            '#sKeyAttribute': index.sortKeyAttribute,
+          })
+        },
+        ExpressionAttributeValues: {
+          ':hKey': hashKey,
+          ...(sortKey && {
+            ':sKey': sortKey,
+          })
+        },
+        ...(where.cursor && {
+          ExclusiveStartKey: where.cursor,
+        }),
+      }
+      return args;
     },
     executeQuery: async (
-      where: WhereClause<T>,
+      where: WhereClause<T, QueryNames>,
       index: Index<ID, T>
     ): Promise<QueryResult<T>> => {
       let res = await getDocClient()
         .query(repo.getQueryArgs(where, index))
         .promise();
 
-      let nextWhere: WhereClause<T> | undefined = res &&
+      let nextWhere: WhereClause<T, QueryNames> | undefined = res &&
         res.LastEvaluatedKey && {
-          ...where,
-          cursor: (res as any).LastEvaluatedKey,
-        };
+        ...where,
+        cursor: (res as any).LastEvaluatedKey,
+      };
 
       return {
         results: (res as any).Items.map((i: SingleTableDocumentWithData<T>) => {
           return getDataFromDocument(i);
         }),
-        nextPageArgs: nextWhere,
+        nextPageArgs: nextWhere as unknown as any,
       };
     },
-    query: async (where: WhereClause<T>): Promise<QueryResult<T>> => {
-      let index = findIndexForQuery<ID, T, QueryNames>(where, config);
-
-      if (!index) {
-        throw { message: 'there isnt an index configured for this query' };
-      }
-
-      return repo.executeQuery(where, index);
-    },
-    queryOne: async (argsIn: WhereClause<T>): Promise<T | null> => {
-      const args = { ...argsIn, limit: 1 };
-      const res = await repo.query(args);
-      if (res.results.length > 0) {
-        return res.results[0];
-      } else {
-        return null;
-      }
+    query: () => {
+      return new QueryBuilder<ID, T, QueryNames>(repo);
     },
     formatForDDB(thing: T) {
       let obj: Partial<SingleTableDocumentWithData<T>> = {
@@ -380,17 +489,16 @@ export function getRepository<ID, T, QueryNames = string>(
 
       return obj as SingleTableDocumentWithData<T>;
     },
-    findIndexForQuery: (where: WhereClause<T>) => {
+    findIndexForQuery: (where: WhereClause<T, QueryNames>) => {
       return findIndexForQuery<ID, T, QueryNames>(where, config);
     },
     queries: Object.keys(config.indexesByTag).reduce(
       (obj: any, key: string) => {
-        obj[key] = (where: WhereClause<T>) =>
-          repo.executeQuery(where, config.indexesByTag[key]);
+        obj[key] = () => repo.query().index(key as any);
         return obj;
       },
       {}
-    ) as Queries<T, QueryNames>,
+    ) as Queries<ID, T, QueryNames>,
   };
   return repo;
 }
