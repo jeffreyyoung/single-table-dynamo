@@ -22,6 +22,208 @@ function _extends() {
   return _extends.apply(this, arguments);
 }
 
+// A type of promise-like that resolves synchronously and supports only one observer
+const _Pact = /*#__PURE__*/(function() {
+	function _Pact() {}
+	_Pact.prototype.then = function(onFulfilled, onRejected) {
+		const result = new _Pact();
+		const state = this.s;
+		if (state) {
+			const callback = state & 1 ? onFulfilled : onRejected;
+			if (callback) {
+				try {
+					_settle(result, 1, callback(this.v));
+				} catch (e) {
+					_settle(result, 2, e);
+				}
+				return result;
+			} else {
+				return this;
+			}
+		}
+		this.o = function(_this) {
+			try {
+				const value = _this.v;
+				if (_this.s & 1) {
+					_settle(result, 1, onFulfilled ? onFulfilled(value) : value);
+				} else if (onRejected) {
+					_settle(result, 1, onRejected(value));
+				} else {
+					_settle(result, 2, value);
+				}
+			} catch (e) {
+				_settle(result, 2, e);
+			}
+		};
+		return result;
+	};
+	return _Pact;
+})();
+
+// Settles a pact synchronously
+function _settle(pact, state, value) {
+	if (!pact.s) {
+		if (value instanceof _Pact) {
+			if (value.s) {
+				if (state & 1) {
+					state = value.s;
+				}
+				value = value.v;
+			} else {
+				value.o = _settle.bind(null, pact, state);
+				return;
+			}
+		}
+		if (value && value.then) {
+			value.then(_settle.bind(null, pact, state), _settle.bind(null, pact, 2));
+			return;
+		}
+		pact.s = state;
+		pact.v = value;
+		const observer = pact.o;
+		if (observer) {
+			observer(pact);
+		}
+	}
+}
+
+function _isSettledPact(thenable) {
+	return thenable instanceof _Pact && thenable.s & 1;
+}
+
+// Asynchronously iterate through an object that has a length property, passing the index as the first argument to the callback (even as the length property changes)
+function _forTo(array, body, check) {
+	var i = -1, pact, reject;
+	function _cycle(result) {
+		try {
+			while (++i < array.length && (!check || !check())) {
+				result = body(i);
+				if (result && result.then) {
+					if (_isSettledPact(result)) {
+						result = result.v;
+					} else {
+						result.then(_cycle, reject || (reject = _settle.bind(null, pact = new _Pact(), 2)));
+						return;
+					}
+				}
+			}
+			if (pact) {
+				_settle(pact, 1, result);
+			} else {
+				pact = result;
+			}
+		} catch (e) {
+			_settle(pact || (pact = new _Pact()), 2, e);
+		}
+	}
+	_cycle();
+	return pact;
+}
+
+const _iteratorSymbol = /*#__PURE__*/ typeof Symbol !== "undefined" ? (Symbol.iterator || (Symbol.iterator = Symbol("Symbol.iterator"))) : "@@iterator";
+
+const _asyncIteratorSymbol = /*#__PURE__*/ typeof Symbol !== "undefined" ? (Symbol.asyncIterator || (Symbol.asyncIterator = Symbol("Symbol.asyncIterator"))) : "@@asyncIterator";
+
+// Asynchronously implement a generic for loop
+function _for(test, update, body) {
+	var stage;
+	for (;;) {
+		var shouldContinue = test();
+		if (_isSettledPact(shouldContinue)) {
+			shouldContinue = shouldContinue.v;
+		}
+		if (!shouldContinue) {
+			return result;
+		}
+		if (shouldContinue.then) {
+			stage = 0;
+			break;
+		}
+		var result = body();
+		if (result && result.then) {
+			if (_isSettledPact(result)) {
+				result = result.s;
+			} else {
+				stage = 1;
+				break;
+			}
+		}
+		if (update) {
+			var updateValue = update();
+			if (updateValue && updateValue.then && !_isSettledPact(updateValue)) {
+				stage = 2;
+				break;
+			}
+		}
+	}
+	var pact = new _Pact();
+	var reject = _settle.bind(null, pact, 2);
+	(stage === 0 ? shouldContinue.then(_resumeAfterTest) : stage === 1 ? result.then(_resumeAfterBody) : updateValue.then(_resumeAfterUpdate)).then(void 0, reject);
+	return pact;
+	function _resumeAfterBody(value) {
+		result = value;
+		do {
+			if (update) {
+				updateValue = update();
+				if (updateValue && updateValue.then && !_isSettledPact(updateValue)) {
+					updateValue.then(_resumeAfterUpdate).then(void 0, reject);
+					return;
+				}
+			}
+			shouldContinue = test();
+			if (!shouldContinue || (_isSettledPact(shouldContinue) && !shouldContinue.v)) {
+				_settle(pact, 1, result);
+				return;
+			}
+			if (shouldContinue.then) {
+				shouldContinue.then(_resumeAfterTest).then(void 0, reject);
+				return;
+			}
+			result = body();
+			if (_isSettledPact(result)) {
+				result = result.v;
+			}
+		} while (!result || !result.then);
+		result.then(_resumeAfterBody).then(void 0, reject);
+	}
+	function _resumeAfterTest(shouldContinue) {
+		if (shouldContinue) {
+			result = body();
+			if (result && result.then) {
+				result.then(_resumeAfterBody).then(void 0, reject);
+			} else {
+				_resumeAfterBody(result);
+			}
+		} else {
+			_settle(pact, 1, result);
+		}
+	}
+	function _resumeAfterUpdate() {
+		if (shouldContinue = test()) {
+			if (shouldContinue.then) {
+				shouldContinue.then(_resumeAfterTest).then(void 0, reject);
+			} else {
+				_resumeAfterTest(shouldContinue);
+			}
+		} else {
+			_settle(pact, 1, result);
+		}
+	}
+}
+
+// Asynchronously call a function and send errors to recovery continuation
+function _catch(body, recover) {
+	try {
+		var result = body();
+	} catch(e) {
+		return recover(e);
+	}
+	if (result && result.then) {
+		return result.then(void 0, recover);
+	}
+	return result;
+}
+
 var _docClient =
 /*#__PURE__*/
 new AWS.DynamoDB.DocumentClient();
@@ -231,7 +433,7 @@ function isCustomGSIQueryArg(thing) {
 }
 
 function convertQueryArgToIndex(queryName, config) {
-  var index = (config.queries || {})[queryName];
+  var index = (config.indexes || {})[queryName];
 
   if (isPrimaryQueryArg(index)) {
     return getPrimaryIndex(config, queryName);
@@ -295,7 +497,7 @@ function getConfig(argsIn) {
     paddedNumberLength: 20,
     queries: {}
   }, argsIn);
-  var indexes = [getPrimaryIndex(args)].concat(args.queries ? Object.keys(args.queries).map(function (queryName) {
+  var indexes = [getPrimaryIndex(args)].concat(args.indexes ? Object.keys(args.indexes).map(function (queryName) {
     return convertQueryArgToIndex(queryName, args);
   }) : []);
   var indexesByTag = indexes.reduce(function (prev, index) {
@@ -316,6 +518,148 @@ function getConfig(argsIn) {
   });
 }
 
+var QueryBuilder =
+/*#__PURE__*/
+function () {
+  function QueryBuilder(repo) {
+    this.clause = {
+      args: {}
+    };
+    this.repo = repo;
+  }
+
+  var _proto = QueryBuilder.prototype;
+
+  _proto.where = function where(parts) {
+    this.clause.args = parts;
+    return this;
+  };
+
+  _proto.sortBy = function sortBy(key) {
+    this.clause.sortBy = key;
+    return this;
+  };
+
+  _proto.sortDirection = function sortDirection(direction) {
+    this.clause.sort = direction;
+    return this;
+  };
+
+  _proto.index = function index(_index) {
+    this.clause.index = _index;
+    return this;
+  };
+
+  _proto.cursor = function cursor(_cursor) {
+    this.clause.cursor = _cursor;
+    return this;
+  };
+
+  _proto.limit = function limit(_limit) {
+    this.clause.limit = _limit;
+    return this;
+  };
+
+  _proto.setClause = function setClause(clause) {
+    this.clause = clause;
+    return this;
+  };
+
+  _proto.get = function get() {
+    var index = this.repo.findIndexForQuery(this.clause);
+
+    if (!index) {
+      throw {
+        message: 'there isnt an index configured for this query'
+      };
+    }
+
+    return this.repo.executeQuery(this.clause, index);
+  };
+
+  _proto.getOne = function getOne() {
+    try {
+      var _this2 = this;
+
+      return Promise.resolve(_this2.limit(1).get()).then(function (res) {
+        if (res.results.length > 0) {
+          return res.results[0];
+        } else {
+          return null;
+        }
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+  /**
+   * Repeatedly pages over the given query until all items have been queried
+   * If a query has more pages than fit in memory, errors will happen
+   */
+  ;
+
+  _proto.getAll = function getAll() {
+    try {
+      var _this4 = this;
+
+      return Promise.resolve(_this4.get()).then(function (res) {
+        var _temp = _for(function () {
+          return !!res.nextPageArgs;
+        }, void 0, function () {
+          return Promise.resolve(_this4.setClause(res.nextPageArgs).get()).then(function (next) {
+            res = {
+              results: res.results.concat(next.results),
+              nextPageArgs: next.nextPageArgs
+            };
+          });
+        });
+
+        return _temp && _temp.then ? _temp.then(function () {
+          return res;
+        }) : res;
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  };
+
+  _proto.deleteAll = function deleteAll() {
+    try {
+      var _this6 = this;
+
+      var hasMore = true; //the max items for batch delete is 25
+      //todo: limit paging to 25 in batchDelete
+
+      return Promise.resolve(_this6.limit(25).get()).then(function (res) {
+        var _temp3 = _for(function () {
+          return !!hasMore;
+        }, void 0, function () {
+          return Promise.resolve(_this6.repo.batchDelete(res.results)).then(function () {
+            var _temp2 = function () {
+              if (res.nextPageArgs) {
+                return Promise.resolve(_this6.setClause(res.nextPageArgs).get()).then(function (_this5$setClause$get) {
+                  res = _this5$setClause$get;
+                });
+              } else {
+                hasMore = false;
+              }
+            }();
+
+            if (_temp2 && _temp2.then) return _temp2.then(function () {});
+          });
+        });
+
+        return _temp3 && _temp3.then ? _temp3.then(function () {
+          return true;
+        }) : true;
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  };
+
+  return QueryBuilder;
+}();
 /**
  *
  * @param thing
@@ -325,6 +669,7 @@ function getConfig(argsIn) {
  *
  * return "{descriptor}#{properties[0]}-{thing[properties[0]]}#..."
  */
+
 
 function getCompositeKeyValue(thing, properties, descriptor, separator, shouldPadNumbersInIndexes) {
   return [descriptor].concat(properties.map(function (k) {
@@ -465,12 +810,29 @@ function getRepository(args) {
     },
     get: function (id) {
       try {
-        var request = {
-          TableName: config.tableName,
-          Key: repo.getKey(id)
-        };
-        return Promise.resolve(getDocClient().get(request).promise()).then(function (res) {
-          return res.Item ? getDataFromDocument(res.Item) : null;
+        return Promise.resolve(repo.batchGet([id])).then(function (res) {
+          return res[0];
+        });
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    },
+    batchGet: function (ids) {
+      try {
+        var _RequestItems;
+
+        return Promise.resolve(getDocClient().batchGet({
+          RequestItems: (_RequestItems = {}, _RequestItems[config.tableName] = {
+            Keys: ids.map(repo.getKey)
+          }, _RequestItems)
+        }).promise()).then(function (res) {
+          return res.Responses && res.Responses[config.tableName] ? res.Responses[config.tableName].map(function (doc) {
+            if (doc) {
+              return getDataFromDocument(doc);
+            } else {
+              return null;
+            }
+          }) : [];
         });
       } catch (e) {
         return Promise.reject(e);
@@ -504,11 +866,29 @@ function getRepository(args) {
     },
     "delete": function (id) {
       try {
-        return Promise.resolve(getDocClient()["delete"]({
-          TableName: config.tableName,
-          Key: repo.getKey(id)
-        }).promise()).then(function () {
+        return Promise.resolve(repo.batchDelete([id])).then(function () {
           return true;
+        });
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    },
+    batchDelete: function (ids) {
+      try {
+        var _RequestItems2;
+
+        return Promise.resolve(getDocClient().batchWrite({
+          RequestItems: (_RequestItems2 = {}, _RequestItems2[config.tableName] = ids.map(function (id) {
+            return {
+              DeleteRequest: {
+                Key: repo.getKey(id)
+              }
+            };
+          }), _RequestItems2)
+        }).promise()).then(function () {
+          return ids.map(function () {
+            return true;
+          });
         });
       } catch (e) {
         return Promise.reject(e);
@@ -580,37 +960,8 @@ function getRepository(args) {
         return Promise.reject(e);
       }
     },
-    query: function (where) {
-      try {
-        var index = _findIndexForQuery(where, config);
-
-        if (!index) {
-          throw {
-            message: 'there isnt an index configured for this query'
-          };
-        }
-
-        return Promise.resolve(repo.executeQuery(where, index));
-      } catch (e) {
-        return Promise.reject(e);
-      }
-    },
-    queryOne: function (argsIn) {
-      try {
-        var _args = _extends({}, argsIn, {
-          limit: 1
-        });
-
-        return Promise.resolve(repo.query(_args)).then(function (res) {
-          if (res.results.length > 0) {
-            return res.results[0];
-          } else {
-            return null;
-          }
-        });
-      } catch (e) {
-        return Promise.reject(e);
-      }
+    query: function query() {
+      return new QueryBuilder(repo);
     },
     formatForDDB: function formatForDDB(thing) {
       var obj = _extends({}, thing, {
@@ -627,130 +978,15 @@ function getRepository(args) {
     findIndexForQuery: function findIndexForQuery(where) {
       return _findIndexForQuery(where, config);
     },
-    queries: Object.keys(config.indexesByTag).reduce(function (obj, key) {
-      obj[key] = function (where) {
-        return repo.executeQuery(where, config.indexesByTag[key]);
+    indexes: Object.keys(config.indexesByTag).reduce(function (obj, key) {
+      obj[key] = function () {
+        return repo.query().index(key);
       };
 
       return obj;
     }, {})
   };
   return repo;
-}
-
-// A type of promise-like that resolves synchronously and supports only one observer
-const _Pact = /*#__PURE__*/(function() {
-	function _Pact() {}
-	_Pact.prototype.then = function(onFulfilled, onRejected) {
-		const result = new _Pact();
-		const state = this.s;
-		if (state) {
-			const callback = state & 1 ? onFulfilled : onRejected;
-			if (callback) {
-				try {
-					_settle(result, 1, callback(this.v));
-				} catch (e) {
-					_settle(result, 2, e);
-				}
-				return result;
-			} else {
-				return this;
-			}
-		}
-		this.o = function(_this) {
-			try {
-				const value = _this.v;
-				if (_this.s & 1) {
-					_settle(result, 1, onFulfilled ? onFulfilled(value) : value);
-				} else if (onRejected) {
-					_settle(result, 1, onRejected(value));
-				} else {
-					_settle(result, 2, value);
-				}
-			} catch (e) {
-				_settle(result, 2, e);
-			}
-		};
-		return result;
-	};
-	return _Pact;
-})();
-
-// Settles a pact synchronously
-function _settle(pact, state, value) {
-	if (!pact.s) {
-		if (value instanceof _Pact) {
-			if (value.s) {
-				if (state & 1) {
-					state = value.s;
-				}
-				value = value.v;
-			} else {
-				value.o = _settle.bind(null, pact, state);
-				return;
-			}
-		}
-		if (value && value.then) {
-			value.then(_settle.bind(null, pact, state), _settle.bind(null, pact, 2));
-			return;
-		}
-		pact.s = state;
-		pact.v = value;
-		const observer = pact.o;
-		if (observer) {
-			observer(pact);
-		}
-	}
-}
-
-function _isSettledPact(thenable) {
-	return thenable instanceof _Pact && thenable.s & 1;
-}
-
-// Asynchronously iterate through an object that has a length property, passing the index as the first argument to the callback (even as the length property changes)
-function _forTo(array, body, check) {
-	var i = -1, pact, reject;
-	function _cycle(result) {
-		try {
-			while (++i < array.length && (!check || !check())) {
-				result = body(i);
-				if (result && result.then) {
-					if (_isSettledPact(result)) {
-						result = result.v;
-					} else {
-						result.then(_cycle, reject || (reject = _settle.bind(null, pact = new _Pact(), 2)));
-						return;
-					}
-				}
-			}
-			if (pact) {
-				_settle(pact, 1, result);
-			} else {
-				pact = result;
-			}
-		} catch (e) {
-			_settle(pact || (pact = new _Pact()), 2, e);
-		}
-	}
-	_cycle();
-	return pact;
-}
-
-const _iteratorSymbol = /*#__PURE__*/ typeof Symbol !== "undefined" ? (Symbol.iterator || (Symbol.iterator = Symbol("Symbol.iterator"))) : "@@iterator";
-
-const _asyncIteratorSymbol = /*#__PURE__*/ typeof Symbol !== "undefined" ? (Symbol.asyncIterator || (Symbol.asyncIterator = Symbol("Symbol.asyncIterator"))) : "@@asyncIterator";
-
-// Asynchronously call a function and send errors to recovery continuation
-function _catch(body, recover) {
-	try {
-		var result = body();
-	} catch(e) {
-		return recover(e);
-	}
-	if (result && result.then) {
-		return result.then(void 0, recover);
-	}
-	return result;
 }
 
 var ensureTableIsConfigured = function ensureTableIsConfigured(tableName, indexes) {

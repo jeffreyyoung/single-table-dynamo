@@ -2,10 +2,30 @@ import { SingleTableDocumentWithData } from './SingleTableDocument';
 import { ConfigArgs, Index, Config } from './config';
 import { KeyOfStr } from './utils';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-export declare type WhereClause<T = any, QueryNames = string> = {
+declare class QueryBuilder<ID = any, T = any, IndexNames = string> {
+    clause: WhereClause<T, IndexNames>;
+    repo: Repository<ID, T, IndexNames>;
+    constructor(repo: Repository<ID, T, IndexNames>);
+    where(parts: Partial<T>): this;
+    sortBy(key: KeyOfStr<T>): this;
+    sortDirection(direction: 'asc' | 'desc'): this;
+    index(index: IndexNames): this;
+    cursor(cursor: Record<string, any>): this;
+    limit(limit: number): this;
+    setClause(clause: WhereClause<T, IndexNames>): this;
+    get(): Promise<QueryResult<T>>;
+    getOne(): Promise<T | null>;
+    /**
+     * Repeatedly pages over the given query until all items have been queried
+     * If a query has more pages than fit in memory, errors will happen
+     */
+    getAll(): Promise<QueryResult<T>>;
+    deleteAll(): Promise<boolean>;
+}
+export declare type WhereClause<T = any, IndexNames = string> = {
     sort?: 'asc' | 'desc';
     args: Partial<T>;
-    index?: QueryNames;
+    index?: IndexNames;
     sortBy?: KeyOfStr<T>;
     cursor?: Record<string, any>;
     limit?: number;
@@ -37,9 +57,9 @@ export declare function getCustomKeyValue<T>(thing: T, propertyName: (keyof T)):
  */
 export declare function dynamoProperty(key: string, value: any, shouldPadNumbersInIndexes: boolean): string;
 export declare function getSortkeyForBeginsWithQuery<ID, T>(thing: Partial<T>, indexFields: (keyof T | keyof ID)[], descriptor: string, compositeKeySeparator: string, shouldPadNumbersInIndexes: boolean): string;
-export declare function findIndexForQuery<ID, T, QueryNames>(where: WhereClause<T>, config: Config<ID, T, QueryNames>): Index<ID, T> | null;
-declare type Queries<T, QueryNames> = Record<Extract<QueryNames, string>, (where: WhereClause<T>) => Promise<QueryResult<T>>>;
-export declare type Repository<ID = any, T = any, QueryNames = string> = {
+export declare function findIndexForQuery<ID, T, QueryNames>(where: WhereClause<T, QueryNames>, config: Config<ID, T, QueryNames>): Index<ID, T> | null;
+declare type IndexQueryBuilderMap<ID, T, QueryNames> = Record<Extract<QueryNames, string>, () => QueryBuilder<ID, T, QueryNames>>;
+export declare type Repository<ID = any, T = any, IndexNames = string> = {
     config: Config<ID, T>;
     getKey: (id: ID) => any;
     get: (id: ID) => Promise<T | null>;
@@ -47,18 +67,19 @@ export declare type Repository<ID = any, T = any, QueryNames = string> = {
     overwrite: (thing: T) => Promise<T>;
     put: (thing: T) => Promise<T>;
     delete: (id: ID) => Promise<boolean>;
+    batchDelete: (ids: ID[]) => Promise<boolean[]>;
+    batchGet: (ids: ID[]) => Promise<(T | null)[]>;
     formatForDDB: (thing: T) => SingleTableDocumentWithData<T>;
-    executeQuery: (where: WhereClause<T>, index: Index<ID, T>) => Promise<QueryResult<T>>;
-    getSortKeyAndHashKeyForQuery(where: WhereClause<T>, index: Index<ID, T>): {
+    executeQuery: (where: WhereClause<T, IndexNames | any>, index: Index<ID, T>) => Promise<QueryResult<T>>;
+    getSortKeyAndHashKeyForQuery(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): {
         sortKey: string;
         hashKey: string;
     };
-    getQueryArgs(where: WhereClause<T>, index: Index<ID, T>): DocumentClient.QueryInput;
-    query: (where: WhereClause<T>) => Promise<QueryResult<T>>;
-    queryOne: (where: WhereClause<T>) => Promise<T | null>;
-    findIndexForQuery: (where: WhereClause<T>) => Index<ID, T> | null;
+    getQueryArgs(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): DocumentClient.QueryInput;
+    query: () => QueryBuilder<ID, T, IndexNames>;
+    findIndexForQuery: (where: WhereClause<T, IndexNames | any>) => Index<ID, T> | null;
     getDocClient: () => AWS.DynamoDB.DocumentClient;
-    queries: Queries<T, QueryNames>;
+    indexes: IndexQueryBuilderMap<ID, T, IndexNames | any>;
     getCursor: (thing: T, index?: Index<ID, T>) => Record<string, any>;
 };
 export declare function getRepository<ID, T, QueryNames = string>(args: ConfigArgs<ID, T, QueryNames>): Repository<ID, T, QueryNames>;

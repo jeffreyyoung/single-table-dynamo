@@ -51,11 +51,11 @@ export declare type ConfigArgs<ID, T, QueryNames = string> = {
     compositeKeySeparator?: '#';
     shouldPadNumbersInIndexes?: boolean;
     paddedNumberLength?: number;
-    queries?: Record<Extract<QueryNames, string>, GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg | CustomGSIQueryArg<T>>;
+    indexes?: Record<Extract<QueryNames, string>, GSIQueryArg<T> | LSIQueryArg<T> | PrimaryQueryArg | CustomGSIQueryArg<T>>;
 };
 declare type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 declare type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-export declare function getConfig<ID, T>(argsIn: PartialBy<ConfigArgs<ID, T>, 'queries'>): Config<ID, T>;
+export declare function getConfig<ID, T>(argsIn: PartialBy<ConfigArgs<ID, T>, 'indexes'>): Config<ID, T>;
 export declare type Config<ID, T, QueryNames = string> = Readonly<{
     tableName: string;
     objectName: string;
