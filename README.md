@@ -34,6 +34,7 @@ Now use the newly create repository to save object to our database
 ```javascript
 let user1 = await userRepo.create({id: 1, name: 'halpert'});
 let user2 = await userRepo.create({id: 2, name: 'beasley'});
+
 let halpert = await userRepo.get({id: 1});
 
 console.log(halpert)// {id:1, name: 'halpert'}
@@ -107,7 +108,11 @@ const repo = getRepository<PurchaseID, Purchase, QueryKeys>({
         }
     }
 });
+```
 
+We store some purchases in our database
+
+```typescript
 
 let purchase1 = await repo.create({
     id: '1',
@@ -128,7 +133,11 @@ let purchase2 = await repo.create({
     state: 'ks',
     city: 'otis'
 })
+```
 
+And now we can query items in our database
+
+```typescript
 //get all of angela's latest purchases
 let {results} = await repo.query()
     .index('latestPurchases')
