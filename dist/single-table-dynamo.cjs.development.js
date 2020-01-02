@@ -821,6 +821,10 @@ function getRepository(args) {
       try {
         var _RequestItems;
 
+        if (ids.length === 0) {
+          return Promise.resolve([]);
+        }
+
         return Promise.resolve(getDocClient().batchGet({
           RequestItems: (_RequestItems = {}, _RequestItems[config.tableName] = {
             Keys: ids.map(repo.getKey)
@@ -876,6 +880,10 @@ function getRepository(args) {
     batchDelete: function (ids) {
       try {
         var _RequestItems2;
+
+        if (ids.length === 0) {
+          return Promise.resolve([]);
+        }
 
         return Promise.resolve(getDocClient().batchWrite({
           RequestItems: (_RequestItems2 = {}, _RequestItems2[config.tableName] = ids.map(function (id) {
@@ -960,8 +968,14 @@ function getRepository(args) {
         return Promise.reject(e);
       }
     },
-    query: function query() {
-      return new QueryBuilder(repo);
+    query: function query(clause) {
+      var builder = new QueryBuilder(repo);
+
+      if (clause) {
+        return builder.setClause(clause);
+      } else {
+        return builder;
+      }
     },
     formatForDDB: function formatForDDB(thing) {
       var obj = _extends({}, thing, {

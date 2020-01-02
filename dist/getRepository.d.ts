@@ -76,7 +76,7 @@ export declare type Repository<ID = any, T = any, IndexNames = string> = {
         hashKey: string;
     };
     getQueryArgs(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): DocumentClient.QueryInput;
-    query: () => QueryBuilder<ID, T, IndexNames>;
+    query: (clause?: WhereClause<T, IndexNames | any>) => QueryBuilder<ID, T, IndexNames>;
     findIndexForQuery: (where: WhereClause<T, IndexNames | any>) => Index<ID, T> | null;
     getDocClient: () => AWS.DynamoDB.DocumentClient;
     indexes: IndexQueryBuilderMap<ID, T, IndexNames | any>;
