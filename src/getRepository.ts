@@ -295,7 +295,7 @@ export type Repository<ID = any, T = any, IndexNames = string> = {
   ) => Promise<QueryResult<T>>;
   getSortKeyAndHashKeyForQuery(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): { sortKey: string, hashKey: string }
   getQueryArgs(where: WhereClause<T, IndexNames | any>, index: Index<ID, T>): DocumentClient.QueryInput
-  query: () => QueryBuilder<ID, T, IndexNames>
+  query: (clause?: WhereClause<T, IndexNames | any>) => QueryBuilder<ID, T, IndexNames>
   findIndexForQuery: (where: WhereClause<T, IndexNames | any>) => Index<ID, T> | null;
   getDocClient: () => AWS.DynamoDB.DocumentClient
   indexes: IndexQueryBuilderMap<ID, T, IndexNames | any>;
@@ -335,6 +335,7 @@ export function getRepository<ID, T, QueryNames = string>(
       return res[0];
     },
     batchGet: async (ids: ID[]): Promise<(T | null)[]> => {
+      if (ids.length === 0) {return [];}
       let res = await getDocClient()
         .batchGet({
           RequestItems: {
@@ -378,6 +379,7 @@ export function getRepository<ID, T, QueryNames = string>(
       return true;
     },
     batchDelete: async (ids: ID[]): Promise<boolean[]> => {
+      if (ids.length === 0) { return []; }
       await getDocClient()
         .batchWrite({
           RequestItems: {
@@ -469,8 +471,13 @@ export function getRepository<ID, T, QueryNames = string>(
         nextPageArgs: nextWhere as unknown as any,
       };
     },
-    query: () => {
-      return new QueryBuilder<ID, T, QueryNames>(repo);
+    query: (clause?: WhereClause<T, QueryNames>) => {
+      const builder = new QueryBuilder<ID, T, QueryNames>(repo);
+      if (clause) {
+        return builder.setClause(clause);
+      } else {
+        return builder;
+      }
     },
     formatForDDB(thing: T) {
       let obj: Partial<SingleTableDocumentWithData<T>> = {

@@ -102,8 +102,8 @@ test('next page args should work', async () => {
   expect(r1.results).toEqual([purchase1]);
   expect(r1.nextPageArgs).toBeTruthy();
 
-  let r2 = await purchaseRepo.indexes.mostRecentPurchases()
-    .setClause(r1.nextPageArgs as any)
+  let r2 = await purchaseRepo
+    .query(r1.nextPageArgs as any)
     .get();
   expect(r2.results).toEqual([purchase3]);
   //expect(r2.nextPageArgs).not.toBeTruthy();
@@ -119,7 +119,7 @@ test('pagination sort descending should work', async () => {
   expect(desc1.results).toEqual([purchase3]);
   expect(desc1.nextPageArgs).toBeTruthy();
 
-  expect((await purchaseRepo.indexes.mostRecentPurchases().setClause(desc1.nextPageArgs!).get()).results)
+  expect((await purchaseRepo.query(desc1.nextPageArgs).get()).results)
     .toEqual([purchase1]);
 });
 
