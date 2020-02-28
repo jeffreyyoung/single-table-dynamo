@@ -52,22 +52,7 @@ export function getGSIDef(index: Index<any, any>) {
   };
 }
 
-// type GSI = {
-//     indexName: string
-//     sortKeyAttributeName: string
-//     hashKeyAttributeName: string
-// }
-/**
- *
- * Creates a table with 5 local secondary indexes
- *
- */
-export function createTable(args: {
-  tableName: string;
-  indexes?: Index<any, any>[];
-}) {
-  var client = new AWS.DynamoDB();
-
+export function getCreateTableInput(args: { tableName: string, indexes?: Index<any,any>[]}) {
   let localSecondaryIndexes = range(0, 4).map<LSI>(i => ({
     indexName: getLSIName(i),
     sortKeyAttributeName: getLSISortKeyAttribute(i),
@@ -119,6 +104,28 @@ export function createTable(args: {
   if (createTableInput.GlobalSecondaryIndexes!.length ===0) {
     delete createTableInput.GlobalSecondaryIndexes;
   }
+
+  return createTableInput;
+}
+
+// type GSI = {
+//     indexName: string
+//     sortKeyAttributeName: string
+//     hashKeyAttributeName: string
+// }
+/**
+ *
+ * Creates a table with 5 local secondary indexes
+ *
+ */
+export function createTable(args: {
+  tableName: string;
+  indexes?: Index<any, any>[];
+}) {
+
+  const createTableInput = getCreateTableInput(args);
+
+  var client = new AWS.DynamoDB();
   return client.createTable(createTableInput).promise()
     .then(() => client.waitFor('tableExists', {TableName: createTableInput.TableName}))
     .then(() => console.log(`${createTableInput.TableName} has been created`));

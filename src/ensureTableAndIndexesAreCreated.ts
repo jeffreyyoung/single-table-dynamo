@@ -1,10 +1,11 @@
 import { AWS } from './AWS';
 import { Repository } from './getRepository';
 import { Index } from './config';
-import { createTable, getGSIDef } from './createTable';
+import { createTable, getGSIDef, getCreateTableInput } from './createTable';
 
-export async function ensureTableAndIndexesExist(repos: Repository[]) {
-  console.log(AWS.config.region);
+export const getTablesAndIndexes = (
+  repos: Repository[]
+) => {
   let tables: {
     [tableName: string]: {
       [indexName: string]: Index<any, any>;
@@ -24,6 +25,19 @@ export async function ensureTableAndIndexesExist(repos: Repository[]) {
       });
     });
 
+    return tables;
+};
+
+export function getCreateTableInputs(repos: Repository[]) {
+  const tables = getTablesAndIndexes(repos);
+
+  return Object.keys(tables).map(t => 
+    getCreateTableInput({ tableName: t, indexes: Object.values(tables[t])})
+  );
+}
+
+export async function ensureTableAndIndexesExist(repos: Repository[]) {
+  let tables = getTablesAndIndexes(repos);
   let tableNames = Object.keys(tables);
 
   for (let i = 0; i < tableNames.length; i++) {
@@ -94,21 +108,26 @@ async function ensureTableIsConfigured(
     await client
       .updateTable({
         TableName: tableName,
-        AttributeDefinitions: toCreate.reduce<{AttributeName: string, AttributeType: string}[]>((prev, index) => {
-          return prev.concat([{
+        AttributeDefinitions: toCreate.reduce<
+          { AttributeName: string; AttributeType: string }[]
+        >((prev, index) => {
+          return prev.concat([
+            {
               AttributeName: index.sortKeyAttribute as string,
               AttributeType: 'S',
-          },{
-            AttributeName: index.hashKeyAttribute as string,
-            AttributeType: 'S'
-          }])
-        },[]),
+            },
+            {
+              AttributeName: index.hashKeyAttribute as string,
+              AttributeType: 'S',
+            },
+          ]);
+        }, []),
         GlobalSecondaryIndexUpdates: toCreate.map(i => ({
           Create: getGSIDef(i),
         })),
       })
       .promise();
-    await client.waitFor('tableExists', {TableName: tableName});
+    await client.waitFor('tableExists', { TableName: tableName });
   } else {
     console.log(`the table ${tableName} has all the necessary indexes`);
   }

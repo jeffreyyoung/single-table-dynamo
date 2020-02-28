@@ -305,20 +305,8 @@ function getGSIDef(index) {
   throw {
     message: "given index of type " + index.type + ", expecting globalSecondaryIndex"
   };
-} // type GSI = {
-//     indexName: string
-//     sortKeyAttributeName: string
-//     hashKeyAttributeName: string
-// }
-
-/**
- *
- * Creates a table with 5 local secondary indexes
- *
- */
-
-function createTable(args) {
-  var client = new AWS.DynamoDB();
+}
+function getCreateTableInput(args) {
   var localSecondaryIndexes = range(0, 4).map(function (i) {
     return {
       indexName: getLSIName(i),
@@ -386,6 +374,22 @@ function createTable(args) {
     delete createTableInput.GlobalSecondaryIndexes;
   }
 
+  return createTableInput;
+} // type GSI = {
+//     indexName: string
+//     sortKeyAttributeName: string
+//     hashKeyAttributeName: string
+// }
+
+/**
+ *
+ * Creates a table with 5 local secondary indexes
+ *
+ */
+
+function createTable(args) {
+  var createTableInput = getCreateTableInput(args);
+  var client = new AWS.DynamoDB();
   return client.createTable(createTableInput).promise().then(function () {
     return client.waitFor('tableExists', {
       TableName: createTableInput.TableName
@@ -1109,21 +1113,7 @@ var getTableDescription = function getTableDescription(client, tableName) {
 
 var ensureTableAndIndexesExist = function ensureTableAndIndexesExist(repos) {
   try {
-    console.log(AWS.config.region);
-    var tables = {};
-    repos.map(function (c) {
-      return c.config;
-    }).forEach(function (c) {
-      if (!tables[c.tableName]) {
-        tables[c.tableName] = {};
-      }
-
-      c.indexes.forEach(function (i) {
-        if (i.type === 'globalSecondaryIndex') {
-          tables[c.tableName][i.indexName] = i;
-        }
-      });
-    });
+    var tables = getTablesAndIndexes(repos);
     var tableNames = Object.keys(tables);
 
     var _temp2 = _forTo(tableNames, function (i) {
@@ -1135,6 +1125,23 @@ var ensureTableAndIndexesExist = function ensureTableAndIndexesExist(repos) {
   } catch (e) {
     return Promise.reject(e);
   }
+};
+var getTablesAndIndexes = function getTablesAndIndexes(repos) {
+  var tables = {};
+  repos.map(function (c) {
+    return c.config;
+  }).forEach(function (c) {
+    if (!tables[c.tableName]) {
+      tables[c.tableName] = {};
+    }
+
+    c.indexes.forEach(function (i) {
+      if (i.type === 'globalSecondaryIndex') {
+        tables[c.tableName][i.indexName] = i;
+      }
+    });
+  });
+  return tables;
 };
 
 export { WORKAROUND_updateAWSConfig, ensureTableAndIndexesExist, getRepository, setDefaultTableName };
