@@ -182,7 +182,7 @@ export function getSortkeyForBeginsWithQuery<ID, T>(
   let fields = [descriptor];
   for (let i = 0; i < indexFields.length; i++) {
     let k = indexFields[i];
-    if (k in thing) {
+    if (k as string in thing) {
       fields.push(dynamoProperty(k as string, String(thing[k as keyof T]), shouldPadNumbersInIndexes));
     } else {
       break;
@@ -321,7 +321,7 @@ export function getRepository<ID, T, QueryNames = string>(
         [config.primaryIndex.sortKeyAttribute]: formatted[config.primaryIndex.sortKeyAttribute],
         ...(index && { [index.hashKeyAttribute]: formatted[index.hashKeyAttribute] }),
         ...(index && { [index.sortKeyAttribute]: formatted[index.sortKeyAttribute] })
-      };
+      } as any;
 
       return cursor;
     },

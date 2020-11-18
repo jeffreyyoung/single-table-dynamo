@@ -1,10 +1,8 @@
 {
   "include": ["src", "types", "test"],
   "compilerOptions": {
-    
     "suppressImplicitAnyIndexErrors": true,
-
-
+    "downlevelIteration": true,
     "target": "es5",
     "module": "esnext",
     "lib": ["dom", "esnext"],
