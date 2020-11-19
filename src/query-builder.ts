@@ -70,6 +70,7 @@ export class QueryBuilder {
       TableName: this.data.tableName,
       ScanIndexForeward: this.data.sortOrder === 'asc' ? true : false,
       Select: 'ALL_ATTRIBUTES',
+      Limit: this.data.limit || 20,
       ...this.data.indexName && {IndexName: this.data.indexName},
       ...this._buildConditionExpression(),
       ...this._buildCursor()

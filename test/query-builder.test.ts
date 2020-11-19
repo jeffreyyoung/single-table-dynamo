@@ -17,6 +17,7 @@ test('should format query request properly', () => {
       Country: 'Belgium',
       Name: 'Jim',
     },
+    Limit: 27,
     ExpressionAttributeNames: {
       '#attr0': 'Country',
       '#attr1': 'Name',

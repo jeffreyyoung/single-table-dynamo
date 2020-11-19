@@ -69,6 +69,7 @@ test('should build query with no sortkey', () => {
     ExpressionAttributeValues: {
       ':attr0': 'User#USA',
     },
+    Limit: 25,
     KeyConditionExpression: '#attr0 EQ :attr0',
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
@@ -92,6 +93,7 @@ test('should build query with extra fields', () => {
     ExpressionAttributeValues: {
       ':attr0': 'User#USA',
     },
+    Limit: 25,
     KeyConditionExpression: '#attr0 EQ :attr0',
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
@@ -120,6 +122,7 @@ test('should build query with sortkey', () => {
     KeyConditionExpression: '#attr0 EQ :attr0 and #attr1 BEGINS_WITH :attr1',
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
+    Limit: 25,
     TableName: 'yeehaw',
   });
 });
@@ -151,6 +154,7 @@ test('should build non primary index', () => {
     },
     KeyConditionExpression: '#attr0 EQ :attr0',
     IndexName: "third",
+    Limit: 25,
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
