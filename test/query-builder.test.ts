@@ -1,4 +1,4 @@
-import { QueryBuilder } from './../src/v2/query-builder';
+import { QueryBuilder } from './../src/query-builder';
 
 test('should format query request properly', () => {
   const builder = new QueryBuilder();

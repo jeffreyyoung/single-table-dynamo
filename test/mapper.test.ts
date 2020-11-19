@@ -1,4 +1,4 @@
-import { Mapper } from './../src/v2/mapper';
+import { Mapper } from './../src/mapper';
 
 type User = {
   id: string;

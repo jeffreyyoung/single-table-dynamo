@@ -1,3 +1,4 @@
+import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { isPrimaryIndex, Mapper, SingleTableIndex } from "./mapper";
 import { QueryBuilder } from './query-builder';
 
@@ -5,10 +6,12 @@ export class IndexQueryBuilder<Src> {
   mapper: Mapper<Src>
   builder: QueryBuilder
   index: SingleTableIndex<Src>
+  ddb?: DocumentClient;
 
-  constructor(tableName: string, index: SingleTableIndex<Src>, mapper: Mapper<Src>) {
+  constructor(tableName: string, index: SingleTableIndex<Src>, mapper: Mapper<Src>, ddb?: DocumentClient) {
     this.mapper = mapper;
     this.index = index;
+    this.ddb = ddb;
     this.builder = new QueryBuilder();
     this.builder
       .table(tableName)
@@ -34,6 +37,14 @@ export class IndexQueryBuilder<Src> {
 
   build() {
     return this.builder.build();
+  }
+
+  async execute() {
+    if (this.ddb) {
+      return this.ddb.query(this.builder.build() as any).promise();
+    } else {
+      throw new Error('a document client instance must be provided to the constructor in order to execute queries')
+    }
   }
 
   where(src: Partial<Src>) {

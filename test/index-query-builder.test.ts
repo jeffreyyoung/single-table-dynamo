@@ -1,5 +1,5 @@
-import { IndexQueryBuilder } from './../src/v2/index-query-builder';
-import { Mapper } from './../src/v2/mapper';
+import { IndexQueryBuilder } from '../src/index-query-builder';
+import { Mapper } from './../src/mapper';
 
 type User = {
   id: string;

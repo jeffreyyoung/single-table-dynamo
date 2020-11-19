@@ -1,3 +1,4 @@
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { IndexQueryBuilder } from './index-query-builder'
 import { MapperArgs, Mapper } from './mapper'
 
@@ -6,25 +7,43 @@ type RepoArgs<Src> = {
 } & MapperArgs<Src>
 
 
-export  class Repository<ID, Src> {
+export class Repository<ID, Src> {
   args: RepoArgs<Src>
   mapper: Mapper<Src>
+  ddb: DocumentClient
 
-  constructor(args: RepoArgs<Src>) {
+  constructor(args: RepoArgs<Src>, c: DocumentClient) {
     this.args = args;
     this.mapper = new Mapper<Src>(args);
+    this.ddb = c;
   }
-  get(id: ID){
 
+  async get(id: ID){
+    const res = await this.ddb.get({
+      TableName: this.args.tableName,
+      Key: id,
+    }).promise();
+    return res.Item as Src;
   }
-  put(src: Src){}
-  update(src: Partial<Src> & ID){}
-  delete(id: Src){}
+  async put(src: Src){
+    await this.ddb.put({
+      TableName: this.args.tableName,
+      Item: this.mapper.decorateWithIndexedFields(src)
+    }).promise()
+    return src;
+  }
+  delete(id: Src){
+    return this.ddb.delete({
+      TableName: this.args.tableName,
+      Key: id
+    }).promise()
+  }
   query(tag: string) {
     const builder = new IndexQueryBuilder(
       this.args.tableName,
       this.indexByTag(tag),
-      this.mapper
+      this.mapper,
+      this.ddb
     );
     return builder
   }
