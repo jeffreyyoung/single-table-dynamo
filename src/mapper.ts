@@ -2,7 +2,7 @@ import { takeWhile } from './utils/takeWhile';
 
 export type KeysOfType<T, TProp> = { [P in keyof T]: T[P] extends TProp? P : never }[keyof T];
 
-enum IndexType {
+export enum IndexType {
   Primary = 'Primary',
   Secondary = 'Secondary'
 }

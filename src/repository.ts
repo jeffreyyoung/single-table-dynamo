@@ -32,16 +32,17 @@ export class Repository<ID, Src> {
     }).promise()
     return src;
   }
-  delete(id: Src){
-    return this.ddb.delete({
+  async delete(id: ID){
+    await this.ddb.delete({
       TableName: this.args.tableName,
       Key: id
     }).promise()
+    return true;
   }
-  query(tag: string) {
+  query(indexTag: string) {
     const builder = new IndexQueryBuilder(
       this.args.tableName,
-      this.indexByTag(tag),
+      this.indexByTag(indexTag),
       this.mapper,
       this.ddb
     );

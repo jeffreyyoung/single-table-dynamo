@@ -1,12 +1,3 @@
-# Single Table Dynamodb
-
-Right now this library is an experiment 👨‍🔬
-
-There are a few other dynamodb clients that help simplify using dynamodb in a node environment, but they all encourage the use of multiple tables.  This client is built with the idea of storing all data in a single table. https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
-
-## Example
-
-```typescript
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import {Repository} from '../src';
 
@@ -77,5 +68,5 @@ async function main() {
     .limit(10)
     .sort('asc')
     .execute();
+  
 }
-```
