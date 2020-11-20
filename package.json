@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "4.0.2",
+  "version": "5.1.0",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -22,16 +22,19 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
+  "peerDependencies": {
+    "aws-sdk": "^2.566.0"
+  },
   "devDependencies": {
     "@types/jest": "^24.0.22",
-    "@types/lodash": "^4.14.145",
+    "aws-sdk": "^2.566.0",
     "dotenv": "^8.2.0",
     "husky": "^3.0.9",
-    "tsdx": "^0.11.0",
     "tslib": "^1.10.0",
+    "tsdx": "^0.14.1",
     "typescript": "^3.7.2"
   },
   "dependencies": {
-    "aws-sdk": "^2.566.0"
+
   }
 }
