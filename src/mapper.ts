@@ -20,7 +20,7 @@ export type IndexBase = (PrimaryIndex | SecondaryIndex) & {tag: string};
 
 export type Index = {
   partitionKey: string
-  sortKey: string
+  sortKey?: string
 } & IndexBase;
 
 export type CompositeIndex<Src> = {
@@ -118,6 +118,9 @@ export class Mapper<Src> {
    */
   computeIndexFields(src: Partial<Src>, index: MapperArgs<Src>['indexes'][number]) {
     if (this._isCompositeIndex(index)) {
+      if (index.fields.length < 1) {
+        throw new Error(`A partition key field must be provided:\n\nprovided fields: ${JSON.stringify(src,null,1)}\nindex: ${JSON.stringify(index,null,1)}`)
+      }
 
       const partitionValue = this._computeCompositePrimaryKey(src, index.fields[0]);
 
@@ -128,7 +131,7 @@ export class Mapper<Src> {
 
       return {
         ...partitionValue && {[index.partitionKey]: partitionValue},
-        ...sortValue && {[index.sortKey]: sortValue}
+        ...sortValue && index.sortKey && {[index.sortKey]: sortValue}
       }
     } else {
       return {

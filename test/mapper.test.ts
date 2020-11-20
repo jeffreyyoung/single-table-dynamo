@@ -114,4 +114,11 @@ test('should format partial index properly', () => {
   ).toEqual({
     pk1: 'User#USA',
   });
+
 });
+
+test('should throw when no partition key is provided', () => {
+  expect(
+    () => mapper.computeIndexFields({ }, mapper.args.indexes[0])
+  ).toThrow();
+})

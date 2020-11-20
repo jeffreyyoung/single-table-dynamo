@@ -53,8 +53,8 @@ export class IndexQueryBuilder<Src> {
       this.builder.where(this.index.partitionKey as any, 'EQ', indexes[this.index.partitionKey])
     }
 
-    if (indexes[this.index.sortKey]) {
-      this.builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey])
+    if (indexes[this.index.sortKey!]) {
+      this.builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey!])
     }
 
     return this;

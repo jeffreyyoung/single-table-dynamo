@@ -19,7 +19,6 @@ const TableConfig = {
   tableName: 'GenericTable',
   primaryIndex: {
     partitionKey: 'pk',
-    sortKey: 'sk',
   },
   secondaryIndexes: [{
     indexName: 'gsi1',
@@ -67,6 +66,7 @@ const repo = new Repository<UserId,User>({
 
 async function main() {
   
+  // create
   let user1 = await repo.put({
     id: '1',
     city: 'Orlando',
@@ -76,10 +76,13 @@ async function main() {
     name: 'Jonny'
   })
 
+  // get
   user1 = await repo.get({id: '1'});
 
+  // delete
   await repo.delete({id: '1'});
 
+  //get users that live in WA
   const result = await repo
     .query('byStateByCreatedDate')
     .where({state: 'WA'})

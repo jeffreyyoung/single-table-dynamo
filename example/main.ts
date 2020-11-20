@@ -5,7 +5,6 @@ const TableConfig = {
   tableName: 'GenericTable',
   primaryIndex: {
     partitionKey: 'pk',
-    sortKey: 'sk',
   },
   secondaryIndexes: [{
     indexName: 'gsi1',
