@@ -41,7 +41,7 @@ export class IndexQueryBuilder<Src> {
 
   async execute() {
     if (this.ddb) {
-      return this.ddb.query(this.builder.build() as any).promise();
+      return this.ddb.query(this.builder.build() as any).promise() as (Omit<DocumentClient.QueryOutput, 'Items'> & {Items?: Src[]});
     } else {
       throw new Error('a document client instance must be provided to the constructor in order to execute queries')
     }

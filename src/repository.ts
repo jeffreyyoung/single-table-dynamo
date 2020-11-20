@@ -29,7 +29,8 @@ export class Repository<ID, Src> {
     await this.ddb.put({
       TableName: this.args.tableName,
       Item: this.mapper.decorateWithIndexedFields(src)
-    }).promise()
+    }).promise();
+    
     return src;
   }
   async delete(id: ID){

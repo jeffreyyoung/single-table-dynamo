@@ -1,5 +1,5 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import {Repository} from '../src';
+import { Repository } from '../src';
 
 const TableConfig = {
   tableName: 'GenericTable',
@@ -17,9 +17,10 @@ const TableConfig = {
     sortKey: 'sk2',
   }]
 }
-
-type User = {
-  id: string
+type UserId = {
+  id: string;
+}
+type User = UserId & {
   name: string
   createdDate: string
   state: string
@@ -29,7 +30,7 @@ type User = {
 
 const docClient = new DocumentClient();
 
-const repo = new Repository<{id: string},User>({
+const repo = new Repository<UserId,User>({
   typeName: 'User',
   tableName: 'GenericTable',
   indexes: [{
@@ -60,13 +61,13 @@ async function main() {
 
   user1 = await repo.get({id: '1'});
 
-  var didDelete = await repo.delete({id: '1'});
+  await repo.delete({id: '1'});
 
-  const results = await repo
+  const result = await repo
     .query('byStateByCreatedDate')
     .where({state: 'WA'})
     .limit(10)
     .sort('asc')
     .execute();
-  
+  console.log(result.Items);
 }

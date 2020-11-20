@@ -1,14 +1,18 @@
 # Single Table Dynamodb
 
-Right now this library is an experiment 👨‍🔬
+There are a few other dynamodb clients that help simplify using dynamodb in a node environment, but most encourage the use of multiple tables.  This client is built with the idea of storing all data in a single table. https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
 
-There are a few other dynamodb clients that help simplify using dynamodb in a node environment, but they all encourage the use of multiple tables.  This client is built with the idea of storing all data in a single table. https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+## Getting started
+
+```
+yarn add single-table-dynamo
+```
 
 ## Example
 
 ```typescript
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import {Repository} from '../src';
+import { Repository } from '../src';
 
 const TableConfig = {
   tableName: 'GenericTable',
@@ -26,9 +30,10 @@ const TableConfig = {
     sortKey: 'sk2',
   }]
 }
-
-type User = {
-  id: string
+type UserId = {
+  id: string;
+}
+type User = UserId & {
   name: string
   createdDate: string
   state: string
@@ -38,7 +43,7 @@ type User = {
 
 const docClient = new DocumentClient();
 
-const repo = new Repository<{id: string},User>({
+const repo = new Repository<UserId,User>({
   typeName: 'User',
   tableName: 'GenericTable',
   indexes: [{
@@ -69,13 +74,15 @@ async function main() {
 
   user1 = await repo.get({id: '1'});
 
-  var didDelete = await repo.delete({id: '1'});
+  await repo.delete({id: '1'});
 
-  const results = await repo
+  const result = await repo
     .query('byStateByCreatedDate')
     .where({state: 'WA'})
     .limit(10)
     .sort('asc')
     .execute();
+  
+  console.log(result.Items);
 }
 ```
