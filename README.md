@@ -14,6 +14,7 @@ yarn add single-table-dynamo
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { Repository } from '../src';
 
+// define properties of our dynamodb table
 const TableConfig = {
   tableName: 'GenericTable',
   primaryIndex: {
@@ -30,6 +31,8 @@ const TableConfig = {
     sortKey: 'sk2',
   }]
 }
+
+// add types for the entity to be stored in dynamodb
 type UserId = {
   id: string;
 }
@@ -43,6 +46,7 @@ type User = UserId & {
 
 const docClient = new DocumentClient();
 
+// create a repo
 const repo = new Repository<UserId,User>({
   typeName: 'User',
   tableName: 'GenericTable',
@@ -50,7 +54,7 @@ const repo = new Repository<UserId,User>({
     tag: 'primaryIndex',
     fields: ['id'],
     ...TableConfig.primaryIndex,
-  }, {
+  }, { // single-table-dynamo will handle generating composite indexes
     tag: 'byCountryByStateByCity',
     fields: ['country', 'state', 'city'],
     ...TableConfig.secondaryIndexes[0],
