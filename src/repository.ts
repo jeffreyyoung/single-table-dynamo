@@ -1,6 +1,6 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
-import { IndexQueryBuilder } from './index-query-builder'
-import { MapperArgs, Mapper } from './mapper'
+import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder'
+import { MapperArgs, Mapper, isPrimaryIndex } from './mapper'
 
 type RepoArgs<Src> = {
   tableName: string
@@ -49,10 +49,20 @@ export class Repository<ID, Src> {
     );
     return builder
   }
+  getCursorEncoder(indexTag: string) {
+    return getCursorEncoder(this.indexByTag(indexTag), this.getPrimaryIndex(), this.mapper);
+  }
   indexByTag(tag: string) {
     const index = this.args.indexes.find(i => i.tag === tag)
     if (!index) {
       throw new Error(`No index exists for that tag, tag: ${tag}, args: ${JSON.stringify(this.args, null, 3)}`)
+    }
+    return index;
+  }
+  getPrimaryIndex() {
+    const index = this.args.indexes.find(i => isPrimaryIndex(i));
+    if (!index) {
+      throw new Error(`No primary index has been defined, args: ${JSON.stringify(this.args, null, 3)}`)
     }
     return index;
   }
