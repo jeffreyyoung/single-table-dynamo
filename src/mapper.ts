@@ -97,7 +97,7 @@ export class Mapper<Src> {
   }
 
   _computeCompositeSortKey(src: Partial<Src>, sortKeyFields: CompositeIndex<Src>['fields']) {
-    return sortKeyFields.map(f => this.stringifyField(src, f)).join('#')
+    return [this.args.typeName, ...sortKeyFields.map(f => this.stringifyField(src, f))].join('#')
   }
 
   _isInSrc(src: Partial<Src>, indexField: CompositeIndex<Src>['fields'][number]) {

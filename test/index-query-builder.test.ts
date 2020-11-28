@@ -65,12 +65,14 @@ test('should build query with no sortkey', () => {
   ).toEqual({
     ExpressionAttributeNames: {
       '#attr0': 'pk1',
+      "#attr1": "sk1",
     },
     ExpressionAttributeValues: {
       ':attr0': 'User#USA',
+      ":attr1": "User",
     },
     Limit: 25,
-    KeyConditionExpression: '#attr0 EQ :attr0',
+    KeyConditionExpression: "#attr0 EQ :attr0 and #attr1 BEGINS_WITH :attr1",
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
@@ -89,12 +91,14 @@ test('should build query with extra fields', () => {
   ).toEqual({
     ExpressionAttributeNames: {
       '#attr0': 'pk1',
+      "#attr1": "sk1",
     },
     ExpressionAttributeValues: {
       ':attr0': 'User#USA',
+      ":attr1": "User",
     },
     Limit: 25,
-    KeyConditionExpression: '#attr0 EQ :attr0',
+    "KeyConditionExpression": "#attr0 EQ :attr0 and #attr1 BEGINS_WITH :attr1",
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
@@ -117,7 +121,7 @@ test('should build query with sortkey', () => {
     },
     ExpressionAttributeValues: {
       ':attr0': 'User#USA',
-      ':attr1': 'UT',
+      ':attr1': 'User#UT',
     },
     KeyConditionExpression: '#attr0 EQ :attr0 and #attr1 BEGINS_WITH :attr1',
     ScanIndexForeward: false,
@@ -148,11 +152,13 @@ test('should build non primary index', () => {
   ).toEqual({
     ExpressionAttributeNames: {
       '#attr0': 'pk2',
+      '#attr1': 'sk2'
     },
     ExpressionAttributeValues: {
       ':attr0': 'User#WA',
+      ':attr1': 'User'
     },
-    KeyConditionExpression: '#attr0 EQ :attr0',
+    "KeyConditionExpression": "#attr0 EQ :attr0 and #attr1 BEGINS_WITH :attr1",
     IndexName: "third",
     Limit: 25,
     ScanIndexForeward: false,

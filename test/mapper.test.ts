@@ -69,8 +69,8 @@ test('should format object for dynamodb properly', () => {
 
     pk1: 'User#USA',
     pk2: 'User#WA',
-    sk1: 'WA#yesterday',
-    sk2: 'USA#yeehaw',
+    sk1: 'User#WA#yesterday',
+    sk2: 'User#USA#yeehaw',
   });
 
   expect(
@@ -91,10 +91,10 @@ test('should format object for dynamodb properly', () => {
     count: 33,
 
     pk1: 'User#USA',
-    sk1: 'UT#tomorrow',
+    sk1: 'User#UT#tomorrow',
 
     pk2: 'User#UT',
-    sk2: 'USA#yeehaw',
+    sk2: 'User#USA#yeehaw',
   });
 });
 
@@ -106,13 +106,14 @@ test('should format partial index properly', () => {
     )
   ).toEqual({
     pk1: 'User#USA',
-    sk1: 'UT',
+    sk1: 'User#UT',
   });
 
   expect(
     mapper.computeIndexFields({ country: 'USA' }, mapper.args.indexes[0])
   ).toEqual({
     pk1: 'User#USA',
+    sk1: 'User'
   });
 
 });
