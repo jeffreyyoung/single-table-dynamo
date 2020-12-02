@@ -25,7 +25,7 @@ export class Repository<ID, Src> {
         Key: this.getKey(id),
       })
       .promise();
-    return res.Item as Src;
+    return res.Item as Src | null;
   }
 
   getKey(id: ID) {
@@ -34,12 +34,13 @@ export class Repository<ID, Src> {
 
   async updateUnsafe(id: ID, src: Partial<Src>) {
     
-    return this.ddb.update({
+    const res = await this.ddb.update({
       TableName: this.args.tableName,
       Key: this.getKey(id),
       ...getDDBUpdateExpression(src),
       ReturnValues: 'ALL_NEW',
     }).promise();
+    return res.Attributes as Src | null;
   }
 
   async put(src: Src) {
