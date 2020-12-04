@@ -38,6 +38,7 @@ beforeEach(() => {
 });
 
 test('updateUnsafe should call document client with correct params', () => {
+  globals['stub'].update.returns({promise: () => ({})} as any);
   globals['repo'].updateUnsafe(
     { id: 'meow' },
     {
