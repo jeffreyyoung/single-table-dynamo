@@ -71,7 +71,7 @@ export class IndexQueryBuilder<Src> {
   where(src: Partial<Src>) {
     const indexes = this.mapper.computeIndexFields(src, this.index) as any;
     if (indexes[this.index.partitionKey]) {
-      this.builder.where(this.index.partitionKey as any, 'EQ', indexes[this.index.partitionKey])
+      this.builder.where(this.index.partitionKey as any, '=', indexes[this.index.partitionKey])
     }
 
     if (indexes[this.index.sortKey!]) {

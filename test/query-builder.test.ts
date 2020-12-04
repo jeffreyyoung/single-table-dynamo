@@ -7,7 +7,7 @@ test('should format query request properly', () => {
     builder
       .table('MyTable')
       .index('MyIndex')
-      .where('Country', 'EQ', 'USA')
+      .where('Country', '=', 'USA')
       .where('Name', 'BEGINS_WITH', 'Jef')
       .limit(27)
       .cursor({ Country: 'Belgium', Name: 'Jim' })
@@ -27,7 +27,7 @@ test('should format query request properly', () => {
       ':attr1': 'Jef',
     },
     IndexName: 'MyIndex',
-    KeyConditionExpression: '#attr0 EQ :attr0 and #attr1 BEGINS_WITH :attr1',
+    KeyConditionExpression: '#attr0 = :attr0 and begins_with(#attr1, :attr1)',
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'MyTable',

@@ -1,4 +1,4 @@
-type Operator = "EQ" | "NE" | "IN" | "LE" | "LT" | "GE" | "GT" | "BETWEEN" | "NOT_NULL" | "NULL" | "CONTAINS" | "NOT_CONTAINS" | "BEGINS_WITH"
+type Operator = "<" | "<=" | "<>" | "=" | ">" | ">=" | "BETWEEN" | "IN" | "BEGINS_WITH"
 type Where = {
   fieldName: string
   operator: Operator
@@ -86,7 +86,12 @@ export class QueryBuilder {
       const attributeName = 'attr'+i;
       ExpressionAttributeNames[`#${attributeName}`] = condition.fieldName;
       ExpressionAttributeValues[`:${attributeName}`] = condition.value;
-      KeyConditionExpression.push(`#${attributeName} ${condition.operator} :${attributeName}`)
+      if (condition.operator === 'BEGINS_WITH') {
+        KeyConditionExpression.push(`begins_with(#${attributeName}, :${attributeName})`)
+      } else {
+        KeyConditionExpression.push(`#${attributeName} ${condition.operator} :${attributeName}`)
+      }
+      
     })
     return {
       ExpressionAttributeNames,
