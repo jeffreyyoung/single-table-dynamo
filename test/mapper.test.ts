@@ -1,5 +1,9 @@
 import { Mapper } from './../src/mapper';
-
+type UserId = {
+  state: string;
+  country: string;
+  createdAt: string;
+}
 type User = {
   id: string;
   state: string;
@@ -20,17 +24,14 @@ const gsi1 =  {
     sortKey: 'sk2',
   };
 
-const mapper = new Mapper<User>({
+const mapper = new Mapper<UserId, User>({
   typeName: 'User',
-  indexes: [
-    {
-      // isPrimaryIndex: true,
-      // partitionKey: 'pk1',
-      // sortKey: 'sk1',
-      ...primaryIndex,
-      tag: 'countryByStateByCreatedAt',
-      fields: ['country', 'state', 'createdAt'],
-    },
+  primaryIndex: {
+    ...primaryIndex,
+    tag: 'countryByStateByCreatedAt',
+    fields: ['country', 'state', 'createdAt'],
+  },
+  secondaryIndexes: [
     {
       ...gsi1,
       tag: 'stateByCountryByYeehaw',
@@ -102,7 +103,7 @@ test('should format partial index properly', () => {
   expect(
     mapper.computeIndexFields(
       { country: 'USA', state: 'UT' },
-      mapper.args.indexes[0]
+      mapper.args.primaryIndex
     )
   ).toEqual({
     pk1: 'User#USA',
@@ -110,7 +111,7 @@ test('should format partial index properly', () => {
   });
 
   expect(
-    mapper.computeIndexFields({ country: 'USA' }, mapper.args.indexes[0])
+    mapper.computeIndexFields({ country: 'USA' }, mapper.args.primaryIndex)
   ).toEqual({
     pk1: 'User#USA',
     sk1: 'User'
@@ -120,6 +121,6 @@ test('should format partial index properly', () => {
 
 test('should throw when no partition key is provided', () => {
   expect(
-    () => mapper.computeIndexFields({ }, mapper.args.indexes[0])
+    () => mapper.computeIndexFields({ }, mapper.args.primaryIndex)
   ).toThrow();
 })

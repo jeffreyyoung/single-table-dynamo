@@ -7,27 +7,32 @@ export enum IndexType {
   Secondary = 'Secondary'
 }
 
-type PrimaryIndex = {
-  type?: IndexType.Primary
+export type PrimaryIndex<ID> = Index | (CompositeIndex<ID>)
+
+export type SecondaryIndex<Src> = NamedIndex | (NamedIndex & CompositeIndex<Src>);
+
+export function isSecondaryIndex<Src>(i: Index): i is SecondaryIndex<Src> {
+  let namedIndex = i as SecondaryIndex<Src>;
+  if (namedIndex.indexName) {
+    return true;
+  }
+
+  return false;
 }
 
-type SecondaryIndex = {
-  type?: IndexType.Secondary
-  indexName: string
-}
-
-export type IndexBase = (PrimaryIndex | SecondaryIndex) & {tag: string};
+type NamedIndex = Index & { indexName: string };
 
 export type Index = {
+  tag?: string
   partitionKey: string
   sortKey?: string
-} & IndexBase;
+};
+
+type CompositeKeyField<Src> = (KeysOfType<Src, string> | NonStringField<Src>);
 
 export type CompositeIndex<Src> = {
-  fields: (KeysOfType<Src, string> | NonStringField<Src>)[]
+  fields: CompositeKeyField<Src>[]
 } & Index;
-
-export type SingleTableIndex<Src> = Index | CompositeIndex<Src>
 
 interface NonStringField<Src> {
   toString: (s: Src) => string
@@ -35,34 +40,32 @@ interface NonStringField<Src> {
 }
 
 
-export type MapperArgs<Src> = {
+export type MapperArgs<Id, Src> = {
   typeName: string,
   indexFieldSeparator?: string,
-  indexes: (SingleTableIndex<Src>)[]
+  primaryIndex: PrimaryIndex<Id>,
+  secondaryIndexes?: SecondaryIndex<Src>[]
 }
 
 function isNonStringField<T>(thing: any): thing is NonStringField<T> {
   return thing?.fields && thing?.toString;
 }
 
-export function isPrimaryIndex(thing: any): thing is PrimaryIndex {
-  //if it doesnt have a indexName, we assume it's the primary
-  return !Boolean((thing as SecondaryIndex).indexName);
-}
-
-
 /**
  * The mapper is what has the responsibility of decorating
  * a 
  * @param args 
  */
-export class Mapper<Src> {
-  args: MapperArgs<Src>
+export class Mapper<Id, Src> {
+  args: MapperArgs<Id, Src>
 
-  constructor(args: MapperArgs<Src>) {
+  constructor(args: MapperArgs<Id, Src>) {
     this.args = args;
   }
 
+  indexes() {
+    return [this.args.primaryIndex, ...(this.args.secondaryIndexes || [])];
+  }
   /**
    * Takes an object to be saved to ddb,
    * and adds any computed index fields to it
@@ -70,13 +73,14 @@ export class Mapper<Src> {
    */
   decorateWithIndexedFields(src: Src) {
     const res = {...src};
-    this.args.indexes.forEach(i => {
+    
+    this.indexes().forEach((i: Index) => {
       Object.assign(res, this.computeIndexFields(src, i));
     });
     return res;
   }
 
-  stringifyField(src: Partial<Src>, f: CompositeIndex<Src>['fields'][number]) {
+  stringifyField(src: Partial<Src>, f: CompositeKeyField<Src>) {
     if (isNonStringField(f)) {
       return f.toString(src);
     } else {
@@ -84,7 +88,7 @@ export class Mapper<Src> {
     }
   }
 
-  _isCompositeIndex(index: MapperArgs<Src>['indexes'][number]): index is CompositeIndex<Src> {
+  _isCompositeIndex(index: Index): index is CompositeIndex<Src> {
     return 'fields' in index;
   }
 
@@ -116,7 +120,7 @@ export class Mapper<Src> {
    * @param typeName 
    * @param index 
    */
-  computeIndexFields(src: Partial<Src>, index: MapperArgs<Src>['indexes'][number]) {
+  computeIndexFields(src: Partial<Src>, index: Index) {
     if (this._isCompositeIndex(index)) {
       if (index.fields.length < 1) {
         throw new Error(`A partition key field must be provided:\n\nprovided fields: ${JSON.stringify(src,null,1)}\nindex: ${JSON.stringify(index,null,1)}`)

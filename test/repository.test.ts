@@ -24,14 +24,12 @@ beforeEach(() => {
     {
       tableName: 'meow',
       typeName: 'User',
-      indexes: [
-        {
-          tag: 'primary',
-          partitionKey: 'yay',
-          sortKey: 'meow',
-          fields: ['id'],
-        },
-      ],
+      primaryIndex:{
+        tag: 'primary',
+        partitionKey: 'yay',
+        sortKey: 'meow',
+        fields: ['id'],
+      },
     },
     globals['stub'] as any
   );

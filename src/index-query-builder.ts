@@ -1,27 +1,31 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { isPrimaryIndex, Mapper, SingleTableIndex } from "./mapper";
+import { Mapper, Index, isSecondaryIndex } from "./mapper";
 import { QueryBuilder } from './query-builder';
 
-export function getCursorEncoder<Src>(index: SingleTableIndex<Src>, primaryIndex: SingleTableIndex<Src>, mapper: Mapper<Src>) {
+export function getCursorEncoder<Id, Src>(args: {
+  primaryIndex: Index,
+  secondaryIndex: Index,
+  mapper: Mapper<Id, Src>
+}) {
   return (src: Src) => {
     return JSON.stringify({
-      ...mapper.computeIndexFields(src, index),
-      ...mapper.computeIndexFields(src, primaryIndex)
+      ...args.mapper.computeIndexFields(src, args.primaryIndex),
+      ...args.secondaryIndex && args.mapper.computeIndexFields(src, args.secondaryIndex)
     });
   }
 }
 
-export class IndexQueryBuilder<Src> {
-  mapper: Mapper<Src>
+export class IndexQueryBuilder<Id, Src> {
+  mapper: Mapper<Id, Src>
   builder: QueryBuilder
-  index: SingleTableIndex<Src>
+  index: Index
   ddb?: DocumentClient;
   encodeCursor: (src: Src) => string;
 
   constructor(
     tableName: string,
-    index: SingleTableIndex<Src>,
-    mapper: Mapper<Src>,
+    index: Index,
+    mapper: Mapper<Id, Src>,
     ddb?: DocumentClient,
     encodeCursor?: (src: Src) => string,
   ) {
@@ -35,7 +39,8 @@ export class IndexQueryBuilder<Src> {
 
     const defaultEncoder = (src: Src) => JSON.stringify(this.mapper.computeIndexFields(src, index));
     this.encodeCursor = encodeCursor || defaultEncoder;
-    if (!isPrimaryIndex(index)) {
+
+    if (isSecondaryIndex(index)) {
       this.builder.index(index.indexName);
     }
   }

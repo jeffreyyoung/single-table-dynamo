@@ -1,20 +1,20 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder';
-import { MapperArgs, Mapper, isPrimaryIndex } from './mapper';
+import { MapperArgs, Mapper } from './mapper';
 import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
 
-type RepoArgs<Src> = {
+type RepoArgs<ID, Src> = {
   tableName: string;
-} & MapperArgs<Src>;
+} & MapperArgs<ID, Src>;
 
 export class Repository<ID, Src> {
-  args: RepoArgs<Src>;
-  mapper: Mapper<Src>;
+  args: RepoArgs<ID, Src>;
+  mapper: Mapper<ID, Src>;
   ddb: DocumentClient;
 
-  constructor(args: RepoArgs<Src>, c: DocumentClient) {
+  constructor(args: RepoArgs<ID, Src>, c: DocumentClient) {
     this.args = args;
-    this.mapper = new Mapper<Src>(args);
+    this.mapper = new Mapper<ID, Src>(args);
     this.ddb = c;
   }
 
@@ -29,7 +29,7 @@ export class Repository<ID, Src> {
   }
 
   getKey(id: ID) {
-    return this.mapper.computeIndexFields(id, this._getPrimaryIndex());
+    return this.mapper.computeIndexFields(id, this.args.primaryIndex);
   }
 
   async updateUnsafe(id: ID, src: Partial<Src>) {
@@ -72,30 +72,17 @@ export class Repository<ID, Src> {
     return builder;
   }
   getCursorEncoder(indexTag: string) {
-    return getCursorEncoder(
-      this._getIndexByTag(indexTag),
-      this._getPrimaryIndex(),
-      this.mapper
-    );
+    return getCursorEncoder({
+      secondaryIndex: this._getIndexByTag(indexTag),
+      primaryIndex: this.args.primaryIndex,
+      mapper: this.mapper
+    });
   }
   _getIndexByTag(tag: string) {
-    const index = this.args.indexes.find(i => i.tag === tag);
+    const index = this.mapper.indexes().find(i => i.tag === tag);
     if (!index) {
       throw new Error(
         `No index exists for that tag, tag: ${tag}, args: ${JSON.stringify(
-          this.args,
-          null,
-          3
-        )}`
-      );
-    }
-    return index;
-  }
-  _getPrimaryIndex() {
-    const index = this.args.indexes.find(i => isPrimaryIndex(i));
-    if (!index) {
-      throw new Error(
-        `No primary index has been defined, args: ${JSON.stringify(
           this.args,
           null,
           3

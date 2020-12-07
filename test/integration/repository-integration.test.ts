@@ -18,13 +18,13 @@ beforeEach(() => {
     {
       tableName: 'table1',
       typeName: 'User',
-      indexes: [
-        {
-          tag: 'primary',
-          partitionKey: 'pk1',
-          sortKey: 'sk1',
-          fields: ['id'],
-        },
+      primaryIndex: {
+        tag: 'primary',
+        partitionKey: 'pk1',
+        sortKey: 'sk1',
+        fields: ['id'],
+      },
+      secondaryIndexes: [
         {
           tag: 'byStateByCityByCountry',
           partitionKey: 'pk2',
