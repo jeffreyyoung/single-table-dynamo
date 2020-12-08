@@ -122,6 +122,9 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
           }
         `);
 
+  await expect(() => repo.updateUnsafe({id: 'NON_EXISTANT_ID'}, { followers: ['YAY']}))
+    .rejects;
+
   await expect(
     repo
       .query('byStateByCityByCountry')
