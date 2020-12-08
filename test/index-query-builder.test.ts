@@ -1,7 +1,11 @@
 import { IndexQueryBuilder } from '../src/index-query-builder';
-import { Mapper } from './../src/mapper';
-
-type User = {
+import { Mapper, Index } from './../src/mapper';
+type UserId = {
+  state: string;
+  country: string;
+  createdAt: string;
+}
+type User = UserId & {
   id: string;
   state: string;
   country: string;
@@ -10,27 +14,15 @@ type User = {
   count: number;
 };
 
-// const indexes = [
-//   {
-//     partitionKey: 'pk1',
-//     sortKey: 'sk1',
-//   },
-//   {
-//     indexName: 'third',
-//     partitionKey: 'pk2',
-//     sortKey: 'sk2',
-//   },
-// ];
-
-const mapper = new Mapper<User>({
+const mapper = new Mapper<UserId, User>({
   typeName: 'User',
-  indexes: [
-    {
-      partitionKey: 'pk1',
-      sortKey: 'sk1',
-      tag: 'countryByStateByCreatedAt',
-      fields: ['country', 'state', 'createdAt'],
-    },
+  primaryIndex: {
+    partitionKey: 'pk1',
+    sortKey: 'sk1',
+    tag: 'countryByStateByCreatedAt',
+    fields: ['country', 'state', 'createdAt'],
+  },
+  secondaryIndexes: [
     {
       indexName: 'third',
       partitionKey: 'pk2',
@@ -51,12 +43,12 @@ const mapper = new Mapper<User>({
   ],
 });
 
-const getBuilder = (which: number) =>
-  new IndexQueryBuilder<User>('yeehaw', mapper.args.indexes[which], mapper);
+const getBuilder = (index: Index) =>
+  new IndexQueryBuilder<UserId, User>('yeehaw', index, mapper);
 
 test('should build query with no sortkey', () => {
   expect(
-    getBuilder(0)
+    getBuilder(mapper.args.primaryIndex)
       .where({
         country: 'USA',
       })
@@ -81,7 +73,7 @@ test('should build query with no sortkey', () => {
 
 test('should build query with extra fields', () => {
   expect(
-    getBuilder(0)
+    getBuilder(mapper.args.primaryIndex)
       .where({
         country: 'USA',
         createdAt: '2010-10-21',
@@ -107,7 +99,7 @@ test('should build query with extra fields', () => {
 
 test('should build query with sortkey', () => {
   expect(
-    getBuilder(0)
+    getBuilder(mapper.args.primaryIndex)
       .where({
         country: 'USA',
         state: 'UT',
@@ -133,7 +125,7 @@ test('should build query with sortkey', () => {
 
 test('should throw with no partition key', () => {
   expect(() =>
-    getBuilder(0)
+    getBuilder(mapper.args.primaryIndex)
       .where({
         state: 'UT',
       })
@@ -144,7 +136,7 @@ test('should throw with no partition key', () => {
 
 test('should build non primary index', () => {
   expect(
-    getBuilder(1)
+    getBuilder(mapper.args.secondaryIndexes![0]!)
       .where({
         state: 'WA',
       })
