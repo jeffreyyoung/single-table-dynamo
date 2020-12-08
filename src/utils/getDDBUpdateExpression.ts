@@ -1,23 +1,23 @@
-export function getDDBUpdateExpression<T>(item: T) {
-  const ExpressionAttributeValues = {};
-  const ExpressionAttributeNames = {};
+import { AttributeRegistry } from './AttributeRegistry';
 
-  const UpdateExpression = `set ${Object.keys(item).map((key, i) => {
 
-    const attribute= key;
-    const attributeName= `#attribute_${i}`;
-    const attributeValue= item[key];
-    const attributeValueName= `:attribute_${i}`;
+export function getDDBUpdateExpression<T>(item: T, mustExistFields: string[]) {
+  const registry = new AttributeRegistry();
 
-    ExpressionAttributeNames[attributeName] = attribute;
-    ExpressionAttributeValues[attributeValueName] = attributeValue;
-
-    return `${attributeName} = ${attributeValueName}`;
+  const UpdateExpression = `set ${Object.keys(item).map((key) => {
+    return `${registry.key(key)} = ${registry.value(item[key])}`;
   }).join(', ')}`;
+  let ConditionExpression = undefined;
+
+  if (mustExistFields.length > 0) {
+    ConditionExpression = mustExistFields.map(attribute => {
+      return `attribute_exists(${registry.key(attribute)})`;
+    }).join(' and ')
+  }
 
   return {
-    ExpressionAttributeValues,
-    ExpressionAttributeNames,
-    UpdateExpression
+    ...registry.get(),
+    UpdateExpression,
+    ConditionExpression
   }
 }

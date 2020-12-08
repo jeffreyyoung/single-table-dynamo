@@ -32,13 +32,13 @@ export class Repository<ID, Src> {
     return this.mapper.computeIndexFields(id, this.args.primaryIndex);
   }
 
-  async updateUnsafe(id: ID, src: Partial<Src>) {
+  async updateUnsafe(id: ID, src: Partial<Src>, options: {upsert: boolean, returnValues?: 'ALL_NEW' | 'ALL_OLD'} = { upsert: false}) {
     
     const res = await this.ddb.update({
       TableName: this.args.tableName,
       Key: this.getKey(id),
-      ...getDDBUpdateExpression(src),
-      ReturnValues: 'ALL_NEW',
+      ...getDDBUpdateExpression(src, options.upsert ? [] : Object.keys(this.getKey(id))),
+      ReturnValues: options?.returnValues ?? 'ALL_NEW',
     }).promise();
     return res.Attributes as Src | undefined;
   }

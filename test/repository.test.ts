@@ -24,7 +24,7 @@ beforeEach(() => {
     {
       tableName: 'meow',
       typeName: 'User',
-      primaryIndex:{
+      primaryIndex: {
         tag: 'primary',
         partitionKey: 'yay',
         sortKey: 'meow',
@@ -36,7 +36,7 @@ beforeEach(() => {
 });
 
 test('updateUnsafe should call document client with correct params', () => {
-  globals['stub'].update.returns({promise: () => ({})} as any);
+  globals['stub'].update.returns({ promise: () => ({}) } as any);
   globals['repo'].updateUnsafe(
     { id: 'meow' },
     {
@@ -49,13 +49,16 @@ test('updateUnsafe should call document client with correct params', () => {
   expect(globals.stub.update.getCall(0)?.args).toMatchInlineSnapshot(`
     Array [
       Object {
+        "ConditionExpression": "attribute_exists(#attr2) and attribute_exists(#attr3)",
         "ExpressionAttributeNames": Object {
-          "#attribute_0": "city",
-          "#attribute_1": "state",
+          "#attr0": "city",
+          "#attr1": "state",
+          "#attr2": "yay",
+          "#attr3": "meow",
         },
         "ExpressionAttributeValues": Object {
-          ":attribute_0": "jimmy",
-          ":attribute_1": "hendricks",
+          ":value0": "jimmy",
+          ":value1": "hendricks",
         },
         "Key": Object {
           "meow": "User",
@@ -63,7 +66,7 @@ test('updateUnsafe should call document client with correct params', () => {
         },
         "ReturnValues": "ALL_NEW",
         "TableName": "meow",
-        "UpdateExpression": "set #attribute_0 = :attribute_0, #attribute_1 = :attribute_1",
+        "UpdateExpression": "set #attr0 = :value0, #attr1 = :value1",
       },
     ]
   `);

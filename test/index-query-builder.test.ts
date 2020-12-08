@@ -60,11 +60,11 @@ test('should build query with no sortkey', () => {
       "#attr1": "sk1",
     },
     ExpressionAttributeValues: {
-      ':attr0': 'User#USA',
-      ":attr1": "User",
+      ':value0': 'User#USA',
+      ":value1": "User",
     },
     Limit: 25,
-    KeyConditionExpression: "#attr0 = :attr0 and begins_with(#attr1, :attr1)",
+    KeyConditionExpression: "#attr0 = :value0 and begins_with(#attr1, :value1)",
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
@@ -83,14 +83,14 @@ test('should build query with extra fields', () => {
   ).toEqual({
     ExpressionAttributeNames: {
       '#attr0': 'pk1',
-      "#attr1": "sk1",
+      '#attr1': 'sk1',
     },
     ExpressionAttributeValues: {
-      ':attr0': 'User#USA',
-      ":attr1": "User",
+      ':value0': 'User#USA',
+      ':value1': 'User',
     },
     Limit: 25,
-    "KeyConditionExpression": "#attr0 = :attr0 and begins_with(#attr1, :attr1)",
+    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
@@ -112,10 +112,10 @@ test('should build query with sortkey', () => {
       '#attr1': 'sk1',
     },
     ExpressionAttributeValues: {
-      ':attr0': 'User#USA',
-      ':attr1': 'User#UT',
+      ':value0': 'User#USA',
+      ':value1': 'User#UT',
     },
-    KeyConditionExpression: '#attr0 = :attr0 and begins_with(#attr1, :attr1)',
+    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     ScanIndexForeward: false,
     Select: 'ALL_ATTRIBUTES',
     Limit: 25,
@@ -147,10 +147,10 @@ test('should build non primary index', () => {
       '#attr1': 'sk2'
     },
     ExpressionAttributeValues: {
-      ':attr0': 'User#WA',
-      ':attr1': 'User'
+      ':value0': 'User#WA',
+      ':value1': 'User'
     },
-    "KeyConditionExpression": "#attr0 = :attr0 and begins_with(#attr1, :attr1)",
+    "KeyConditionExpression": "#attr0 = :value0 and begins_with(#attr1, :value1)",
     IndexName: "third",
     Limit: 25,
     ScanIndexForeward: false,

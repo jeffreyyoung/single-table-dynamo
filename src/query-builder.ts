@@ -1,3 +1,5 @@
+import { AttributeRegistry } from './utils/AttributeRegistry'
+
 type Operator = "<" | "<=" | "<>" | "=" | ">" | ">=" | "BETWEEN" | "IN" | "BEGINS_WITH"
 type Where = {
   fieldName: string
@@ -78,24 +80,19 @@ export class QueryBuilder {
   }
 
   _buildConditionExpression() {
-    const ExpressionAttributeNames = {};
+    const registry = new AttributeRegistry();
     const KeyConditionExpression: string[] = [];
-    const ExpressionAttributeValues = {};
 
-    this.data.keyConditions.forEach((condition, i) => {
-      const attributeName = 'attr'+i;
-      ExpressionAttributeNames[`#${attributeName}`] = condition.fieldName;
-      ExpressionAttributeValues[`:${attributeName}`] = condition.value;
+    this.data.keyConditions.forEach((condition) => {
       if (condition.operator === 'BEGINS_WITH') {
-        KeyConditionExpression.push(`begins_with(#${attributeName}, :${attributeName})`)
+        KeyConditionExpression.push(`begins_with(${registry.key(condition.fieldName)}, ${registry.value(condition.value)})`)
       } else {
-        KeyConditionExpression.push(`#${attributeName} ${condition.operator} :${attributeName}`)
+        KeyConditionExpression.push(`${registry.key(condition.fieldName)} ${condition.operator} ${registry.value(condition.value)}`)
       }
       
     })
     return {
-      ExpressionAttributeNames,
-      ExpressionAttributeValues,
+      ...registry.get(),
       KeyConditionExpression: KeyConditionExpression.join(' and ')
     }
   }
