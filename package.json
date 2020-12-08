@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "6.2.8",
+  "version": "6.2.10",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -15,7 +15,7 @@
     "build": "tsdx build",
     "test": "tsdx test",
     "lint": "tsdx lint",
-    "publish": "yarn build && npm publish"
+    "deploy": "yarn build && yarn publish"
   },
   "prettier": {
     "printWidth": 80,
