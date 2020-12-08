@@ -25,7 +25,7 @@ export class Repository<ID, Src> {
         Key: this.getKey(id),
       })
       .promise();
-    return res.Item as Src | null;
+    return res.Item as Src | undefined;
   }
 
   getKey(id: ID) {
@@ -40,7 +40,7 @@ export class Repository<ID, Src> {
       ...getDDBUpdateExpression(src),
       ReturnValues: 'ALL_NEW',
     }).promise();
-    return res.Attributes as Src | null;
+    return res.Attributes as Src | undefined;
   }
 
   async put(src: Src) {
