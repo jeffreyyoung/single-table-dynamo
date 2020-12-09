@@ -1,3 +1,4 @@
+export * from './utils/AttributeRegistry';
 export * from './index-query-builder';
 export * from './mapper';
 export * from './query-builder';
