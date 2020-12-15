@@ -53,6 +53,7 @@ export class Repository<ID, Src> {
 
     return src;
   }
+
   async delete(id: ID) {
     await this.ddb
       .delete({
@@ -62,6 +63,7 @@ export class Repository<ID, Src> {
       .promise();
     return true;
   }
+
   query(indexTag: string) {
     const builder = new IndexQueryBuilder(
       this.args.tableName,
@@ -71,6 +73,7 @@ export class Repository<ID, Src> {
     );
     return builder;
   }
+
   getCursorEncoder(indexTag: string) {
     return getCursorEncoder({
       secondaryIndex: this._getIndexByTag(indexTag),
@@ -78,6 +81,7 @@ export class Repository<ID, Src> {
       mapper: this.mapper
     });
   }
+
   _getIndexByTag(tag: string) {
     const index = this.mapper.indexes().find(i => i.tag === tag);
     if (!index) {
@@ -91,4 +95,5 @@ export class Repository<ID, Src> {
     }
     return index;
   }
+
 }

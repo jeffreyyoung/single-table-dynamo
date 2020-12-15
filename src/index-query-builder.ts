@@ -27,7 +27,6 @@ export class IndexQueryBuilder<Id, Src> {
     index: Index,
     mapper: Mapper<Id, Src>,
     ddb?: DocumentClient,
-    encodeCursor?: (src: Src) => string,
   ) {
     
     this.mapper = mapper;
@@ -37,8 +36,10 @@ export class IndexQueryBuilder<Id, Src> {
     this.builder
       .table(tableName)
 
-    const defaultEncoder = (src: Src) => JSON.stringify(this.mapper.computeIndexFields(src, index));
-    this.encodeCursor = encodeCursor || defaultEncoder;
+    this.encodeCursor = (src: Src) => JSON.stringify({
+      ...this.mapper.computeIndexFields(src, index),
+      ...this.mapper.computeIndexFields(src, this.mapper.args.primaryIndex)
+    });
 
     if (isSecondaryIndex(index)) {
       this.builder.index(index.indexName);
@@ -55,7 +56,7 @@ export class IndexQueryBuilder<Id, Src> {
     return this;
   }
 
-  cursor(str: 'string') {
+  cursor(str: string) {
     this.builder.cursor(JSON.parse(str));
     return this;
   }
