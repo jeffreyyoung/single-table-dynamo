@@ -36,10 +36,11 @@ export class IndexQueryBuilder<Id, Src> {
     this.builder
       .table(tableName)
 
-    this.encodeCursor = (src: Src) => JSON.stringify({
-      ...this.mapper.computeIndexFields(src, index),
-      ...this.mapper.computeIndexFields(src, this.mapper.args.primaryIndex)
-    });
+    this.encodeCursor = getCursorEncoder({
+      secondaryIndex:index,
+      primaryIndex: mapper.args.primaryIndex,
+      mapper
+    })
 
     if (isSecondaryIndex(index)) {
       this.builder.index(index.indexName);
