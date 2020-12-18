@@ -1,13 +1,44 @@
 import { BatchWriteItemOutput, DocumentClient } from 'aws-sdk/clients/dynamodb'
 
-export type WriteRequest = {
+export type WriteRequest = PutRequest | DeleteRequest
+
+export type PutRequest<T = any> = {
   TableName: string
-  Operation: DocumentClient.BatchWriteItemInput["RequestItems"][string][number]
+  Operation: {
+    PutRequest: {
+      Item: T
+    }
+  }
+}
+
+export type DeleteRequest<T = any> = {
+  TableName: string
+  Operation: {
+    DeleteRequest: {
+      Key: T
+    }
+  }
 }
 
 const BATCH_WRITE_REQUEST_LIMIT = 25;
 
-export async function batchWrite(ddb: DocumentClient, requestsIn: WriteRequest[]) {
+
+
+// https://stackoverflow.com/questions/51674820/generics-for-arrays-in-typescript-3-0
+export async function batchPut<Requests extends Array<PutRequest>>(
+  ddb: DocumentClient,
+  requests: Requests
+): Promise<{ [K in keyof Requests]: Requests[K] extends PutRequest<infer R> ? R : Requests[K] }> {
+
+  await batchWrite(ddb, requests);
+
+  //@ts-ignore
+  return requests.map(r => r.Operation.PutRequest.Item);
+}
+
+export async function batchWrite<Requests extends Array<PutRequest | DeleteRequest>>(ddb: DocumentClient, requestsIn: Requests): Promise<{
+  [K in keyof Requests]: Requests[K] extends PutRequest<infer R> ? R : true
+}> {
   
   let unprocessed = requestsIn.slice(0);
 
@@ -20,9 +51,21 @@ export async function batchWrite(ddb: DocumentClient, requestsIn: WriteRequest[]
     unprocessed = unprocessed.concat(_unprocessedItemsToRequests(res.UnprocessedItems));
   }
 
-  return requestsIn;
+  //@ts-ignore
+  return requestsIn.map(r => {
+    if (isPutRequest(r)) {
+      return r.Operation.PutRequest.Item;
+    } else {
+      return true;
+    }
+  });
 }
 
+
+function isPutRequest(r: WriteRequest): r is PutRequest {
+  let temp = r as PutRequest;
+  return Boolean(temp?.Operation?.PutRequest?.Item);
+}
 
 function _convertRequestsToWriteInput(requests: WriteRequest[]) {
   return requests.reduce<DocumentClient.BatchWriteItemInput>((prev, op) => {
@@ -42,9 +85,9 @@ function _unprocessedItemsToRequests(items: BatchWriteItemOutput["UnprocessedIte
   const requests: WriteRequest[] = [];
   if (items) {
     Object.keys(items).forEach(TableName => {
-      items[TableName].forEach(Operation => requests.push({
+      items[TableName].forEach((Operation) => requests.push({
         TableName,
-        Operation
+        Operation: Operation as any
       }))
     })
 

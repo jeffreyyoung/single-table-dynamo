@@ -18,7 +18,7 @@ export class Repository<ID, Src> {
     this.args = args;
     this.mapper = new Mapper<ID, Src>(args);
     this.ddb = c;
-    this.batch = new BatchArgsHandler(args.tableName, this.mapper);
+    this.batch = new BatchArgsHandler<ID, Src>(args.tableName, this.mapper);
   }
 
   async get(id: ID) {

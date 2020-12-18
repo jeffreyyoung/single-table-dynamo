@@ -1,5 +1,5 @@
 import { GetRequest } from 'batch-get';
-import { WriteRequest } from './batch-write';
+import { DeleteRequest, PutRequest } from './batch-write';
 import { Mapper } from './mapper';
 
 export class BatchArgsHandler<Id, T> {
@@ -11,14 +11,7 @@ export class BatchArgsHandler<Id, T> {
     this.mapper = mapper;
   }
 
-  get(item: Id): GetRequest {
-    return {
-      TableName: this.tableName,
-      Key: this.mapper.getKey(item),
-    }
-  }  
-
-  put(item: T): WriteRequest {
+  put(item: T): PutRequest<T> {
     return {
       TableName: this.tableName,
       Operation: {
@@ -29,7 +22,14 @@ export class BatchArgsHandler<Id, T> {
     }
   }
 
-  delete(key: Id): WriteRequest {
+  get(item: Id): GetRequest<T> {
+    return {
+      TableName: this.tableName,
+      Key: this.mapper.getKey(item),
+    }
+  }
+
+  delete(key: Id): DeleteRequest {
     return {
       TableName: this.tableName,
       Operation: {

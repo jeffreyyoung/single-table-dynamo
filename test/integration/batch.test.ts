@@ -10,10 +10,39 @@ type ThingId = {
 type Thing = ThingId & {
   name: string
 };
-let repo: Repository<ThingId, Thing>;
+let thingRepo: Repository<ThingId, Thing>;
 
+type PersonId = {
+  personId: string
+}
+type Person = PersonId & {
+  name: string
+}
+let personRepo: Repository<PersonId, Person>;
 beforeEach(() => {
-  repo = new Repository<ThingId, Thing>(
+  const ddb = new DocumentClient({
+    ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
+      endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
+      sslEnabled: false,
+      region: 'local',
+    }),
+  });
+  personRepo = new Repository<PersonId, Person>(
+    {
+      tableName: 'table1',
+      typeName: 'Person',
+      primaryIndex: {
+        tag: 'primary',
+        partitionKey: 'pk1',
+        sortKey: 'sk1',
+        fields: ['personId'],
+      },
+      secondaryIndexes: [],
+    },
+    ddb
+  );
+
+  thingRepo = new Repository<ThingId, Thing>(
     {
       tableName: 'table1',
       typeName: 'Thing',
@@ -25,14 +54,17 @@ beforeEach(() => {
       },
       secondaryIndexes: [],
     },
-    new DocumentClient({
-      ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-        endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-        sslEnabled: false,
-        region: 'local',
-      }),
-    })
+    ddb
   );
+});
+
+test('types should infer correctly', async () => {
+  await expect(
+    batchGet(personRepo.ddb, [
+      personRepo.batch.get({personId: 'meow'}),
+      thingRepo.batch.get({id: 'nooo'})
+    ])
+  ).resolves.toEqual([undefined, undefined]);
 });
 
 test('batch write should work with one table', async () => {
@@ -40,20 +72,19 @@ test('batch write should work with one table', async () => {
   
   await expect(
     batchWrite(
-      repo.ddb,
-      ids.map(id => repo.batch.put({id, name: 'meow'}))
+      thingRepo.ddb,
+      [
+        ...ids.map(id => thingRepo.batch.put({id, name: 'meow'})),
+        ...ids.map(id => personRepo.batch.put({personId: id, name: 'yo'}))
+      ]
     )
-  ).resolves.toHaveLength(35)
-  
+  ).resolves.toHaveLength(70)
 
-  await Promise.all(ids.map(async (id) => {
-    return expect(repo.get({id})).resolves.toMatchObject({
-      id,
-      name: 'meow'
-    })
-  }))
-
-  await expect(batchGet(repo.ddb, ids.map(id => repo.batch.get({id})))).resolves.toMatchObject(
-    ids.map(id => ({id, name: 'meow'}))
-  )
+  await expect(batchGet(thingRepo.ddb, [
+    ...ids.map(id => thingRepo.batch.get({id})),
+    ...ids.map(id => personRepo.batch.get({personId: id}))
+  ])).resolves.toMatchObject([
+    ...ids.map(id => ({id, name: 'meow'})),
+    ...ids.map(id => ({personId: id, name: 'yo'}))
+  ])
 })

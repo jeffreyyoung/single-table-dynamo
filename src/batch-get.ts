@@ -1,13 +1,16 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 
-export type GetRequest = {
+export type GetRequest<ReturnType = any> = {
   TableName: string
   Key: any
+  _res?: ReturnType
 }
 
 const BATCH_GET_REQUEST_LIMIT = 100;
 
-export async function batchGet<T = any>(ddb: DocumentClient, requestsIn: GetRequest[]) {
+export async function batchGet<Requests extends readonly GetRequest[]>(ddb: DocumentClient, requestsIn: Requests): Promise<
+{ [K in keyof Requests]: Requests[K] extends GetRequest<infer R> ? R : undefined }
+> {
   //Here we register the primary partition and sort key fields for each table
   const tableToKeyFields: Record<string, string[]> = {};
 
@@ -39,7 +42,8 @@ export async function batchGet<T = any>(ddb: DocumentClient, requestsIn: GetRequ
     unprocessed = unprocessed.concat(_unprocessedItemsToRequests(res.UnprocessedKeys));
   }
 
-  return stringKeys.map<T>(r => stringKeyToResult[r]);
+  //@ts-expect-error
+  return stringKeys.map(r => stringKeyToResult[r]);
 }
 
 function getKeyFromItem(keyFields: string[], item: any) {
