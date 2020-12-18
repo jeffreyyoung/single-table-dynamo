@@ -33,8 +33,7 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
     this.index = index;
     this.ddb = ddb;
     this.builder = new QueryBuilder();
-    this.builder
-      .table(tableName)
+    this.builder = this.builder.table(tableName);
 
     this.encodeCursor = getCursorEncoder({
       secondaryIndex:index,
@@ -43,22 +42,22 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
     })
 
     if (isSecondaryIndex(index)) {
-      this.builder.index(index.indexName);
+      this.builder = this.builder.index(index.indexName);
     }
   }
 
   limit(t: number) {
-    this.builder.limit(t);
+    this.builder = this.builder.limit(t);
     return this;
   }
 
   sort(direction: 'asc' | 'desc') {
-    this.builder.sort(direction);
+    this.builder = this.builder.sort(direction);
     return this;
   }
 
   cursor(str: string) {
-    this.builder.cursor(JSON.parse(str));
+    this.builder = this.builder.cursor(JSON.parse(str));
     return this;
   }
 
@@ -78,11 +77,11 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
   where(src: Partial<Src>) {
     const indexes = this.mapper.computeIndexFields(src, this.index) as any;
     if (indexes[this.index.partitionKey]) {
-      this.builder.where(this.index.partitionKey as any, '=', indexes[this.index.partitionKey])
+      this.builder = this.builder.where(this.index.partitionKey as any, '=', indexes[this.index.partitionKey])
     }
 
     if (indexes[this.index.sortKey!]) {
-      this.builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey!])
+      this.builder = this.builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey!])
     }
 
     return this;

@@ -25,46 +25,48 @@ export type QueryData = {
 
 export class QueryBuilder {
   data: QueryData
-  constructor() {
-    this.data = {
+  constructor(data?: QueryData) {
+    this.data = data || {
       keyConditions: [],
       sortOrder: 'desc',
       limit: 25
     }
   }
 
-  table(tabeName: string) {
-    this.data.tableName = tabeName;
-    return this;
+  cloneWith(data: Partial<QueryData>) {
+    return new QueryBuilder({
+      ...this.data,
+      ...data
+    })
+  }
+
+  table(tableName: string) {
+    return this.cloneWith({tableName})
   }
 
   index(indexName: string) {
-    this.data.indexName = indexName;
-    return this;
+    return this.cloneWith({indexName});
   }
 
   sort(direction: 'asc' | 'desc') {
-    this.data.sortOrder = direction;
-    return this;
+    return this.cloneWith({sortOrder: direction});
   }
 
-  limit(l: number) {
-    this.data.limit = l;
-    return this;
+  limit(limit: number) {
+    return this.cloneWith({limit})
   }
 
-  cursor(l: object) {
-    this.data.cursor = l;
-    return this;
+  cursor(cursor: object) {
+    return this.cloneWith({cursor})
   }
 
   where(key: string, op: Operator, value: string | number) {
-    this.data.keyConditions.push({
+    const keyConditions = [...this.data.keyConditions, {
       fieldName: key,
       operator: op,
       value
-    });
-    return this;
+    }]
+    return this.cloneWith({keyConditions})
   }
 
   build() {
