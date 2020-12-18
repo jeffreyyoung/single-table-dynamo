@@ -32,11 +32,12 @@ const docClient = new DocumentClient();
 const repo = new Repository<UserId,User>({
   typeName: 'User',
   tableName: 'GenericTable',
-  indexes: [{
+  primaryIndex: {
     tag: 'primaryIndex',
     fields: ['id'],
     ...TableConfig.primaryIndex,
-  }, {
+  },
+  secondaryIndexes: [{
     tag: 'byCountryByStateByCity',
     fields: ['country', 'state', 'city'],
     ...TableConfig.secondaryIndexes[0],

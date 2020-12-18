@@ -1,4 +1,5 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { BatchArgsHandler } from './batch-args-handler';
 import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder';
 import { MapperArgs, Mapper } from './mapper';
 import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
@@ -11,11 +12,13 @@ export class Repository<ID, Src> {
   args: RepoArgs<ID, Src>;
   mapper: Mapper<ID, Src>;
   ddb: DocumentClient;
+  batch: BatchArgsHandler<ID, Src>
 
   constructor(args: RepoArgs<ID, Src>, c: DocumentClient) {
     this.args = args;
     this.mapper = new Mapper<ID, Src>(args);
     this.ddb = c;
+    this.batch = new BatchArgsHandler(args.tableName, this.mapper);
   }
 
   async get(id: ID) {
@@ -29,7 +32,7 @@ export class Repository<ID, Src> {
   }
 
   getKey(id: ID) {
-    return this.mapper.computeIndexFields(id, this.args.primaryIndex);
+    return this.mapper.getKey(id);
   }
 
   async updateUnsafe(id: ID, src: Partial<Src>, options: {upsert: boolean, returnValues?: 'ALL_NEW' | 'ALL_OLD'} = { upsert: false}) {
@@ -44,6 +47,7 @@ export class Repository<ID, Src> {
   }
 
   async put(src: Src) {
+    
     await this.ddb
       .put({
         TableName: this.args.tableName,

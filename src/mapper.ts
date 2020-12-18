@@ -63,6 +63,10 @@ export class Mapper<Id, Src> {
     this.args = args;
   }
 
+  getKey(id: Id) {
+    return this.computeIndexFields(id, this.args.primaryIndex);
+  }
+
   indexes() {
     return [this.args.primaryIndex, ...(this.args.secondaryIndexes || [])];
   }
@@ -73,7 +77,7 @@ export class Mapper<Id, Src> {
    */
   decorateWithIndexedFields(src: Src) {
     const res = {...src};
-    
+
     this.indexes().forEach((i: Index) => {
       Object.assign(res, this.computeIndexFields(src, i));
     });
