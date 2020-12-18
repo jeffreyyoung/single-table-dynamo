@@ -69,12 +69,12 @@ export class Repository<ID, Src, IndexTagNames = string> {
   }
 
   query(indexTag: IndexTagNames) {
-    const builder = new IndexQueryBuilder(
-      this.args.tableName,
-      this._getIndexByTag(indexTag),
-      this.mapper,
-      this.ddb
-    );
+    const builder = new IndexQueryBuilder({
+      tableName: this.args.tableName,
+      index: this._getIndexByTag(indexTag),
+      mapper: this.mapper,
+      ddb: this.ddb
+    });
     return builder;
   }
 

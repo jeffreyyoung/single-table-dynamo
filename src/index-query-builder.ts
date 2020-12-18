@@ -15,25 +15,31 @@ export function getCursorEncoder<Id, Src, IndexTagNames>(args: {
   }
 }
 
-export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
+type IndexQueryBuilderArgs<Id, Src, IndexTagNames = string> = {
+  tableName: string
   mapper: Mapper<Id, Src, IndexTagNames>
-  builder: QueryBuilder
   index: Index<IndexTagNames>
+  builder?: QueryBuilder
+  ddb?: DocumentClient;
+}
+
+export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
+  tableName: string
+  mapper: Mapper<Id, Src, IndexTagNames>
+  
+  index: Index<IndexTagNames>
+  builder: QueryBuilder
   ddb?: DocumentClient;
   encodeCursor: (src: Src) => string;
 
   constructor(
-    tableName: string,
-    index: Index<IndexTagNames>,
-    mapper: Mapper<Id, Src, IndexTagNames>,
-    ddb?: DocumentClient,
+    {tableName, mapper, builder, index, ddb}: IndexQueryBuilderArgs<Id, Src, IndexTagNames>
   ) {
-    
+    this.tableName = tableName;
     this.mapper = mapper;
     this.index = index;
     this.ddb = ddb;
-    this.builder = new QueryBuilder();
-    this.builder = this.builder.table(tableName);
+    this.builder = (builder || new QueryBuilder()).table(tableName);
 
     this.encodeCursor = getCursorEncoder({
       secondaryIndex:index,
@@ -46,19 +52,26 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
     }
   }
 
+  clone(builder: QueryBuilder) {
+    return new IndexQueryBuilder({
+      tableName: this.tableName,
+      mapper: this.mapper,
+      index: this.index,
+      ddb: this.ddb,
+      builder
+    })
+  }
+
   limit(t: number) {
-    this.builder = this.builder.limit(t);
-    return this;
+    return this.clone(this.builder.limit(t));
   }
 
   sort(direction: 'asc' | 'desc') {
-    this.builder = this.builder.sort(direction);
-    return this;
+    return this.clone(this.builder.sort(direction));
   }
 
   cursor(str: string) {
-    this.builder = this.builder.cursor(JSON.parse(str));
-    return this;
+    return this.clone(this.builder.cursor(JSON.parse(str)));
   }
 
   build() {
@@ -75,15 +88,16 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
   }
 
   where(src: Partial<Src>) {
+    let builder = this.builder;
     const indexes = this.mapper.computeIndexFields(src, this.index) as any;
     if (indexes[this.index.partitionKey]) {
-      this.builder = this.builder.where(this.index.partitionKey as any, '=', indexes[this.index.partitionKey])
+      builder = builder.where(this.index.partitionKey as any, '=', indexes[this.index.partitionKey])
     }
 
     if (indexes[this.index.sortKey!]) {
-      this.builder = this.builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey!])
+      builder = builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey!])
     }
 
-    return this;
+    return this.clone(builder);
   }
 }

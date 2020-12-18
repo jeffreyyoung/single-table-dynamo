@@ -44,7 +44,7 @@ const mapper = new Mapper<UserId, User>({
 });
 
 const getBuilder = (index: Index) =>
-  new IndexQueryBuilder<UserId, User>('yeehaw', index, mapper);
+  new IndexQueryBuilder<UserId, User>({tableName: 'yeehaw', index, mapper});
 
 test('should build query with no sortkey', () => {
   expect(
