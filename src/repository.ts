@@ -4,21 +4,21 @@ import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder';
 import { MapperArgs, Mapper } from './mapper';
 import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
 
-type RepoArgs<ID, Src> = {
+type RepoArgs<ID, Src, IndexTagNames = string> = {
   tableName: string;
-} & MapperArgs<ID, Src>;
+} & MapperArgs<ID, Src, IndexTagNames>;
 
-export class Repository<ID, Src> {
-  args: RepoArgs<ID, Src>;
-  mapper: Mapper<ID, Src>;
+export class Repository<ID, Src, IndexTagNames = string> {
+  args: RepoArgs<ID, Src, IndexTagNames>;
+  mapper: Mapper<ID, Src, IndexTagNames>;
   ddb: DocumentClient;
-  batch: BatchArgsHandler<ID, Src>
+  batch: BatchArgsHandler<ID, Src, IndexTagNames>
 
-  constructor(args: RepoArgs<ID, Src>, c: DocumentClient) {
+  constructor(args: RepoArgs<ID, Src, IndexTagNames>, c: DocumentClient) {
     this.args = args;
-    this.mapper = new Mapper<ID, Src>(args);
+    this.mapper = new Mapper<ID, Src, IndexTagNames>(args);
     this.ddb = c;
-    this.batch = new BatchArgsHandler<ID, Src>(args.tableName, this.mapper);
+    this.batch = new BatchArgsHandler<ID, Src, IndexTagNames>(args.tableName, this.mapper);
   }
 
   async get(id: ID) {
@@ -68,7 +68,7 @@ export class Repository<ID, Src> {
     return true;
   }
 
-  query(indexTag: string) {
+  query(indexTag: IndexTagNames) {
     const builder = new IndexQueryBuilder(
       this.args.tableName,
       this._getIndexByTag(indexTag),
@@ -78,7 +78,7 @@ export class Repository<ID, Src> {
     return builder;
   }
 
-  getCursorEncoder(indexTag: string) {
+  getCursorEncoder(indexTag: IndexTagNames) {
     return getCursorEncoder({
       secondaryIndex: this._getIndexByTag(indexTag),
       primaryIndex: this.args.primaryIndex,
@@ -86,7 +86,7 @@ export class Repository<ID, Src> {
     });
   }
 
-  _getIndexByTag(tag: string) {
+  _getIndexByTag(tag: IndexTagNames) {
     const index = this.mapper.indexes().find(i => i.tag === tag);
     if (!index) {
       throw new Error(

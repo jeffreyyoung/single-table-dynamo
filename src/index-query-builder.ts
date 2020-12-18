@@ -2,10 +2,10 @@ import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { Mapper, Index, isSecondaryIndex } from "./mapper";
 import { QueryBuilder } from './query-builder';
 
-export function getCursorEncoder<Id, Src>(args: {
-  primaryIndex: Index,
-  secondaryIndex: Index,
-  mapper: Mapper<Id, Src>
+export function getCursorEncoder<Id, Src, IndexTagNames>(args: {
+  primaryIndex: Index<IndexTagNames>,
+  secondaryIndex: Index<IndexTagNames>,
+  mapper: Mapper<Id, Src, IndexTagNames>
 }) {
   return (src: Src) => {
     return JSON.stringify({
@@ -15,17 +15,17 @@ export function getCursorEncoder<Id, Src>(args: {
   }
 }
 
-export class IndexQueryBuilder<Id, Src> {
-  mapper: Mapper<Id, Src>
+export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
+  mapper: Mapper<Id, Src, IndexTagNames>
   builder: QueryBuilder
-  index: Index
+  index: Index<IndexTagNames>
   ddb?: DocumentClient;
   encodeCursor: (src: Src) => string;
 
   constructor(
     tableName: string,
-    index: Index,
-    mapper: Mapper<Id, Src>,
+    index: Index<IndexTagNames>,
+    mapper: Mapper<Id, Src, IndexTagNames>,
     ddb?: DocumentClient,
   ) {
     

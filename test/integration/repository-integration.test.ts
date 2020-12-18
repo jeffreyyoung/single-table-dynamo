@@ -14,7 +14,7 @@ type User = UserId & {
 let repo: Repository<UserId, User>;
 
 beforeEach(() => {
-  repo = new Repository<UserId, User>(
+  repo = new Repository<UserId, User, 'primary' | 'byCountryByStateByCity'>(
     {
       tableName: 'table1',
       typeName: 'User',

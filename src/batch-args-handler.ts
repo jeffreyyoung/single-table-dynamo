@@ -2,11 +2,11 @@ import { GetRequest } from 'batch-get';
 import { DeleteRequest, PutRequest } from './batch-write';
 import { Mapper } from './mapper';
 
-export class BatchArgsHandler<Id, T> {
-  private mapper: Mapper<Id, T>
+export class BatchArgsHandler<Id, T, IndexTagNames = string> {
+  private mapper: Mapper<Id, T, IndexTagNames>
   private tableName: string
 
-  constructor(tableName: string, mapper: Mapper<Id, T>) {
+  constructor(tableName: string, mapper: Mapper<Id, T, IndexTagNames>) {
     this.tableName = tableName;
     this.mapper = mapper;
   }
