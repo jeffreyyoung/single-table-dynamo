@@ -52,7 +52,7 @@ const mapper = new Mapper<UserId, User>({
 
 test('should format object for dynamodb properly', () => {
   expect(
-    mapper.decorateWithIndexedFields({
+    mapper.decorateWithCompositeFields({
       updatedAt: 'today',
       createdAt: 'yesterday',
       country: 'USA',
@@ -75,7 +75,7 @@ test('should format object for dynamodb properly', () => {
   });
 
   expect(
-    mapper.decorateWithIndexedFields({
+    mapper.decorateWithCompositeFields({
       updatedAt: 'today',
       createdAt: 'tomorrow',
       country: 'USA',

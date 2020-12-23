@@ -9,7 +9,7 @@ export enum IndexType {
 
 export type PrimaryIndex<ID, IndexTagNames = string> = Index<IndexTagNames> | (CompositeIndex<ID, IndexTagNames>)
 
-export type SecondaryIndex<Src, IndexTagNames = string> = NamedIndex<IndexTagNames> | (NamedIndex<IndexTagNames> & CompositeIndex<Src, IndexTagNames>);
+export type SecondaryIndex<Src, IndexTagNames = string> = NamedIndex<IndexTagNames> | (NamedIndex<IndexTagNames> & CompositeIndex<Src, IndexTagNames> & (SparseIndex<Src> | {}))
 
 export function isSecondaryIndex<Src, IndexTagNames>(i: Index<IndexTagNames>): i is SecondaryIndex<Src, IndexTagNames> {
   let namedIndex = i as SecondaryIndex<Src>;
@@ -28,11 +28,16 @@ export type Index<IndexTagNames = string> = {
   sortKey?: string
 };
 
-type CompositeKeyField<Src> = (KeysOfType<Src, string> | NonStringField<Src>);
+type CompositeKeyField<Src> = (KeysOfType<Src, string | null | undefined> | NonStringField<Src>);
 
 export type CompositeIndex<Src, IndexTagNames = string> = {
   fields: CompositeKeyField<Src>[]
 } & Index<IndexTagNames>;
+
+export type SparseIndex<Src> = {
+  sparse: true
+  shouldWriteIndex?: ((arg: Src) => boolean)
+}
 
 interface NonStringField<Src> {
   toString: (s: Src) => string
@@ -72,16 +77,37 @@ export class Mapper<Id, Src, IndexTagNames = string> {
   indexes() {
     return [this.args.primaryIndex, ...(this.args.secondaryIndexes || [])];
   }
+
+  _isSparseIndex(i: any): i is SparseIndex<Src> {
+    const j = i as SparseIndex<Src>;
+    if (j.sparse) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  _shouldWriteIndex(src: Src, i: Index<IndexTagNames>) {
+    if (this._isSparseIndex(i) && this._isCompositeIndex(i)) {
+      return i.shouldWriteIndex ? 
+        i.shouldWriteIndex(src) : 
+        i.fields.every(field => this._isInSrc(src, field))
+    } else {
+      return true;
+    }
+  }
   /**
    * Takes an object to be saved to ddb,
-   * and adds any computed index fields to it
+   * and adds any composite index fields to it
    * @param src 
    */
-  decorateWithIndexedFields(src: Src) {
+  decorateWithCompositeFields(src: Src) {
     const res = {...src};
 
     this.indexes().forEach((i: Index<IndexTagNames>) => {
-      Object.assign(res, this.computeIndexFields(src, i));
+      if (this._shouldWriteIndex(src, i)) {
+        Object.assign(res, this.computeIndexFields(src, i));
+      }
     });
     return res;
   }
@@ -98,7 +124,7 @@ export class Mapper<Id, Src, IndexTagNames = string> {
     return 'fields' in index;
   }
 
-  _computeCompositePrimaryKey(src: Partial<Src>, primaryField: CompositeIndex<Src>['fields'][number]) {
+  _computeCompositePartitionKey(src: Partial<Src>, primaryField: CompositeIndex<Src>['fields'][number]) {
     const field = this.stringifyField(src, primaryField);
     if (!field) {
       throw new Error(`You must provide partition key fields, required field: ${primaryField}, provided fields: ${JSON.stringify(src, null, 1)}`)
@@ -132,7 +158,7 @@ export class Mapper<Id, Src, IndexTagNames = string> {
         throw new Error(`A partition key field must be provided:\n\nprovided fields: ${JSON.stringify(src,null,1)}\nindex: ${JSON.stringify(index,null,1)}`)
       }
 
-      const partitionValue = this._computeCompositePrimaryKey(src, index.fields[0]);
+      const partitionValue = this._computeCompositePartitionKey(src, index.fields[0]);
 
       const sortValue = this._computeCompositeSortKey(src, takeWhile(
           index.fields.slice(1),

@@ -16,7 +16,7 @@ export class BatchArgsHandler<Id, T, IndexTagNames = string> {
       TableName: this.tableName,
       Operation: {
         PutRequest: {
-          Item: this.mapper.decorateWithIndexedFields(item)
+          Item: this.mapper.decorateWithCompositeFields(item)
         }
       }
     }

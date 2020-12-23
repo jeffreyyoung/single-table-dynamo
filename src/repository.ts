@@ -51,7 +51,7 @@ export class Repository<ID, Src, IndexTagNames = string> {
     await this.ddb
       .put({
         TableName: this.args.tableName,
-        Item: this.mapper.decorateWithIndexedFields(src),
+        Item: this.mapper.decorateWithCompositeFields(src),
       })
       .promise();
 
