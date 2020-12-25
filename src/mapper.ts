@@ -74,6 +74,35 @@ export class Mapper<Id, Src, IndexTagNames = string> {
     return this.computeIndexFields(id, this.args.primaryIndex);
   }
 
+  getId(src: Src): Id {
+    const value: Id = {} as any;
+
+    this.getIndexFields(this.args.primaryIndex).forEach(f => {
+      value[f] = src[f];
+    })
+
+    return value;
+  }
+
+  getIndexFields(i: Index<IndexTagNames>) {
+    let fields: string[] = [];
+
+    if (this._isCompositeIndex(i)) {
+      i.fields.forEach(f => {
+        if (isNonStringField(f)) {
+          fields = fields.concat(...f.fields)
+        } else {
+          fields.push(f as string);
+        }
+      })
+    } else {
+      i.partitionKey && fields.push(i.partitionKey)
+      i.sortKey && fields.push(i.sortKey);
+    }
+
+    return fields;
+  }
+
   indexes() {
     return [this.args.primaryIndex, ...(this.args.secondaryIndexes || [])];
   }
@@ -91,7 +120,7 @@ export class Mapper<Id, Src, IndexTagNames = string> {
     if (this._isSparseIndex(i) && this._isCompositeIndex(i)) {
       return i.shouldWriteIndex ? 
         i.shouldWriteIndex(src) : 
-        i.fields.every(field => this._isInSrc(src, field))
+        this.getIndexFields(i).every(field => Object(src as any).hasOwnProperty(field))
     } else {
       return true;
     }
