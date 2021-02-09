@@ -2,12 +2,12 @@ import { GetRequest } from 'batch-get';
 import { DeleteRequest, PutRequest } from './batch-write';
 import { Mapper } from './mapper';
 
-export class BatchArgsHandler<Id, T, IndexTagNames = string> {
-  private mapper: Mapper<Id, T, IndexTagNames>
+export class BatchArgsHandler<Id, T> {
+  private mapper: Mapper<T>
   private tableName: string
 
-  constructor(tableName: string, mapper: Mapper<Id, T, IndexTagNames>) {
-    this.tableName = tableName;
+  constructor(mapper: Mapper<T>) {
+    this.tableName = mapper.args.tableName;
     this.mapper = mapper;
   }
 
@@ -16,7 +16,7 @@ export class BatchArgsHandler<Id, T, IndexTagNames = string> {
       TableName: this.tableName,
       Operation: {
         PutRequest: {
-          Item: this.mapper.decorateWithCompositeFields(item)
+          Item: this.mapper.decorateWithKeys(item) as any
         }
       }
     }
@@ -25,7 +25,7 @@ export class BatchArgsHandler<Id, T, IndexTagNames = string> {
   get(item: Id): GetRequest<T> {
     return {
       TableName: this.tableName,
-      Key: this.mapper.getKey(item),
+      Key: this.mapper.getKey(item as any),
     }
   }
 
@@ -34,7 +34,7 @@ export class BatchArgsHandler<Id, T, IndexTagNames = string> {
       TableName: this.tableName,
       Operation: {
         DeleteRequest: {
-          Key: this.mapper.getKey(key)
+          Key: this.mapper.getKey(key as any)
         }
       }
     }

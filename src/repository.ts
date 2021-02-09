@@ -1,31 +1,36 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { BatchArgsHandler } from './batch-args-handler';
+import { IndexBase, IndexField, Mapper, RepositoryArgs } from './mapper';
 import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder';
-import { MapperArgs, Mapper } from './mapper';
 import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
+import { BatchArgsHandler } from './batch-args-handler';
+import { mask, partial } from 'superstruct';
 
-type RepoArgs<ID, Src, IndexTagNames = string> = {
-  tableName: string;
-} & MapperArgs<ID, Src, IndexTagNames>;
-
-export class Repository<ID, Src, IndexTagNames = string> {
-  args: RepoArgs<ID, Src, IndexTagNames>;
-  mapper: Mapper<ID, Src, IndexTagNames>;
-  ddb: DocumentClient;
-  batch: BatchArgsHandler<ID, Src, IndexTagNames>
-
-  constructor(args: RepoArgs<ID, Src, IndexTagNames>, c: DocumentClient) {
+export class Repository<
+Src = any,
+PrimaryKeyField extends IndexField<Src> = IndexField<Src>,
+IndexTag extends string = string,
+SecondaryIndexTag extends string = string,
+ID = Pick<Src, PrimaryKeyField>
+> {
+  args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>
+  mapper: Mapper<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, ID>
+  batch: BatchArgsHandler<ID, Src>
+  ddb: DocumentClient
+  
+  constructor(args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>, ddb: DocumentClient) {
     this.args = args;
-    this.mapper = new Mapper<ID, Src, IndexTagNames>(args);
-    this.ddb = c;
-    this.batch = new BatchArgsHandler<ID, Src, IndexTagNames>(args.tableName, this.mapper);
+    this.mapper = new Mapper(args);
+    this.batch = new BatchArgsHandler<ID, Src>(this.mapper as any);
+    this.ddb = ddb;
+
   }
+
 
   async get(id: ID) {
     const res = await this.ddb
       .get({
         TableName: this.args.tableName,
-        Key: this.getKey(id),
+        Key: this.mapper.getKey(id),
       })
       .promise();
     return res.Item as Src | undefined;
@@ -39,19 +44,18 @@ export class Repository<ID, Src, IndexTagNames = string> {
     
     const res = await this.ddb.update({
       TableName: this.args.tableName,
-      Key: this.getKey(id),
-      ...getDDBUpdateExpression(src, options.upsert ? [] : Object.keys(this.getKey(id))),
+      Key: this.mapper.getKey(id),
+      ...getDDBUpdateExpression(src, options.upsert ? [] : Object.keys(this.mapper.getKey(id))),
       ReturnValues: options?.returnValues ?? 'ALL_NEW',
     }).promise();
     return res.Attributes as Src | undefined;
   }
 
   async put(src: Src) {
-    
     await this.ddb
       .put({
         TableName: this.args.tableName,
-        Item: this.mapper.decorateWithCompositeFields(src),
+        Item: this.mapper.decorateWithKeys(src),
       })
       .promise();
 
@@ -62,42 +66,40 @@ export class Repository<ID, Src, IndexTagNames = string> {
     await this.ddb
       .delete({
         TableName: this.args.tableName,
-        Key: this.getKey(id),
+        Key: this.mapper.getKey(id),
       })
       .promise();
     return true;
   }
+  getIndexByTag(indexTag: IndexTag | SecondaryIndexTag): IndexBase<Src> {
+    let index;
+    if (this.args.secondaryIndexes?.[indexTag as SecondaryIndexTag]) {
+      index = this.args.secondaryIndexes[indexTag as SecondaryIndexTag];
+    } else if (this.args.primaryIndex.tag === indexTag) {
+      index = this.args.primaryIndex;
+    }
+    if (!index) {
+      throw new Error('expected an index, but did not get one');
+    }
+    return index;
+  }
 
-  query(indexTag: IndexTagNames) {
-    const builder = new IndexQueryBuilder({
+  query(indexTag: IndexTag | SecondaryIndexTag) {
+    
+    const builder = new IndexQueryBuilder<Src>({
       tableName: this.args.tableName,
-      index: this._getIndexByTag(indexTag),
-      mapper: this.mapper,
+      index: this.getIndexByTag(indexTag),
+      mapper: this.mapper as any,
       ddb: this.ddb
     });
     return builder;
   }
 
-  getCursorEncoder(indexTag: IndexTagNames) {
+  getCursorEncoder(indexTag: IndexTag | SecondaryIndexTag) {
     return getCursorEncoder({
-      secondaryIndex: this._getIndexByTag(indexTag),
+      secondaryIndex: this.getIndexByTag(indexTag),
       primaryIndex: this.args.primaryIndex,
-      mapper: this.mapper
+      mapper: this.mapper as any
     });
   }
-
-  _getIndexByTag(tag: IndexTagNames) {
-    const index = this.mapper.indexes().find(i => i.tag === tag);
-    if (!index) {
-      throw new Error(
-        `No index exists for that tag, tag: ${tag}, args: ${JSON.stringify(
-          this.args,
-          null,
-          3
-        )}`
-      );
-    }
-    return index;
-  }
-
 }

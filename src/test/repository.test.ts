@@ -1,33 +1,33 @@
-import { Repository } from './../src/repository';
+import { Repository } from '../repository';
 import sinon from 'sinon';
 import Sinon from 'sinon';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { array, Infer, object, string } from 'superstruct';
 
-type UserId = {
-  id: string;
-};
+const schema = object({
+  id: string(),
+  followers: array(string()),
+  country: string(),
+  city: string(),
+  state: string()
+})
 
-type User = UserId & {
-  followers: string[];
-  country: string;
-  city: string;
-  state: string;
-};
 const globals: {
-  repo: Repository<UserId, User>;
+  repo: Repository<Infer<typeof schema>, 'id'>;
   stub: Sinon.SinonStubbedInstance<DocumentClient>;
 } = {} as any;
 
 beforeEach(() => {
   globals['stub'] = sinon.stub(new DocumentClient());
-  globals['repo'] = new Repository<UserId, User>(
+  globals['repo'] = new Repository(
     {
       tableName: 'meow',
-      typeName: 'User',
+      objectName: 'User',
+      schema,
       primaryIndex: {
         tag: 'primary',
-        partitionKey: 'yay',
-        sortKey: 'meow',
+        pk: 'yay',
+        sk: 'meow',
         fields: ['id'],
       },
     },

@@ -1,73 +1,65 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { object, string } from 'superstruct';
 import { Repository } from '../src';
 
 const TableConfig = {
   tableName: 'GenericTable',
   primaryIndex: {
-    partitionKey: 'pk',
+    pk: 'pk1',
+    sk: 'sk0'
   },
   secondaryIndexes: [{
     indexName: 'gsi1',
-    partitionKey: 'pk1',
-    sortKey: 'sk1',
+    pk: 'pk1',
+    sk: 'sk1',
   }, {
     indexName: 'gsi2',
-    partitionKey: 'pk2',
-    sortKey: 'sk2',
+    pk: 'pk2',
+    sk: 'sk2',
   }]
 }
-type UserId = {
-  id: string;
-}
-type User = UserId & {
-  name: string
-  createdDate: string
-  state: string
-  country: string
-  city: string
-}
 
-const docClient = new DocumentClient();
-
-const repo = new Repository<UserId,User>({
-  typeName: 'User',
+const repo = new Repository({
+  //define an object schema
+  schema: object({
+    id: string(),
+    country: string(),
+    state: string(),
+    city: string()
+  }),
+  objectName: 'User',
   tableName: 'GenericTable',
+  
+  //define our primary index
   primaryIndex: {
-    tag: 'primaryIndex',
     fields: ['id'],
     ...TableConfig.primaryIndex,
   },
-  secondaryIndexes: [{
-    tag: 'byCountryByStateByCity',
-    fields: ['country', 'state', 'city'],
-    ...TableConfig.secondaryIndexes[0],
-  }, {
-    tag: 'byStateByCreatedDate',
-    fields: ['state', 'createdDate'],
-    ...TableConfig.secondaryIndexes[1],
-  }]
-}, docClient);
 
-async function main() {
+  //define our secondary indexes
+  secondaryIndexes: {
+    byCountryByStateByCity: {
+      fields: ['country', 'state', 'city'],
+      ...TableConfig.secondaryIndexes[0],
+    }
+  }
+}, new DocumentClient());
+
   
-  let user1 = await repo.put({
+let user1 = await repo.put({
     id: '1',
     city: 'Orlando',
     state: 'Washington',
     country: 'Canada',
-    createdDate: '2011-10-31',
-    name: 'Jonny'
-  })
+})
 
-  user1 = await repo.get({id: '1'});
+user1 = await repo.get({id: '1'});
 
-  await repo.delete({id: '1'});
+await repo.delete({id: '1'});
 
-  const result = await repo
-    .query('byStateByCreatedDate')
-    .where({state: 'WA'})
-    .limit(10)
-    .sort('asc')
-    .execute();
-  console.log(result.Items);
-}
+const result = await repo
+  .query('byStateByCreatedDate')
+  .where({state: 'WA'})
+  .limit(10)
+  .sort('asc')
+  .execute();

@@ -1,66 +1,65 @@
-import { Mapper } from './../src/mapper';
+import { number, object, string, optional, Infer } from 'superstruct';
+import { Mapper } from '../mapper';
 import { tableConfig } from './utils/table_config';
-type UserId = {
-  state: string;
-  country: string;
-  createdAt: string;
-};
-type User = {
-  id: string;
-  state: string;
-  country: string;
-  createdAt: string;
-  updatedAt: string;
-  count: number;
-  banned?: string;
-};
 
-const mapper = new Mapper<UserId, User>({
-  typeName: 'User',
+
+const schema = object({
+  id: string(),
+  state: string(),
+  country: string(),
+  createdAt: string(),
+  updatedAt: string(),
+  count: number(),
+  banned: optional(string()),
+});
+
+const mapper = new Mapper({
+  objectName: 'User',
+  tableName: 'Yeehaw',
+  schema,
   primaryIndex: {
     ...tableConfig.primaryIndex,
     tag: 'countryByStateByCreatedAt',
     fields: ['country', 'state', 'createdAt'],
   },
-  secondaryIndexes: [
-    {
+  secondaryIndexes: {
+    stateByCountryByYeehaw: {
       ...tableConfig.secondaryIndexes[0],
-      tag: 'stateByCountryByYeehaw',
-      fields: [
-        'state',
-        'country',
-        { toString: () => 'yeehaw', fields: ['count'] },
-      ],
+      fields: ['state', 'country', 'count'],
+      stringifyField: {
+        count: () => 'yeehaw'
+      }
     },
-    {
+    stateCreatedAt: {
       ...tableConfig.secondaryIndexes[1],
-      sparse: true,
       shouldWriteIndex: src => src.state === 'UT',
-      tag: 'stateCreatedAt',
       fields: [
         'state',
         'createdAt',
-        { toString: () => 'yeehaw', fields: ['count'] },
+        'count',
       ],
+      stringifyField: {
+        count: () => 'yeehaw'
+      }
     },
-    {
+    byBannedById: {
       ...tableConfig.secondaryIndexes[2],
-      sparse: true,
-      fields: ['banned', 'id'],
+      onlyWriteWhenAllFieldsPresent: true,
+      fields: ['banned', 'id']
     },
-    {
-      ...tableConfig.secondaryIndexes[3],
-      indexName: 'countryByUpdatedAt',
-      tag: 'meowowow',
-      partitionKey: 'state',
-      sortKey: 'country',
-    },
-  ],
+    // countryByUpdatedAt: {
+      // ...tableConfig.secondaryIndexes[3],
+      // indexName: 'countryByUpdatedAt',
+      // tag: 'meowowow',
+      // partitionKey: 'state',
+      // sortKey: 'country',
+    // }
+  }
 });
 
 test('should decorate all fields', () => {
   expect(
-    mapper.decorateWithCompositeFields({
+    mapper.decorateWithKeys({
       id: 'yay',
       count: 23,
       banned: 'yes',
@@ -92,7 +91,7 @@ test('should decorate all fields', () => {
 
 test('should decorate all fields except pk3,sk3', () => {
   expect(
-    mapper.decorateWithCompositeFields({
+    mapper.decorateWithKeys({
       id: 'yay',
       count: 23,
       country: 'usa',
@@ -120,7 +119,7 @@ test('should decorate all fields except pk3,sk3', () => {
 
 test('should decorate all fields except pk2, sk2 ', () => {
   expect(
-    mapper.decorateWithCompositeFields({
+    mapper.decorateWithKeys({
       id: 'yay',
       count: 23,
       country: 'usa',

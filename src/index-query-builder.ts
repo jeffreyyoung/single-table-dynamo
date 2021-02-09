@@ -1,39 +1,38 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { Mapper, Index, isSecondaryIndex } from "./mapper";
+import { Mapper, ifSecondaryIndexGetName, IndexBase } from './mapper';
 import { QueryBuilder } from './query-builder';
 
-export function getCursorEncoder<Id, Src, IndexTagNames>(args: {
-  primaryIndex: Index<IndexTagNames>,
-  secondaryIndex: Index<IndexTagNames>,
-  mapper: Mapper<Id, Src, IndexTagNames>
+export function getCursorEncoder<Src>(args: {
+  primaryIndex: IndexBase<Src>,
+  secondaryIndex: IndexBase<Src>,
+  mapper: Mapper
 }) {
   return (src: Src) => {
     return JSON.stringify({
-      ...args.mapper.computeIndexFields(src, args.primaryIndex),
-      ...args.secondaryIndex && args.mapper.computeIndexFields(src, args.secondaryIndex)
+      ...args.mapper.getIndexKey(src, args.primaryIndex),
+      ...args.secondaryIndex && args.mapper.getIndexKey(src, args.secondaryIndex)
     });
   }
 }
 
-type IndexQueryBuilderArgs<Id, Src, IndexTagNames = string> = {
+type IndexQueryBuilderArgs<T> = {
   tableName: string
-  mapper: Mapper<Id, Src, IndexTagNames>
-  index: Index<IndexTagNames>
+  mapper: Mapper
+  index: IndexBase<T>
   builder?: QueryBuilder
   ddb?: DocumentClient;
 }
 
-export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
+export class IndexQueryBuilder<Src> {
   tableName: string
-  mapper: Mapper<Id, Src, IndexTagNames>
-  
-  index: Index<IndexTagNames>
+  mapper: Mapper
+  index: IndexBase<Src>
   builder: QueryBuilder
   ddb?: DocumentClient;
   encodeCursor: (src: Src) => string;
 
   constructor(
-    {tableName, mapper, builder, index, ddb}: IndexQueryBuilderArgs<Id, Src, IndexTagNames>
+    {tableName, mapper, builder, index, ddb}: IndexQueryBuilderArgs<Src>
   ) {
     this.tableName = tableName;
     this.mapper = mapper;
@@ -46,14 +45,14 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
       primaryIndex: mapper.args.primaryIndex,
       mapper
     })
-
-    if (isSecondaryIndex(index)) {
-      this.builder = this.builder.index(index.indexName);
+    const secondaryIndexName = ifSecondaryIndexGetName(index);
+    if (secondaryIndexName) {
+      this.builder = this.builder.index(secondaryIndexName);
     }
   }
 
   clone(builder: QueryBuilder) {
-    return new IndexQueryBuilder({
+    return new IndexQueryBuilder<Src>({
       tableName: this.tableName,
       mapper: this.mapper,
       index: this.index,
@@ -89,13 +88,13 @@ export class IndexQueryBuilder<Id, Src, IndexTagNames = string> {
 
   where(src: Partial<Src>) {
     let builder = this.builder;
-    const indexes = this.mapper.computeIndexFields(src, this.index) as any;
-    if (indexes[this.index.partitionKey]) {
-      builder = builder.where(this.index.partitionKey as any, '=', indexes[this.index.partitionKey])
+    const indexes = this.mapper.getIndexKey(src as Src, this.index, {partial: true}) as any;
+    if (indexes[this.index.pk]) {
+      builder = builder.where(this.index.pk as any, '=', indexes[this.index.pk])
     }
 
-    if (indexes[this.index.sortKey!]) {
-      builder = builder.where(this.index.sortKey as any, 'BEGINS_WITH', indexes[this.index.sortKey!])
+    if (indexes[this.index.sk!]) {
+      builder = builder.where(this.index.sk as any, 'BEGINS_WITH', indexes[this.index.sk!])
     }
 
     return this.clone(builder);

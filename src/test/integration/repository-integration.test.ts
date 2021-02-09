@@ -1,50 +1,41 @@
-import { Repository } from './../../src/repository';
+import { Repository } from '../../repository';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { array, object, string } from 'superstruct';
 
-type UserId = {
-  id: string;
-};
-
-type User = UserId & {
-  followers: string[];
-  country: string;
-  city: string;
-  state: string;
-};
-let repo: Repository<UserId, User>;
-
-beforeEach(() => {
-  repo = new Repository<UserId, User, 'primary' | 'byCountryByStateByCity'>(
-    {
-      tableName: 'table1',
-      typeName: 'User',
-      primaryIndex: {
-        tag: 'primary',
-        partitionKey: 'pk1',
-        sortKey: 'sk1',
-        fields: ['id'],
-      },
-      secondaryIndexes: [
-        {
-          tag: 'byCountryByStateByCity',
-          partitionKey: 'pk2',
-          sortKey: 'sk2',
-          fields: ['country', 'state', 'city'],
-          indexName: 'gsi1',
-        },
-      ],
-    },
-    new DocumentClient({
-      ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-        endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-        sslEnabled: false,
-        region: 'local',
-      }),
-    })
-  );
-});
+const getUserRepo = () => new Repository({
+  tableName: 'table1',
+  objectName: 'User',
+  schema: object({
+    id: string(),
+    followers: array(string()),
+    country: string(),
+    city: string(),
+    state: string()
+  }),
+  primaryIndex: {
+    tag: 'primary',
+    pk: 'pk1',
+    sk: 'sk1',
+    fields: ['id']
+  },
+  secondaryIndexes: {
+    byCountryByStateByCity: {
+      pk: 'pk2',
+      sk: 'sk2',
+      fields: ['country', 'state', 'city'],
+      indexName: 'gsi1',
+    }
+  }
+}, new DocumentClient({
+  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
+    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
+    sslEnabled: false,
+    region: 'local',
+  }),
+}))
 
 test('get, put, delete, updateUnsafe, and query should work', async () => {
+  const repo = getUserRepo();
   await expect(repo.get({ id: 'yay' })).resolves.toEqual(undefined);
 
   const obj = {
@@ -166,6 +157,7 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
 });
 
 test('curosr pagination should work', async () => {
+  const repo = getUserRepo();
   const cities = ['Alphaville', 'Betaville', 'Canaryville'];
 
   await Promise.all(

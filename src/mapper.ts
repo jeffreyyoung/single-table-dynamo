@@ -1,208 +1,136 @@
+import { Struct } from 'superstruct';
+import { StructSchema } from 'superstruct/lib/utils';
 import { takeWhile } from './utils/takeWhile';
 
-export type KeysOfType<T, TProp> = { [P in keyof T]: T[P] extends TProp? P : never }[keyof T];
+export type IndexField<T> = Extract<keyof T, string>;
 
-export enum IndexType {
-  Primary = 'Primary',
-  Secondary = 'Secondary'
-}
-
-export type PrimaryIndex<ID, IndexTagNames = string> = Index<IndexTagNames> | (CompositeIndex<ID, IndexTagNames>)
-
-export type SecondaryIndex<Src, IndexTagNames = string> = NamedIndex<IndexTagNames> | (NamedIndex<IndexTagNames> & CompositeIndex<Src, IndexTagNames> & (SparseIndex<Src> | {}))
-
-export function isSecondaryIndex<Src, IndexTagNames>(i: Index<IndexTagNames>): i is SecondaryIndex<Src, IndexTagNames> {
-  let namedIndex = i as SecondaryIndex<Src>;
-  if (namedIndex.indexName) {
-    return true;
-  }
-
-  return false;
-}
-
-type NamedIndex<IndexTagNames = string> = Index<IndexTagNames> & { indexName: string };
-
-export type Index<IndexTagNames = string> = {
-  tag?: IndexTagNames
-  partitionKey: string
-  sortKey?: string
+export type IndexBase<T, Field extends IndexField<T> = any> = {
+  fields: Field[];
+  pk: string;
+  sk: string;
+  stringifyField?: Partial<Record<Field, (field: Field, obj: T) => string>>;
 };
 
-type CompositeKeyField<Src> = (KeysOfType<Src, string | null | undefined> | NonStringField<Src>);
-
-export type CompositeIndex<Src, IndexTagNames = string> = {
-  fields: CompositeKeyField<Src>[]
-} & Index<IndexTagNames>;
-
-export type SparseIndex<Src> = {
-  sparse: true
-  shouldWriteIndex?: ((arg: Src) => boolean)
+type SecondaryIndex<T> = {
+  indexName: string
+  onlyWriteWhenAllFieldsPresent?: boolean
+  shouldWriteIndex?: (src: T) => boolean
 }
 
-interface NonStringField<Src> {
-  toString: (s: Src) => string
-  fields: Extract<keyof Src, string>[]
-}
+export type RepositoryArgs<
+  T = Record<string, any>,
+  PrimaryKeyField extends IndexField<T> = any,
+  IndexTag extends string = string,
+  SecondaryIndexTag extends string = string,
+> = {
+  schema: Struct<T, StructSchema<T>>;
+  tableName: string;
+  objectName: string;
+  primaryIndex: IndexBase<T, PrimaryKeyField> & {
+    tag?: IndexTag;
+  };
+  secondaryIndexes?: Record<
+    SecondaryIndexTag,
+    IndexBase<T> & SecondaryIndex<T>
+  >;
+};
 
+export class Mapper<
+  T = any,
+  PrimaryKeyField extends IndexField<T> = any,
+  IndexTag extends string = string,
+  SecondaryIndexTag extends string = string,
+  Id = Pick<T, PrimaryKeyField>
+> {
+  public args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>;
 
-export type MapperArgs<Id, Src, IndexTagNames = string> = {
-  typeName: string,
-  indexFieldSeparator?: string,
-  primaryIndex: PrimaryIndex<Id, IndexTagNames>,
-  secondaryIndexes?: SecondaryIndex<Src, IndexTagNames>[]
-}
-
-
-
-function isNonStringField<T>(thing: any): thing is NonStringField<T> {
-  return thing?.fields && thing?.toString;
-}
-
-/**
- * The mapper is what has the responsibility of decorating
- * a 
- * @param args 
- */
-export class Mapper<Id, Src, IndexTagNames = string> {
-  readonly args: MapperArgs<Id, Src, IndexTagNames>
-
-  constructor(args: MapperArgs<Id, Src, IndexTagNames>) {
+  constructor(
+    args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>
+  ) {
     this.args = args;
   }
 
   getKey(id: Id) {
-    return this.computeIndexFields(id, this.args.primaryIndex);
+    return this.getIndexKey(id as any, this.args.primaryIndex);
   }
 
-  getId(src: Src): Id {
-    const value: Id = {} as any;
-
-    this.getIndexFields(this.args.primaryIndex).forEach(f => {
-      value[f] = src[f];
-    })
-
-    return value;
+  decorateWithKeys(thing: T): T & Record<string, string> {
+    const indexes = [
+      this.args.primaryIndex,
+      ...Object.values(this.args.secondaryIndexes || {}),
+    ] as IndexBase<T>[];
+    const keys = indexes
+      .map(i => this.getIndexKey(thing, i))
+      .reduce((prev = {}, cur) => ({ ...prev, ...cur }));
+    return Object.assign({}, thing, keys);
   }
 
-  getIndexFields(i: Index<IndexTagNames>) {
-    let fields: string[] = [];
+  getIndexKey<IdOrT>(
+    thing: Partial<IdOrT>,
+    index: IndexBase<IdOrT>,
+    options: { partial?: boolean, debugInfo?: any } = {}
+  ): Record<string, string> {
+    if (!options.partial && !shouldWriteIndex(thing as IdOrT, index)) {
+      return {};
+    }
+    const pkFields = index.fields.slice(0, 1);
+    let skFields = index.fields.slice(1);
 
-    if (this._isCompositeIndex(i)) {
-      i.fields.forEach(f => {
-        if (isNonStringField(f)) {
-          fields = fields.concat(...f.fields)
-        } else {
-          fields.push(f as string);
-        }
-      })
-    } else {
-      i.partitionKey && fields.push(i.partitionKey)
-      i.sortKey && fields.push(i.sortKey);
+    if (options.partial || isSparseIndex(index)) {
+
+      skFields = takeWhile(skFields, f => !Object(thing).hasOwnProperty(f));
     }
 
-    return fields;
-  }
-
-  indexes() {
-    return [this.args.primaryIndex, ...(this.args.secondaryIndexes || [])];
-  }
-
-  _isSparseIndex(i: any): i is SparseIndex<Src> {
-    const j = i as SparseIndex<Src>;
-    if (j.sparse) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  _shouldWriteIndex(src: Src, i: Index<IndexTagNames>) {
-    if (this._isSparseIndex(i) && this._isCompositeIndex(i)) {
-      return i.shouldWriteIndex ? 
-        i.shouldWriteIndex(src) : 
-        this.getIndexFields(i).every(field => Object(src as any).hasOwnProperty(field))
-    } else {
-      return true;
-    }
-  }
-  /**
-   * Takes an object to be saved to ddb,
-   * and adds any composite index fields to it
-   * @param src 
-   */
-  decorateWithCompositeFields(src: Src) {
-    const res = {...src};
-
-    this.indexes().forEach((i: Index<IndexTagNames>) => {
-      if (this._shouldWriteIndex(src, i)) {
-        Object.assign(res, this.computeIndexFields(src, i));
+    [...pkFields, ...skFields].forEach(f => {
+      if (!Object(thing).hasOwnProperty(f)) {
+        throw new Error(
+          `To query index: ${JSON.stringify(
+            index
+          )}, field: ${f} is required, recieved ${JSON.stringify(thing)}, debugInfo: ${JSON.stringify(options?.debugInfo || {})}`
+        );
       }
     });
-    return res;
-  }
 
-  stringifyField(src: Partial<Src>, f: CompositeKeyField<Src>) {
-    if (isNonStringField(f)) {
-      return f.toString(src);
-    } else {
-      return src[f as string];
+    function stringifyField(fieldName: string) {
+      const stringify = index?.stringifyField?.[fieldName];
+      if (stringify) {
+        return stringify(fieldName, thing as IdOrT);
+      } else {
+        return thing[fieldName as any];
+      }
     }
-  }
 
-  _isCompositeIndex(index: Index<IndexTagNames>): index is CompositeIndex<Src, IndexTagNames> {
-    return 'fields' in index;
-  }
-
-  _computeCompositePartitionKey(src: Partial<Src>, primaryField: CompositeIndex<Src>['fields'][number]) {
-    const field = this.stringifyField(src, primaryField);
-    if (!field) {
-      throw new Error(`You must provide partition key fields, required field: ${primaryField}, provided fields: ${JSON.stringify(src, null, 1)}`)
-    }
-    return [this.args.typeName, this.stringifyField(src, primaryField)].join('#');
-  }
-
-  _computeCompositeSortKey(src: Partial<Src>, sortKeyFields: CompositeIndex<Src>['fields']) {
-    return [this.args.typeName, ...sortKeyFields.map(f => this.stringifyField(src, f))].join('#')
-  }
-
-  _isInSrc(src: Partial<Src>, indexField: CompositeIndex<Src>['fields'][number]) {
-    let fields = [];
-    if (isNonStringField(indexField)) {
-      fields = [...indexField.fields]
-    } else {
-      fields = [indexField]
+    return {
+      [index.pk]: [this.args.objectName, ...pkFields.map(stringifyField)].join(
+        '#'
+      ),
+      [index.sk]: [this.args.objectName, ...skFields.map(stringifyField)].join(
+        '#'
+      ),
     };
-    return fields.every(f=> (src as any).hasOwnProperty(f))
   }
+}
 
-  /**
-   * Returns the key/values of an index
-   * @param src 
-   * @param typeName 
-   * @param index 
-   */
-  computeIndexFields(src: Partial<Src>, index: Index<IndexTagNames>) {
-    if (this._isCompositeIndex(index)) {
-      if (index.fields.length < 1) {
-        throw new Error(`A partition key field must be provided:\n\nprovided fields: ${JSON.stringify(src,null,1)}\nindex: ${JSON.stringify(index,null,1)}`)
-      }
-
-      const partitionValue = this._computeCompositePartitionKey(src, index.fields[0]);
-
-      const sortValue = this._computeCompositeSortKey(src, takeWhile(
-          index.fields.slice(1),
-          (f) => !this._isInSrc(src, f)
-        ));
-
-      return {
-        ...partitionValue && {[index.partitionKey]: partitionValue},
-        ...sortValue && index.sortKey && {[index.sortKey]: sortValue}
-      }
-    } else {
-      return {
-        [index.partitionKey]: src[index.partitionKey],
-        ...index.sortKey && src[index.sortKey] && {[index.sortKey]: src[index.sortKey]}
-      }
-    }
+function shouldWriteIndex<T>(obj: T, index: IndexBase<T>) {
+  if (isSecondaryIndex(index) && index.shouldWriteIndex) {
+    return index.shouldWriteIndex(obj);
+  } else if (isSecondaryIndex(index) && index.onlyWriteWhenAllFieldsPresent) {
+    return index.fields.every(f => Object(obj).hasOwnProperty(f))
+  } else {
+    return true;
   }
+}
+
+function isSparseIndex(index: IndexBase<any, any>) {
+  return Boolean((index as any)?.sparse);
+}
+
+function isSecondaryIndex<T = any>(index: IndexBase<T>): index is (IndexBase<T> & SecondaryIndex<T>) {
+  return Boolean((index as any as SecondaryIndex<T>).indexName)
+}
+
+export function ifSecondaryIndexGetName(
+  index: IndexBase<any, any>
+): string | undefined {
+  return (index as any)?.indexName;
 }

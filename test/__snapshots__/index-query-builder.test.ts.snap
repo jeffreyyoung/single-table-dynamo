@@ -1,7 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`should throw with no partition key 1`] = `
-"You must provide partition key fields, required field: country, provided fields: {
- \\"state\\": \\"UT\\"
-}"
-`;
