@@ -42,24 +42,27 @@ ID = Pick<Src, PrimaryKeyField>
 
   async updateUnsafe(id: ID, src: Partial<Src>, options: {upsert: boolean, returnValues?: 'ALL_NEW' | 'ALL_OLD'} = { upsert: false}) {
     
+    const updates = this.mapper.partialAssert(src);    
+
     const res = await this.ddb.update({
       TableName: this.args.tableName,
       Key: this.mapper.getKey(id),
-      ...getDDBUpdateExpression(src, options.upsert ? [] : Object.keys(this.mapper.getKey(id))),
+      ...getDDBUpdateExpression(updates, options.upsert ? [] : Object.keys(this.mapper.getKey(id))),
       ReturnValues: options?.returnValues ?? 'ALL_NEW',
     }).promise();
     return res.Attributes as Src | undefined;
   }
 
   async put(src: Src) {
+    const masked = this.mapper.assert(src);
     await this.ddb
       .put({
         TableName: this.args.tableName,
-        Item: this.mapper.decorateWithKeys(src),
+        Item: this.mapper.decorateWithKeys(masked),
       })
       .promise();
 
-    return src;
+    return masked;
   }
 
   async delete(id: ID) {

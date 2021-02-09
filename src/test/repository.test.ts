@@ -2,7 +2,7 @@ import { Repository } from '../repository';
 import sinon from 'sinon';
 import Sinon from 'sinon';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { array, Infer, object, string } from 'superstruct';
+import { array, Infer, mask, object, string, partial } from 'superstruct';
 
 const schema = object({
   id: string(),
@@ -34,6 +34,32 @@ beforeEach(() => {
     globals['stub'] as any
   );
 });
+
+test('superstruct works as expected', () => {
+  const schema = globals['repo'].args.schema;
+
+  const j = mask({
+    id: 'hey',
+    jimm: 'yo',
+    country: 'usa',
+    city: 'yay',
+    state: 'ut',
+    followers: []
+  }, schema);
+  expect(j).toEqual({
+    id: 'hey',
+    country: 'usa',
+    city: 'yay',
+    state: 'ut',
+    followers: []
+  })
+
+  const b = mask({
+    id: 'hey',
+    followers: []
+  }, partial(schema));
+  expect(b).toEqual({id: 'hey', followers:[]})
+})
 
 test('updateUnsafe should call document client with correct params', () => {
   globals['stub'].update.returns({ promise: () => ({}) } as any);

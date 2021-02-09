@@ -1,5 +1,6 @@
-import { Struct } from 'superstruct';
+import { mask, partial, Struct } from 'superstruct';
 import { StructSchema } from 'superstruct/lib/utils';
+import { removeUndefined } from './utils/removeUndefined';
 import { takeWhile } from './utils/takeWhile';
 
 export type IndexField<T> = Extract<keyof T, string>;
@@ -48,6 +49,14 @@ export class Mapper<
     args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>
   ) {
     this.args = args;
+  }
+
+  partialAssert(obj: Partial<T>): Partial<T> {
+    return removeUndefined(mask(obj, partial(this.args.schema as any)) as any);
+  }
+
+  assert(obj: T): T {
+    return mask(obj, this.args.schema);
   }
 
   getKey(id: Id) {
