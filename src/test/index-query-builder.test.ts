@@ -3,7 +3,7 @@ import { IndexQueryBuilder } from '../index-query-builder';
 import { IndexBase, Mapper } from '../mapper';
 
 const mapper = new Mapper({
-  entityType: 'User',
+  typeName: 'User',
   tableName: 'table1',
   schema: object({
     state: string(),

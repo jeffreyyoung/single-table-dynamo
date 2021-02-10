@@ -9,29 +9,29 @@ export class Repository<
   PrimaryKeyField extends IndexField<Src> = IndexField<Src>,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
-  ID = Pick<Src, PrimaryKeyField>
+  ID = Pick<Src, PrimaryKeyField>,
+  NotFoundType = undefined
 > {
-  args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>
-  mapper: Mapper<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, ID>
+  args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, NotFoundType>
+  mapper: Mapper<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, ID, NotFoundType>
   batch: BatchArgsHandler<ID, Src>
   ddb: DocumentClient
   
-  constructor(args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>, ddb: DocumentClient) {
+  constructor(args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, NotFoundType>, ddb: DocumentClient) {
     this.args = args;
     this.mapper = new Mapper(args);
     this.batch = new BatchArgsHandler<ID, Src>(this.mapper as any);
     this.ddb = ddb;
   }
 
-
-  async get(id: ID) {
+  async get(id: ID): Promise<Src | NotFoundType> {
     const res = await this.ddb
       .get({
         TableName: this.args.tableName,
         Key: this.mapper.getKey(id),
       })
       .promise();
-    return res.Item as Src | undefined;
+    return res.Item as Src || this.args.NotFoundType as any;
   }
 
   getKey(id: ID) {
@@ -48,7 +48,7 @@ export class Repository<
       ...getDDBUpdateExpression(updates, options.upsert ? [] : Object.keys(this.mapper.getKey(id))),
       ReturnValues: options?.returnValues ?? 'ALL_NEW',
     }).promise();
-    return res.Attributes as Src | undefined;
+    return res.Attributes as Src || this.args.NotFoundType;
   }
 
   async put(src: Src) {

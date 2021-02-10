@@ -61,7 +61,7 @@ const ddb = new DocumentClient({
 
 const repo = new Repository(
   {
-    entityType: 'User',
+    typeName: 'User',
 
     schema,
 
@@ -71,6 +71,8 @@ const repo = new Repository(
       ...tableConfig.primaryIndex,
       fields: ['id'],
     },
+
+    NotFoundType: null
   },
   ddb
 );

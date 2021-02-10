@@ -22,7 +22,7 @@ beforeEach(() => {
   globals['repo'] = new Repository(
     {
       tableName: 'meow',
-      entityType: 'User',
+      typeName: 'User',
       schema,
       primaryIndex: {
         tag: 'primary',

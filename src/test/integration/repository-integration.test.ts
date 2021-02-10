@@ -4,7 +4,7 @@ import { array, object, string } from 'superstruct';
 
 const getUserRepo = () => new Repository({
   tableName: 'table1',
-  entityType: 'User',
+  typeName: 'User',
   schema: object({
     id: string(),
     followers: array(string()),

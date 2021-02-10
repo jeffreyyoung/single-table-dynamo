@@ -23,10 +23,11 @@ export type RepositoryArgs<
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = '',
   SecondaryIndexTag extends string = string,
+  NotFoundType = undefined
 > = {
   schema: Struct<T, StructSchema<T>>;
   tableName: string;
-  entityType: string;
+  typeName: string;
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
@@ -34,6 +35,7 @@ export type RepositoryArgs<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
   >;
+  NotFoundType?: NotFoundType
 };
 
 export class Mapper<
@@ -41,12 +43,13 @@ export class Mapper<
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
-  Id = Pick<T, PrimaryKeyField>
+  Id = Pick<T, PrimaryKeyField>,
+  NotFoundType = undefined
 > {
-  public args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>;
+  public args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag, NotFoundType>;
 
   constructor(
-    args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>
+    args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag, NotFoundType>
   ) {
     this.args = args;
   }
@@ -110,10 +113,10 @@ export class Mapper<
     }
 
     return {
-      [index.pk]: [this.args.entityType, ...pkFields.map(stringifyField)].join(
+      [index.pk]: [this.args.typeName, ...pkFields.map(stringifyField)].join(
         '#'
       ),
-      [index.sk]: [this.args.entityType, ...skFields.map(stringifyField)].join(
+      [index.sk]: [this.args.typeName, ...skFields.map(stringifyField)].join(
         '#'
       ),
     };

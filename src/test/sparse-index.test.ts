@@ -13,7 +13,7 @@ const schema = object({
 });
 
 const mapper = new Mapper({
-  entityType: 'User',
+  typeName: 'User',
   tableName: 'Yeehaw',
   schema,
   primaryIndex: {

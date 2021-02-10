@@ -30,7 +30,7 @@ const repo = new Repository({
   },
 
   tableName: TableConfig.tableName,
-  entityType: 'User',
+  typeName: 'User',
 }, new DocumentClient())
 
 // get an object
