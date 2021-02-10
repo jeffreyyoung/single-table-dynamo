@@ -2,7 +2,6 @@ import { number, object, string, optional, Infer } from 'superstruct';
 import { Mapper } from '../mapper';
 import { tableConfig } from './utils/table_config';
 
-
 const schema = object({
   id: string(),
   state: string(),
@@ -27,34 +26,30 @@ const mapper = new Mapper({
       ...tableConfig.secondaryIndexes[0],
       fields: ['state', 'country', 'count'],
       stringifyField: {
-        count: () => 'yeehaw'
-      }
+        count: () => 'yeehaw',
+      },
     },
     stateCreatedAt: {
       ...tableConfig.secondaryIndexes[1],
       shouldWriteIndex: src => src.state === 'UT',
-      fields: [
-        'state',
-        'createdAt',
-        'count',
-      ],
+      fields: ['state', 'createdAt', 'count'],
       stringifyField: {
-        count: () => 'yeehaw'
-      }
+        count: () => 'yeehaw',
+      },
     },
     byBannedById: {
       ...tableConfig.secondaryIndexes[2],
       onlyWriteWhenAllFieldsPresent: true,
-      fields: ['banned', 'id']
+      fields: ['banned', 'id'],
     },
     // countryByUpdatedAt: {
-      // ...tableConfig.secondaryIndexes[3],
-      // indexName: 'countryByUpdatedAt',
-      // tag: 'meowowow',
-      // partitionKey: 'state',
-      // sortKey: 'country',
+    // ...tableConfig.secondaryIndexes[3],
+    // indexName: 'countryByUpdatedAt',
+    // tag: 'meowowow',
+    // partitionKey: 'state',
+    // sortKey: 'country',
     // }
-  }
+  },
 });
 
 test('should decorate all fields', () => {
@@ -75,11 +70,9 @@ test('should decorate all fields', () => {
       "country": "usa",
       "createdAt": "today",
       "id": "yay",
-      "pk0": "User#usa",
       "pk1": "User#UT",
       "pk2": "User#UT",
       "pk3": "User#yes",
-      "sk0": "User#UT#today",
       "sk1": "User#usa#yeehaw",
       "sk2": "User#today#yeehaw",
       "sk3": "User#yay",
@@ -105,10 +98,8 @@ test('should decorate all fields except pk3,sk3', () => {
       "country": "usa",
       "createdAt": "today",
       "id": "yay",
-      "pk0": "User#usa",
       "pk1": "User#UT",
       "pk2": "User#UT",
-      "sk0": "User#UT#today",
       "sk1": "User#usa#yeehaw",
       "sk2": "User#today#yeehaw",
       "state": "UT",
@@ -135,10 +126,8 @@ test('should decorate all fields except pk2, sk2 ', () => {
       "country": "usa",
       "createdAt": "today",
       "id": "yay",
-      "pk0": "User#usa",
       "pk1": "User#WA",
       "pk3": "User#yes",
-      "sk0": "User#WA#today",
       "sk1": "User#usa#yeehaw",
       "sk3": "User#yay",
       "state": "WA",

@@ -5,11 +5,11 @@ import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
 import { BatchArgsHandler } from './batch-args-handler';
 
 export class Repository<
-Src = any,
-PrimaryKeyField extends IndexField<Src> = IndexField<Src>,
-IndexTag extends string = string,
-SecondaryIndexTag extends string = string,
-ID = Pick<Src, PrimaryKeyField>
+  Src = any,
+  PrimaryKeyField extends IndexField<Src> = IndexField<Src>,
+  IndexTag extends string = string,
+  SecondaryIndexTag extends string = string,
+  ID = Pick<Src, PrimaryKeyField>
 > {
   args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>
   mapper: Mapper<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, ID>
@@ -104,3 +104,7 @@ ID = Pick<Src, PrimaryKeyField>
     });
   }
 }
+
+
+export type InferObjectType<Repo> = Repo extends Repository<infer T, any> ? T : never;
+export type InferIdType<Repo> = Repo extends Repository<infer T, infer IdField> ? Pick<T, IdField> : never;

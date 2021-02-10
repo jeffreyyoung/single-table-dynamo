@@ -16,7 +16,7 @@ export class BatchArgsHandler<Id, T> {
       TableName: this.tableName,
       Operation: {
         PutRequest: {
-          Item: this.mapper.decorateWithKeys(item) as any
+          Item: this.mapper.decorateWithKeys(this.mapper.assert(item)) as any
         }
       }
     }

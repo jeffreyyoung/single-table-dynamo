@@ -2,7 +2,7 @@
 //@ts-ignore-all
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { object, string } from 'superstruct';
-import { Repository } from '../src';
+import { Repository, InferObjectType, InferIdType } from '../src';
 
 // create a repository that can be used for CRUD/Query operations
 const repo = new Repository({
@@ -33,7 +33,6 @@ const repo = new Repository({
   entityType: 'User',
 }, new DocumentClient())
 
-
 // get an object
 const user = await repo.get({id: 'user1'});
 
@@ -48,6 +47,11 @@ const results = await repo.query('fasdlkf')
   .where({country: 'usa'})
   .exec();
 
+// extract entity type from repo
+type O = InferObjectType<typeof repo>; // {id: string, country: string, city: string, state: string }
+
+// extract id type from repo
+type Id = InferIdType<typeof repo>; // {id: string}
 
 
 var TableConfig = {

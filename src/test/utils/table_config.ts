@@ -1,9 +1,10 @@
 export const range =(count: number) => [...Array(count).keys()];
 
 export const tableConfig = {
+  tableName: 'table1',
   primaryIndex: {
-    pk: 'pk0',
-    sk: 'sk0'
+    pk: 'pk1',
+    sk: 'sk1'
   },
   secondaryIndexes: range(24).map(i => ({
     indexName: 'gsi'+(i+1),
