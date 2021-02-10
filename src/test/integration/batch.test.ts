@@ -18,7 +18,7 @@ const personRepo = new Repository(
       name: string()
     }),
     tableName: 'table1',
-    objectName: 'Person',
+    entityType: 'Person',
     primaryIndex: {
       tag: 'primary',
       pk: 'pk1',
@@ -36,7 +36,7 @@ const thingRepo = new Repository(
       name: string()
     }),
     tableName: 'table1',
-    objectName: 'Thing',
+    entityType: 'Thing',
     primaryIndex: {
       tag: 'primary',
       pk: 'pk1',

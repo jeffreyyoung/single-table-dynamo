@@ -12,84 +12,71 @@ yarn add single-table-dynamo
 
 ```typescript
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { Repository } from '../src';
+import { object, string } from 'superstruct';
+import { Repository } from 'single-table-dynamo';
 
-// define properties of our dynamodb table
-const TableConfig = {
+// create a repository that can be used for CRUD/Query operations
+const repo = new Repository({
+  // add a name for the entity to be stored in dynamodb
+  entityType: 'User',
+
+  // create a schema for the entity
+  schema: object({
+    id: string(),
+    country: string(),
+    state: string(),
+    city: string()
+  }),
+
+  // define the id fields for this object
+  primaryIndex: {
+    fields: ['id'],
+    ...TableConfig.primaryIndex
+  },
+
+  // define secondaryIndexes that can be used for additional queries
+  secondaryIndexes: {
+    byCountryByStateByCity: {
+      fields: ['country', 'state', 'city'],
+      ...TableConfig.secondaryIndexes[0]
+    }
+  },
+
+  tableName: TableConfig.tableName,
+}, new DocumentClient())
+
+
+// get an object
+const user = await repo.get({id: 'user1'});
+
+// delete
+await repo.delete({id: 'user1'});
+
+// create
+const newUser = await repo.put({id: "user1", city: "otis", state: "kansas", country: "usa"})
+
+// query
+const results = await repo.query('byCountryByStateByCity')
+  .where({country: 'usa'})
+  .exec();
+
+
+
+var TableConfig = {
   tableName: 'GenericTable',
   primaryIndex: {
-    partitionKey: 'pk',
+    pk: 'pk1',
+    sk: 'sk0'
   },
   secondaryIndexes: [{
     indexName: 'gsi1',
-    partitionKey: 'pk1',
-    sortKey: 'sk1',
+    pk: 'pk1',
+    sk: 'sk1',
   }, {
     indexName: 'gsi2',
-    partitionKey: 'pk2',
-    sortKey: 'sk2',
+    pk: 'pk2',
+    sk: 'sk2',
   }]
 }
 
-// add types for the entity to be stored in dynamodb
-type UserId = {
-  id: string;
-}
-type User = UserId & {
-  name: string
-  createdDate: string
-  state: string
-  country: string
-  city: string
-}
-
-const docClient = new DocumentClient();
-
-// create a repo
-const repo = new Repository<UserId,User>({
-  typeName: 'User',
-  tableName: 'GenericTable',
-  primaryIndex: {
-    fields: ['id'],
-    ...TableConfig.primaryIndex,
-  },
-  secondaryIndexes: [{
-    tag: 'byCountryByStateByCity',
-    fields: ['country', 'state', 'city'],
-    ...TableConfig.secondaryIndexes[0],
-  }, {
-    tag: 'byStateByCreatedDate',
-    fields: ['state', 'createdDate'],
-    ...TableConfig.secondaryIndexes[1],
-  }]
-}, docClient);
-
-async function main() {
-  
-  // create
-  let user1 = await repo.put({
-    id: '1',
-    city: 'Orlando',
-    state: 'Washington',
-    country: 'Canada',
-    createdDate: '2011-10-31',
-    name: 'Jonny'
-  })
-
-  // get
-  user1 = await repo.get({id: '1'});
-
-  // delete
-  await repo.delete({id: '1'});
-
-  //get users that live in WA
-  const result = await repo
-    .query('byStateByCreatedDate')
-    .where({state: 'WA'})
-    .limit(10)
-    .sort('asc')
-    .execute();
-  
-  console.log(result.Items);
-}
 ```

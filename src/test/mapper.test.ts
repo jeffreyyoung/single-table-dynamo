@@ -12,7 +12,7 @@ const mapper = new Mapper({
     count: number()
   }),
   tableName: 'yay',
-  objectName: 'User',
+  entityType: 'User',
   primaryIndex: {
     pk: 'pk1',
     sk: 'sk1',

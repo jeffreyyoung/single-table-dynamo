@@ -3,7 +3,6 @@ import { IndexBase, IndexField, Mapper, RepositoryArgs } from './mapper';
 import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder';
 import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
 import { BatchArgsHandler } from './batch-args-handler';
-import { mask, partial } from 'superstruct';
 
 export class Repository<
 Src = any,
@@ -22,7 +21,6 @@ ID = Pick<Src, PrimaryKeyField>
     this.mapper = new Mapper(args);
     this.batch = new BatchArgsHandler<ID, Src>(this.mapper as any);
     this.ddb = ddb;
-
   }
 
 

@@ -21,12 +21,12 @@ type SecondaryIndex<T> = {
 export type RepositoryArgs<
   T = Record<string, any>,
   PrimaryKeyField extends IndexField<T> = any,
-  IndexTag extends string = string,
+  IndexTag extends string = '',
   SecondaryIndexTag extends string = string,
 > = {
   schema: Struct<T, StructSchema<T>>;
   tableName: string;
-  objectName: string;
+  entityType: string;
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
@@ -110,10 +110,10 @@ export class Mapper<
     }
 
     return {
-      [index.pk]: [this.args.objectName, ...pkFields.map(stringifyField)].join(
+      [index.pk]: [this.args.entityType, ...pkFields.map(stringifyField)].join(
         '#'
       ),
-      [index.sk]: [this.args.objectName, ...skFields.map(stringifyField)].join(
+      [index.sk]: [this.args.entityType, ...skFields.map(stringifyField)].join(
         '#'
       ),
     };

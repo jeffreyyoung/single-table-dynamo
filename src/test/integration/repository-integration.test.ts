@@ -4,7 +4,7 @@ import { array, object, string } from 'superstruct';
 
 const getUserRepo = () => new Repository({
   tableName: 'table1',
-  objectName: 'User',
+  entityType: 'User',
   schema: object({
     id: string(),
     followers: array(string()),
@@ -66,21 +66,21 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
     repo
       .query('primary')
       .where({ city: 'scranton' })
-      .execute()
+      .exec()
   ).toThrow();
 
   await expect(() =>
     repo
       .query('byCountryByStateByCity')
       .where({ city: 'scranton' })
-      .execute()
+      .exec()
   ).toThrow();
 
   await expect(
     repo
       .query('byCountryByStateByCity')
       .where({ country: 'CA' })
-      .execute()
+      .exec()
   ).resolves.toMatchInlineSnapshot(`
           Object {
             "Count": 1,
@@ -127,7 +127,7 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
     repo
       .query('byCountryByStateByCity')
       .where({ country: 'CA' })
-      .execute()
+      .exec()
   ).resolves.toMatchInlineSnapshot(`
           Object {
             "Count": 1,
@@ -180,7 +180,7 @@ test('curosr pagination should work', async () => {
   const res = await repo
     .query('byCountryByStateByCity')
     .where(where)
-    .execute();
+    .exec();
 
   expect(res!.Items!.map(i => i.city)).toMatchObject(cities);
 
@@ -188,7 +188,7 @@ test('curosr pagination should work', async () => {
     .query('byCountryByStateByCity')
     .where(where)
     .limit(1)
-    .execute();
+    .exec();
 
   expect(page1!.Items!.map(i => i.city)).toMatchObject([cities[0]]);
 
@@ -197,7 +197,7 @@ test('curosr pagination should work', async () => {
     .where(where)
     .limit(2)
     .cursor(res.encodeCursor(res!.Items![0]))
-    .execute();
+    .exec();
 
   expect(page2!.Items!.map(i => i.city)).toMatchObject([cities[1], cities[2]]);
 
@@ -206,7 +206,7 @@ test('curosr pagination should work', async () => {
     .where(where)
     .limit(2)
     .cursor(res.encodeCursor(res!.Items![1]))
-    .execute();
+    .exec();
   
   expect(page3!.Items!.map(i => i.city)).toMatchObject([cities[2]]);
 });

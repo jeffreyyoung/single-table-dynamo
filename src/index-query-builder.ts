@@ -77,7 +77,7 @@ export class IndexQueryBuilder<Src> {
     return this.builder.build();
   }
 
-  async execute() {
+  async exec() {
     if (this.ddb) {
       let res = await this.ddb.query(this.builder.build() as any).promise() as (Omit<DocumentClient.QueryOutput, 'Items'> & {Items?: Src[]});
       return Object.assign(res, {encodeCursor: this.encodeCursor});
