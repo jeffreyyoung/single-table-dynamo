@@ -72,7 +72,6 @@ const repo = new Repository(
       fields: ['id'],
     },
 
-    NotFoundType: null
   },
   ddb
 );

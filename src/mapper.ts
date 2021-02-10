@@ -23,7 +23,6 @@ export type RepositoryArgs<
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = '',
   SecondaryIndexTag extends string = string,
-  NotFoundType = undefined
 > = {
   schema: Struct<T, StructSchema<T>>;
   tableName: string;
@@ -35,7 +34,6 @@ export type RepositoryArgs<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
   >;
-  NotFoundType?: NotFoundType
 };
 
 export class Mapper<
@@ -43,13 +41,12 @@ export class Mapper<
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
-  Id = Pick<T, PrimaryKeyField>,
-  NotFoundType = undefined
+  Id = Pick<T, PrimaryKeyField>
 > {
-  public args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag, NotFoundType>;
+  public args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>;
 
   constructor(
-    args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag, NotFoundType>
+    args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>
   ) {
     this.args = args;
   }
