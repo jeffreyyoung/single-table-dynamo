@@ -63,7 +63,10 @@ export class Mapper<
     return this.getIndexKey(id as any, this.args.primaryIndex);
   }
 
-  decorateWithKeys(thing: T): T & Record<string, string> {
+  decorateWithKeys(thing: T, options: {assert?: boolean} = {}): T & Record<string, string> {
+    if (options.assert) {
+      this.assert(thing);
+    }
     const indexes = [
       this.args.primaryIndex,
       ...Object.values(this.args.secondaryIndexes || {}),

@@ -19,7 +19,7 @@ import { Repository } from 'single-table-dynamo';
 const repo = new Repository({
 
   // add a name for the entity to be stored in dynamodb
-  entityType: 'User',
+  typeName: 'User',
 
   // create a schema for the entity
   schema: object({

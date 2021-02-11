@@ -36,7 +36,7 @@ const getUserRepo = () => new Repository({
 
 test('get, put, delete, updateUnsafe, and query should work', async () => {
   const repo = getUserRepo();
-  await expect(repo.get({ id: 'yay' })).resolves.toEqual(undefined);
+  await expect(repo.get({ id: 'yay' })).resolves.toEqual(null);
 
   const obj = {
     id: 'yay',
