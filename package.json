@@ -38,6 +38,6 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "superstruct": "^0.14.0"
+    "superstruct": "0.14.0"
   }
 }

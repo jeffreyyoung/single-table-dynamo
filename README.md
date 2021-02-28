@@ -61,10 +61,10 @@ const results = await repo.query('byCountryByStateByCity')
   .where({country: 'usa'})
   .exec();
 
-// extract entity type from repo
+// infer object type from repo
 type O = InferObjectType<typeof repo>; // {id: string, country: string, city: string, state: string }
 
-// extract id type from repo
+// infer id type from repo
 type Id = InferIdType<typeof repo>; // {id: string}
 
 var TableConfig = {
