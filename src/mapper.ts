@@ -1,3 +1,4 @@
+import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { mask, partial, Struct } from 'superstruct';
 import { StructSchema } from 'superstruct/lib/utils';
 import { removeUndefined } from './utils/removeUndefined';
@@ -27,6 +28,7 @@ export type RepositoryArgs<
   schema: Struct<T, StructSchema<T>>;
   tableName: string;
   typeName: string;
+  getDocument?: (args: Parameters<DocumentClient['get']>[0]) => ReturnType<ReturnType<DocumentClient['get']>['promise']>
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };

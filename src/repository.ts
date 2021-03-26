@@ -23,13 +23,19 @@ export class Repository<
     this.ddb = ddb;
   }
 
+  private doGet(id: ID) {
+    const args = {
+      TableName: this.args.tableName,
+      Key: this.mapper.getKey(id)
+    }
+
+    return this.args.getDocument ? 
+      this.args.getDocument(args) :
+      this.ddb.get(args).promise()
+  }
+
   async get(id: ID) {
-    const res = await this.ddb
-      .get({
-        TableName: this.args.tableName,
-        Key: this.mapper.getKey(id),
-      })
-      .promise();
+    const res = await this.doGet(id);
     return res.Item as Src || null;
   }
 

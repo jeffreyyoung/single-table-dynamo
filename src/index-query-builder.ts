@@ -86,6 +86,11 @@ export class IndexQueryBuilder<Src> {
     }
   }
 
+  async execOne() {
+    const res = await this.limit(1).exec();
+    return res.Items?.[0]
+  }
+
   where(src: Partial<Src>) {
     let builder = this.builder;
     const indexes = this.mapper.getIndexKey(src as Src, this.index, {partial: true}) as any;

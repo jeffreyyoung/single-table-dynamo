@@ -28,7 +28,7 @@ test('should format query request properly', () => {
     },
     IndexName: 'MyIndex',
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
-    ScanIndexForeward: false,
+    ScanIndexForward: true,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'MyTable',
   });

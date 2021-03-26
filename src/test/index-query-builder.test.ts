@@ -60,10 +60,35 @@ test('should build query with no sortkey', () => {
     },
     Limit: 25,
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
-    ScanIndexForeward: false,
+    ScanIndexForward: true,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });
+
+  expect(
+    getBuilder(mapper.args.primaryIndex as any)
+      .where({
+        country: 'USA',
+      })
+      .limit(25)
+      .sort('asc')
+      .build()
+  ).toEqual({
+    ExpressionAttributeNames: {
+      '#attr0': 'pk1',
+      '#attr1': 'sk1',
+    },
+    ExpressionAttributeValues: {
+      ':value0': 'User#USA',
+      ':value1': 'User',
+    },
+    Limit: 25,
+    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
+    ScanIndexForward: true,
+    Select: 'ALL_ATTRIBUTES',
+    TableName: 'yeehaw',
+  });
+
 });
 
 test('should build query with extra fields', () => {
@@ -86,7 +111,7 @@ test('should build query with extra fields', () => {
     },
     Limit: 25,
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
-    ScanIndexForeward: false,
+    ScanIndexForward: true,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });
@@ -111,7 +136,7 @@ test('should build query with sortkey', () => {
       ':value1': 'User#UT',
     },
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
-    ScanIndexForeward: false,
+    ScanIndexForward: true,
     Select: 'ALL_ATTRIBUTES',
     Limit: 25,
     TableName: 'yeehaw',
@@ -150,7 +175,7 @@ test('should build non primary index', () => {
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     IndexName: 'third',
     Limit: 25,
-    ScanIndexForeward: false,
+    ScanIndexForward: true,
     Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });

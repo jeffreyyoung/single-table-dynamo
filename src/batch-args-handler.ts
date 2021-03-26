@@ -1,4 +1,4 @@
-import { GetRequest } from 'batch-get';
+import { GetRequest } from './batch-get';
 import { DeleteRequest, PutRequest } from './batch-write';
 import { Mapper } from './mapper';
 

@@ -13,7 +13,7 @@ type Where = {
  */
 export type QueryData = {
   keyConditions: Where[]
-  sortOrder: 'asc' | 'desc'
+  sortDirection: 'asc' | 'desc'
   limit: number
   indexName?: string
   tableName?: string
@@ -28,7 +28,7 @@ export class QueryBuilder {
   constructor(data?: QueryData) {
     this.data = data || {
       keyConditions: [],
-      sortOrder: 'desc',
+      sortDirection: 'asc',
       limit: 25
     }
   }
@@ -49,7 +49,7 @@ export class QueryBuilder {
   }
 
   sort(direction: 'asc' | 'desc') {
-    return this.cloneWith({sortOrder: direction});
+    return this.cloneWith({sortDirection: direction});
   }
 
   limit(limit: number) {
@@ -72,7 +72,7 @@ export class QueryBuilder {
   build() {
     return {
       TableName: this.data.tableName,
-      ScanIndexForeward: this.data.sortOrder === 'asc' ? true : false,
+      ScanIndexForward: this.data.sortDirection === 'asc',
       Select: 'ALL_ATTRIBUTES',
       Limit: this.data.limit || 20,
       ...this.data.indexName && {IndexName: this.data.indexName},

@@ -1,38 +1,66 @@
 import { Repository } from '../../repository';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { array, object, string } from 'superstruct';
-
-const getUserRepo = () => new Repository({
-  tableName: 'table1',
-  typeName: 'User',
-  schema: object({
-    id: string(),
-    followers: array(string()),
-    country: string(),
-    city: string(),
-    state: string()
-  }),
-  primaryIndex: {
-    tag: 'primary',
-    pk: 'pk1',
-    sk: 'sk1',
-    fields: ['id']
-  },
-  secondaryIndexes: {
-    byCountryByStateByCity: {
-      pk: 'pk2',
-      sk: 'sk2',
-      fields: ['country', 'state', 'city'],
-      indexName: 'gsi1',
-    }
-  }
-}, new DocumentClient({
+const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
     endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
     sslEnabled: false,
     region: 'local',
   }),
-}))
+});
+const getUserRepo = () =>
+  new Repository(
+    {
+      tableName: 'table1',
+      typeName: 'User',
+      schema: object({
+        id: string(),
+        followers: array(string()),
+        country: string(),
+        city: string(),
+        state: string(),
+      }),
+      primaryIndex: {
+        tag: 'primary',
+        pk: 'pk1',
+        sk: 'sk1',
+        fields: ['id'],
+      },
+      secondaryIndexes: {
+        byCountryByStateByCity: {
+          pk: 'pk2',
+          sk: 'sk2',
+          fields: ['country', 'state', 'city'],
+          indexName: 'gsi1',
+        },
+      },
+    },
+    ddb
+  );
+
+
+test('getDocument works as expected', async () => {
+  const repo = new Repository({
+    ...getUserRepo().args,
+    getDocument: (args) => ddb.get(args).promise()
+  }, ddb)
+
+  await repo.put({
+    city: 'gump',
+    state: 'forest',
+    country: 'vietnam',
+    followers: [],
+    id: '5'
+  });
+
+  await expect(repo.get({id: '5'})).resolves.toMatchObject({
+    city: 'gump',
+    state: 'forest',
+    country: 'vietnam',
+    followers: [],
+    id: '5'
+  })
+})
 
 test('get, put, delete, updateUnsafe, and query should work', async () => {
   const repo = getUserRepo();
@@ -207,6 +235,60 @@ test('curosr pagination should work', async () => {
     .limit(2)
     .cursor(res.encodeCursor(res!.Items![1]))
     .exec();
-  
+
   expect(page3!.Items!.map(i => i.city)).toMatchObject([cities[2]]);
+});
+
+test('sort ascending/descending should work', async () => {
+  const wordRepo = new Repository(
+    {
+      schema: object({
+        lang: string(),
+        word: string(),
+      }),
+      primaryIndex: {
+        fields: ['lang', 'word'],
+        tag: 'primary',
+        pk: 'pk1',
+        sk: 'sk1',
+      },
+      tableName: 'table1',
+      typeName: 'word',
+    },
+    ddb
+  );
+  await Promise.all([
+    wordRepo.put({
+      lang: 'en',
+      word: 'a',
+    }),
+    wordRepo.put({
+      lang: 'en',
+      word: 'b',
+    }),
+    wordRepo.put({
+      lang: 'en',
+      word: 'c',
+    }),
+  ]);
+
+  const { Items } = await wordRepo
+    .query('primary')
+    .where({ lang: 'en' })
+    .sort('desc')
+    .exec();
+  expect(Items).toMatchObject(
+    [{ word: 'c' }, { word: 'b' }, { word: 'a' }],
+  );
+
+  const { Items: ItemsAscending } = await wordRepo
+    .query('primary')
+    .where({ lang: 'en' })
+    .sort('asc')
+    .exec();
+  expect(ItemsAscending).toMatchObject([
+    { word: 'a' },
+    { word: 'b' },
+    { word: 'c' },
+  ]);
 });
