@@ -16,7 +16,7 @@
     "test": "tsdx test",
     "tdd": "tsdx test --watchAll",
     "lint": "tsdx lint",
-    "deploy": "yarn build && yarn publish"
+    "deploy": "yarn test && yarn build && yarn publish"
   },
   "prettier": {
     "printWidth": 80,
