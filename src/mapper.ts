@@ -1,6 +1,9 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { GetRequest } from 'batch-get';
+import { Repository } from 'repository';
 import { mask, partial, Struct } from 'superstruct';
 import { StructSchema } from 'superstruct/lib/utils';
+import { UnwrapPromise } from 'utils/UnwrapPromise';
 import { removeUndefined } from './utils/removeUndefined';
 import { takeWhile } from './utils/takeWhile';
 
@@ -19,6 +22,14 @@ type SecondaryIndex<T> = {
   shouldWriteIndex?: (src: T) => boolean
 }
 
+export type onHooks<T, R extends Repository> = {
+  get?: (args: Parameters<Repository['get']>, returned: UnwrapPromise<ReturnType<Repository['get']>>, keyInfo: GetRequest) => any,
+  updateUnsafe?: (args: Parameters<Repository['updateUnsafe']>, returned: UnwrapPromise<ReturnType<Repository['updateUnsafe']>>, keyInfo: GetRequest) => any,
+  put?: (args: Parameters<Repository['put']>, returned: UnwrapPromise<ReturnType<Repository['put']>>, keyInfo: GetRequest) => any,
+  delete?: (args: Parameters<Repository['delete']>, returned: UnwrapPromise<ReturnType<Repository['delete']>>, keyInfo: GetRequest) => any,
+  query?: (results: { result: T, keyInfo: GetRequest }[]) => any
+}
+
 export type RepositoryArgs<
   T = Record<string, any>,
   PrimaryKeyField extends IndexField<T> = any,
@@ -29,6 +40,7 @@ export type RepositoryArgs<
   tableName: string;
   typeName: string;
   getDocument?: (args: Parameters<DocumentClient['get']>[0]) => ReturnType<ReturnType<DocumentClient['get']>['promise']>
+  on?: onHooks<T, Repository>,
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
@@ -61,7 +73,7 @@ export class Mapper<
     return mask(obj, this.args.schema);
   }
 
-  getKey(id: Id) {
+  getKey(id: Id | T) {
     return this.getIndexKey(id as any, this.args.primaryIndex);
   }
 

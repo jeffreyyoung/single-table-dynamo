@@ -36,10 +36,12 @@ export class Repository<
 
   async get(id: ID) {
     const res = await this.doGet(id);
-    return res.Item as Src || null;
+    const item = res.Item as Src || null;
+    this.args.on?.get?.([id], item, this.getHookKeyInfo(id));
+    return item;
   }
 
-  getKey(id: ID) {
+  getKey(id: ID | Src) {
     return this.mapper.getKey(id);
   }
 
@@ -53,7 +55,19 @@ export class Repository<
       ...getDDBUpdateExpression(updates, options.upsert ? [] : Object.keys(this.mapper.getKey(id))),
       ReturnValues: options?.returnValues ?? 'ALL_NEW',
     }).promise();
-    return res.Attributes as Src || null;
+    const updated = (res.Attributes as Src) || null
+    if (updated) {
+      this.args.on?.updateUnsafe?.([id, src, options], updated, this.getHookKeyInfo(updated))
+    }
+    
+    return updated;
+  }
+
+  private getHookKeyInfo(thing: Src | ID) {
+    return {
+      TableName: this.args.tableName,
+      Key: this.getKey(thing)
+    }
   }
 
   async put(src: Src) {
@@ -64,7 +78,7 @@ export class Repository<
         Item: this.mapper.decorateWithKeys(masked),
       })
       .promise();
-
+    this.args.on?.put?.([src], masked, this.getHookKeyInfo(masked))
     return masked;
   }
 
@@ -75,6 +89,7 @@ export class Repository<
         Key: this.mapper.getKey(id),
       })
       .promise();
+    this.args.on?.delete?.([id], true, this.getHookKeyInfo(id))
     return true;
   }
   getIndexByTag(indexTag: IndexTag | SecondaryIndexTag): IndexBase<Src> {
