@@ -13,17 +13,17 @@ export async function batchGet<Requests extends readonly GetRequest[]>(ddb: Docu
 > {
   //Here we register the primary partition and sort key fields for each table
   const tableToKeyFields: Record<string, string[]> = {};
-
   //here we cache the order of all the requests
   const stringKeys = requestsIn.map((r) => {
     tableToKeyFields[r.TableName] = Object.keys(r.Key);
     return getStringKey(r);
   });
-  
+
   const stringKeyToResult = {};
 
+  const uniqRequests = uniqueBy(requestsIn as any as GetRequest<any>[], getStringKey);
 
-  let unprocessed: GetRequest[] = requestsIn.slice(0);
+  let unprocessed: GetRequest[] = uniqRequests.slice(0);
 
   while (unprocessed.length > 0) {
     //take off 25
@@ -51,7 +51,14 @@ function getKeyFromItem(keyFields: string[], item: any) {
 }
 
 function getStringKey(request: GetRequest) {
-  return request.TableName + JSON.stringify(request.Key);
+  return request.TableName + Object.keys(request.Key).sort().map(prop => `${prop}:${request.Key[prop]}`);
+}
+
+function uniqueBy<T>(things:T[], fn: (arg: T) => string) {
+  const thingsByKey: Record<string, T> = {};
+  things.forEach(thing => thingsByKey[fn(thing)] = thing);
+
+  return Array.from(new Set(Object.keys(thingsByKey))).map(k => thingsByKey[k]);
 }
 
 function _convertRequestsToBatchGetInput(requests: GetRequest[]) {
