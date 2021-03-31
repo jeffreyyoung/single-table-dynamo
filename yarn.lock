@@ -6050,11 +6050,6 @@ subleveldown@^5.0.0:
     levelup "^4.4.0"
     reachdown "^1.1.0"
 
-superstruct@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/superstruct/-/superstruct-0.14.0.tgz#bcb39a880df84431f4ebc212a43f4a08bf2e4275"
-  integrity sha512-ZAbLEckVHuq6Np4Apb4poT90uVw8cCdzg2in7tapumcBOTRWM8ZsBdsQnUIPIZOHRa7Ohfh1YZ0nMvomJHbYig==
-
 supports-color@^5.3.0:
   version "5.5.0"
   resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-5.5.0.tgz#e2e69a44ac8772f78a1ec0b35b689df6530efc8f"
@@ -6657,9 +6652,9 @@ xtend@^4.0.2, xtend@~4.0.0:
   integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
 
 y18n@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/y18n/-/y18n-4.0.0.tgz#95ef94f85ecc81d007c264e190a120f0a3c8566b"
-  integrity sha512-r9S/ZyXu/Xu9q1tYlpsLIsa3EeLXXk0VwlxqTcFRfg9EhMW+17kbt9G0NrgCmhGb5vT2hyhJZLfDGx+7+5Uj/w==
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/y18n/-/y18n-4.0.1.tgz#8db2b83c31c5d75099bb890b23f3094891e247d4"
+  integrity sha512-wNcy4NvjMYL8gogWWYAO7ZFWFfHcbdbE57tZO8e4cbpj8tfUcwrwqSl3ad8HxpYWCdXcJUCeKKZS62Av1affwQ==
 
 yaml@^1.7.2:
   version "1.10.0"
