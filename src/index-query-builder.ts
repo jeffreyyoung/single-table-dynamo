@@ -1,4 +1,5 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { FieldsToProject, getDefaultFieldsToProject } from 'utils/ProjectFields';
 import { Mapper, ifSecondaryIndexGetName, IndexBase } from './mapper';
 import { QueryBuilder } from './query-builder';
 
@@ -18,6 +19,7 @@ export function getCursorEncoder<Src>(args: {
 type IndexQueryBuilderArgs<T> = {
   tableName: string
   mapper: Mapper
+  fieldsToProject?: FieldsToProject<T>
   index: IndexBase<T>
   builder?: QueryBuilder
   ddb?: DocumentClient;
@@ -32,14 +34,16 @@ export class IndexQueryBuilder<Src> {
   encodeCursor: (src: Src) => string;
 
   constructor(
-    {tableName, mapper, builder, index, ddb}: IndexQueryBuilderArgs<Src>
+    {tableName, mapper, builder, index, ddb, fieldsToProject }: IndexQueryBuilderArgs<Src>
   ) {
     this.tableName = tableName;
     this.mapper = mapper;
     this.index = index;
     this.ddb = ddb;
     this.builder = (builder || new QueryBuilder()).table(tableName);
-
+    if (fieldsToProject) {
+      this.builder = this.builder.project(fieldsToProject);
+    }
     this.encodeCursor = getCursorEncoder({
       secondaryIndex:index,
       primaryIndex: mapper.args.primaryIndex,
@@ -57,12 +61,16 @@ export class IndexQueryBuilder<Src> {
       mapper: this.mapper,
       index: this.index,
       ddb: this.ddb,
-      builder
+      builder: builder.cloneWith({})
     })
   }
 
   limit(t: number) {
     return this.clone(this.builder.limit(t));
+  }
+
+  project(fieldsToProject: FieldsToProject<Src>) {
+    return this.clone(this.builder.project(fieldsToProject));
   }
 
   sort(direction: 'asc' | 'desc') {

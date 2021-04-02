@@ -1,3 +1,4 @@
+import { FieldsToProject, getDefaultFieldsToProject } from './utils/ProjectFields';
 import { GetRequest } from './batch-get';
 import { DeleteRequest, PutRequest } from './batch-write';
 import { Mapper } from './mapper';
@@ -22,10 +23,11 @@ export class BatchArgsHandler<Id, T> {
     }
   }
 
-  get(item: Id): GetRequest<T> {
+  get(item: Id, extraArgs?: { fieldsToProject?: FieldsToProject<T> }): GetRequest<any> {
     return {
       TableName: this.tableName,
       Key: this.mapper.getKey(item as any),
+      projectionFields: extraArgs?.fieldsToProject || getDefaultFieldsToProject(this.mapper.args as any)
     }
   }
 

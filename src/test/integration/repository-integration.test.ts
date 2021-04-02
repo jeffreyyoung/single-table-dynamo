@@ -39,6 +39,21 @@ const getUserRepo = () =>
   );
 
 
+test('projection expression should work', async () => {
+  const repo = getUserRepo();
+
+  await repo.put({
+    city: 'gump',
+    state: 'forest',
+    country: 'vietnam',
+    followers: [],
+    id: '5'
+  });
+
+  const got1 = await repo.get({id: '5'}, { fieldsToProject: ['city']})
+  expect(Object.keys(got1 || {})).toMatchObject(['city'])
+})
+
 test('getDocument works as expected', async () => {
   const repo = new Repository({
     ...getUserRepo().args,
@@ -82,10 +97,6 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
             "country": "CA",
             "followers": Array [],
             "id": "yay",
-            "pk1": "User#yay",
-            "pk2": "User#CA",
-            "sk1": "User",
-            "sk2": "User#PA#scranton",
             "state": "PA",
           }
         `);
@@ -108,6 +119,7 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
     repo
       .query('byCountryByStateByCity')
       .where({ country: 'CA' })
+      .project([])
       .exec()
   ).resolves.toMatchInlineSnapshot(`
           Object {
@@ -167,10 +179,6 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
                   "yay1",
                 ],
                 "id": "yay",
-                "pk1": "User#yay",
-                "pk2": "User#CA",
-                "sk1": "User",
-                "sk2": "User#PA#scranton",
                 "state": "PA",
               },
             ],

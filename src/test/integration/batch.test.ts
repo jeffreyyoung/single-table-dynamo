@@ -1,6 +1,6 @@
 import { Repository } from '../../repository';
-import { batchWrite } from '../../batch-write';
-import { batchGet } from '../../batch-get';
+import { batchPut, batchWrite } from '../../batch-write';
+import { batchGet, convertRequestsToBatchGetInput } from '../../batch-get';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { object, string } from 'superstruct';
 
@@ -47,9 +47,90 @@ const thingRepo = new Repository(
   ddb
 );
 
-test('batch get should handle duplicate keys', async () => {
+test('should handle custom fieldsToProject', async () => {
+  await batchPut(ddb, [
+    thingRepo.batch.put({ id: '1', name: 'yes' }),
+    thingRepo.batch.put({ id: '2', name: 'no' }),
+    thingRepo.batch.put({ id: '3', name: 'maybe' }),
+    personRepo.batch.put({ personId: 'hello?', name: 'ok' }),
+  ]);
+
+  expect(
+    await batchGet(ddb, [
+      thingRepo.batch.get({ id: '1' }, { fieldsToProject: ['name'] }),
+      thingRepo.batch.get({ id: '1' }, { fieldsToProject: ['name'] }),
+      thingRepo.batch.get({ id: '1' }, { fieldsToProject: ['name'] }),
+      personRepo.batch.get(
+        { personId: 'hello?' },
+        { fieldsToProject: ['name'] }
+      ),
+    ])
+  ).toMatchInlineSnapshot(`
+    Array [
+      Object {
+        "name": "yes",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      Object {
+        "name": "yes",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      Object {
+        "name": "yes",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      Object {
+        "name": "ok",
+        "pk1": "Person#hello?",
+        "sk1": "Person",
+      },
+    ]
+  `);
+
+  // should merge fields to project
+  expect(
+    await batchGet(ddb, [
+      thingRepo.batch.get({ id: '1' }, { fieldsToProject: ['id'] }),
+      thingRepo.batch.get({ id: '1' }, { fieldsToProject: ['id'] }),
+      thingRepo.batch.get({ id: '1' }, { fieldsToProject: ['name'] }),
+      personRepo.batch.get({ personId: 'hello?' }),
+    ])
+  ).toMatchInlineSnapshot(`
+    Array [
+      Object {
+        "id": "1",
+        "name": "yes",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      Object {
+        "id": "1",
+        "name": "yes",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      Object {
+        "id": "1",
+        "name": "yes",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      Object {
+        "name": "ok",
+        "personId": "hello?",
+        "pk1": "Person#hello?",
+        "sk1": "Person",
+      },
+    ]
+  `);
+});
+
+test('batch get should handle duplicate keys for objects that do not exist', async () => {
   await expect(
-    batchGet(ddb, [
+    await batchGet(ddb, [
       { TableName: 'THINGS_TABLE', Key: { pk0: 'User#env2', sk0: 'User' } },
       {
         TableName: 'THINGS_TABLE',
@@ -61,7 +142,7 @@ test('batch get should handle duplicate keys', async () => {
         Key: { pk0: 'Community#wyHwHdx83x8UZlutb2kr-', sk0: 'Community' },
       },
     ])
-  ).resolves.toEqual([undefined, undefined, undefined, undefined]);
+  ).toEqual([undefined, undefined, undefined, undefined]);
 });
 
 test('types should infer correctly', async () => {

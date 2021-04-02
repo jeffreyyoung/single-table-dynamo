@@ -3,7 +3,7 @@ import { GetRequest } from 'batch-get';
 import { Repository } from 'repository';
 import { mask, partial, Struct } from 'superstruct';
 import { StructSchema } from 'superstruct/lib/utils';
-import { UnwrapPromise } from 'utils/UnwrapPromise';
+import { UnwrapPromise } from './utils/UnwrapPromise';
 import { removeUndefined } from './utils/removeUndefined';
 import { takeWhile } from './utils/takeWhile';
 

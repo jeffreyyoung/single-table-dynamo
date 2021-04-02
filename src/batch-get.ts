@@ -1,9 +1,10 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { FieldsToProject, toProjectionExpression } from './utils/ProjectFields';
 
 export type GetRequest<ReturnType = any> = {
   TableName: string
   Key: any
-  _res?: ReturnType
+  projectionFields?: FieldsToProject<ReturnType>
 }
 
 const BATCH_GET_REQUEST_LIMIT = 100;
@@ -13,9 +14,15 @@ export async function batchGet<Requests extends readonly GetRequest[]>(ddb: Docu
 > {
   //Here we register the primary partition and sort key fields for each table
   const tableToKeyFields: Record<string, string[]> = {};
+  //Here we register the projection fields of each table
+  const tableToProjectionFields: Record<string, Set<string>> = {}
   //here we cache the order of all the requests
   const stringKeys = requestsIn.map((r) => {
     tableToKeyFields[r.TableName] = Object.keys(r.Key);
+    if (!tableToProjectionFields[r.TableName]) {
+      tableToProjectionFields[r.TableName] = new Set<string>(tableToKeyFields[r.TableName]);
+    }
+    r.projectionFields?.forEach(f => tableToProjectionFields[r.TableName].add(f))
     return getStringKey(r);
   });
 
@@ -28,8 +35,7 @@ export async function batchGet<Requests extends readonly GetRequest[]>(ddb: Docu
   while (unprocessed.length > 0) {
     //take off 25
     let requests = unprocessed.splice(0, BATCH_GET_REQUEST_LIMIT);
-
-    const res = await ddb.batchGet(_convertRequestsToBatchGetInput(requests)).promise();
+    const res = await ddb.batchGet(convertRequestsToBatchGetInput(requests, tableToProjectionFields)).promise();
     if (res.Responses) {
       Object.entries(res.Responses).forEach(([TableName, items]) => {
         items.forEach(item => {
@@ -61,14 +67,14 @@ function uniqueBy<T>(things:T[], fn: (arg: T) => string) {
   return Array.from(new Set(Object.keys(thingsByKey))).map(k => thingsByKey[k]);
 }
 
-function _convertRequestsToBatchGetInput(requests: GetRequest[]) {
+export function convertRequestsToBatchGetInput(requests: GetRequest[], tableToProjectionFields: Record<string, Set<string>>): DocumentClient.BatchGetItemInput {
   return requests.reduce<DocumentClient.BatchGetItemInput>((prev, req) => {
     if (!prev.RequestItems[req.TableName]) {
-      prev.RequestItems[req.TableName] = {
-        Keys: []
-      }
+      prev.RequestItems[req.TableName] = { Keys: []}
     }
     prev.RequestItems[req.TableName].Keys.push(req.Key)
+    // add projection expression to this table
+    Object.assign(prev.RequestItems[req.TableName], toProjectionExpression(Array.from(tableToProjectionFields[req.TableName])));
     return prev;
   }, {
     RequestItems: {

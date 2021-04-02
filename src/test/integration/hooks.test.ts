@@ -77,12 +77,16 @@ test('hooks should get called', async () => {
           Object {
             "id": "1",
           },
+          Object {
+            "fieldsToProject": Array [
+              "id",
+              "name",
+            ],
+          },
         ],
         Object {
           "id": "1",
           "name": "meow",
-          "pk1": "Thing#1",
-          "sk1": "Thing",
         },
         Object {
           "Key": Object {
@@ -96,13 +100,17 @@ test('hooks should get called', async () => {
         Array [
           Object {
             "id": "1",
+          },
+          Object {
+            "fieldsToProject": Array [
+              "id",
+              "name",
+            ],
           },
         ],
         Object {
           "id": "1",
           "name": "yeehaw",
-          "pk1": "Thing#1",
-          "sk1": "Thing",
         },
         Object {
           "Key": Object {
@@ -116,6 +124,12 @@ test('hooks should get called', async () => {
         Array [
           Object {
             "id": "1",
+          },
+          Object {
+            "fieldsToProject": Array [
+              "id",
+              "name",
+            ],
           },
         ],
         null,

@@ -3,6 +3,11 @@ import { IndexBase, IndexField, Mapper, RepositoryArgs } from './mapper';
 import { getCursorEncoder, IndexQueryBuilder } from './index-query-builder';
 import {getDDBUpdateExpression} from './utils/getDDBUpdateExpression';
 import { BatchArgsHandler } from './batch-args-handler';
+import { FieldsToProject, toProjectionExpression, getDefaultFieldsToProject } from './utils/ProjectFields';
+
+type ExtraQueryParams<T> = {
+  fieldsToProject: FieldsToProject<T>
+}
 
 export class Repository<
   Src = any,
@@ -23,9 +28,10 @@ export class Repository<
     this.ddb = ddb;
   }
 
-  private doGet(id: ID) {
+  private doGet(id: ID, extraParams: ExtraQueryParams<Src>) {
     const args = {
       TableName: this.args.tableName,
+      ...toProjectionExpression(extraParams.fieldsToProject),
       Key: this.mapper.getKey(id)
     }
 
@@ -34,10 +40,11 @@ export class Repository<
       this.ddb.get(args).promise()
   }
 
-  async get(id: ID) {
-    const res = await this.doGet(id);
+  async get(id: ID, extraParams: ExtraQueryParams<Src> = { fieldsToProject: getDefaultFieldsToProject<Src>(this.args as any)}) {
+
+    const res = await this.doGet(id, extraParams);
     const item = res.Item as Src || null;
-    this.args.on?.get?.([id], item, this.getHookKeyInfo(id));
+    this.args.on?.get?.([id, extraParams], item, this.getHookKeyInfo(id));
     return item;
   }
 
@@ -111,6 +118,7 @@ export class Repository<
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
       mapper: this.mapper as any,
+      fieldsToProject: getDefaultFieldsToProject(this.args),
       ddb: this.ddb
     });
     return builder;
