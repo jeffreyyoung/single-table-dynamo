@@ -61,7 +61,6 @@ test('should build query with no sortkey', () => {
     Limit: 25,
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     ScanIndexForward: true,
-    Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });
 
@@ -85,7 +84,6 @@ test('should build query with no sortkey', () => {
     Limit: 25,
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     ScanIndexForward: true,
-    Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });
 
@@ -112,7 +110,6 @@ test('should build query with extra fields', () => {
     Limit: 25,
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     ScanIndexForward: true,
-    Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });
 });
@@ -137,7 +134,6 @@ test('should build query with sortkey', () => {
     },
     KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
     ScanIndexForward: true,
-    Select: 'ALL_ATTRIBUTES',
     Limit: 25,
     TableName: 'yeehaw',
   });
@@ -176,7 +172,6 @@ test('should build non primary index', () => {
     IndexName: 'third',
     Limit: 25,
     ScanIndexForward: true,
-    Select: 'ALL_ATTRIBUTES',
     TableName: 'yeehaw',
   });
 });
