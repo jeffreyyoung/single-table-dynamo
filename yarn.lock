@@ -6050,11 +6050,6 @@ subleveldown@^5.0.0:
     levelup "^4.4.0"
     reachdown "^1.1.0"
 
-superstruct@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/superstruct/-/superstruct-0.14.0.tgz#bcb39a880df84431f4ebc212a43f4a08bf2e4275"
-  integrity sha512-ZAbLEckVHuq6Np4Apb4poT90uVw8cCdzg2in7tapumcBOTRWM8ZsBdsQnUIPIZOHRa7Ohfh1YZ0nMvomJHbYig==
-
 supports-color@^5.3.0:
   version "5.5.0"
   resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-5.5.0.tgz#e2e69a44ac8772f78a1ec0b35b689df6530efc8f"
@@ -6624,9 +6619,9 @@ write@1.0.3:
     mkdirp "^0.5.1"
 
 ws@^7.0.0:
-  version "7.4.0"
-  resolved "https://registry.yarnpkg.com/ws/-/ws-7.4.0.tgz#a5dd76a24197940d4a8bb9e0e152bb4503764da7"
-  integrity sha512-kyFwXuV/5ymf+IXhS6f0+eAFvydbaBW3zjpT6hUdAh/hbVjTIB5EHBGi0bPoCLSK2wcuz3BrEkB9LrYv1Nm4NQ==
+  version "7.4.6"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-7.4.6.tgz#5654ca8ecdeee47c33a9a4bf6d28e2be2980377c"
+  integrity sha512-YmhHDO4MzaDLB+M9ym/mDA5z0naX8j7SIlT8f8z+I0VtzsRbekxEutHSme7NPS2qE8StCYQNUnfWdXta/Yu85A==
 
 xml-name-validator@^3.0.0:
   version "3.0.0"
