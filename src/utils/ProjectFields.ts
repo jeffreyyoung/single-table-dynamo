@@ -1,5 +1,3 @@
-import { RepositoryArgs } from "mapper";
-
 export type FieldsToProject<T = any> = (string & keyof T)[]
 
 export function getDefaultFieldsToProject<Src>(args: any): FieldsToProject<Src> {

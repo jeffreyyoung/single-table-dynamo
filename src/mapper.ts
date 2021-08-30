@@ -10,9 +10,19 @@ import { takeWhile } from './utils/takeWhile';
 export type IndexField<T> = Extract<keyof T, string>;
 
 export type IndexBase<T, Field extends IndexField<T> = any> = {
+  /**
+   * The fields to be indexed.  The first <partitionKeyFieldCount ?? 1> are used for the partition key
+   * while the rest are used for the sort key. To query this index all partitionKeys must be provided
+   */
   fields: Field[];
   pk: string;
   sk: string;
+  /**
+   * By default, the first field in the fields array will be used as the partition key
+   * Setting partitionKeyFieldCount=2 will result in the first 2 fields being used as
+   * partitionKeyFields
+   */
+  partitionKeyFieldCount?: number;
   stringifyField?: Partial<Record<Field, (field: Field, obj: T) => string>>;
 };
 
@@ -99,8 +109,10 @@ export class Mapper<
     if (!options.partial && !shouldWriteIndex(thing as IdOrT, index)) {
       return {};
     }
-    const pkFields = index.fields.slice(0, 1);
-    let skFields = index.fields.slice(1);
+    const numPkFields = index.partitionKeyFieldCount || 1;
+
+    const pkFields = index.fields.slice(0, numPkFields);
+    let skFields = index.fields.slice(numPkFields);
 
     if (options.partial || isSparseIndex(index)) {
 
