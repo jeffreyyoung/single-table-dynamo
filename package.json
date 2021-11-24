@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "7.0.12",
+  "version": "7.0.14",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -32,6 +32,7 @@
     "husky": "^3.0.9",
     "jest-dynalite": "^3.2.3",
     "sinon": "^9.2.1",
+    "superstruct": "0.14.0",
     "tsdx": "^0.14.1",
     "tslib": "^1.10.0",
     "typescript": "^3.7.2"
