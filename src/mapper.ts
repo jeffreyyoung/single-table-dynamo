@@ -57,7 +57,7 @@ export type onHooks<T, R extends Repository> = {
 export type ZodesqueSchema<TInput = unknown> = {
   parse: (input: any) => TInput;
   partial: () => {
-    parse: (input: any) => TInput;
+    parse: (input: any) => Partial<TInput>;
   };
 };
 

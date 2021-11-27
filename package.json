@@ -10,7 +10,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && tsc",
+    "build": "rm -rf ./dist && tsc -p tsconfig.prod.json",
     "test": "jest",
     "tdd": "jest --watchAll",
     "deploy": "yarn test && yarn build && yarn publish"
@@ -26,6 +26,7 @@
     "@types/sinon": "^9.0.9",
     "aws-sdk": "^2.566.0",
     "dotenv": "^8.2.0",
+    "expect-type": "^0.13.0",
     "husky": "^3.0.9",
     "jest": "^27.3.1",
     "jest-dynalite": "^3.2.3",
