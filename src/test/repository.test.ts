@@ -3,17 +3,18 @@ import sinon from 'sinon';
 import Sinon from 'sinon';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { array, Infer, mask, object, string, partial } from 'superstruct';
-
-const schema = object({
-  id: string(),
-  followers: array(string()),
-  country: string(),
-  city: string(),
-  state: string()
+import { z } from 'zod';
+const schema = z.object({
+  id: z.string(),
+  followers: z.array(z.string()).default([]),
+  country: z.string(),
+  city: z.string(),
+  state: z.string()
 })
 
+
 const globals: {
-  repo: Repository<Infer<typeof schema>, 'id'>;
+  repo: Repository<z.infer<typeof schema>, 'id'>;
   stub: Sinon.SinonStubbedInstance<DocumentClient>;
 } = {} as any;
 
@@ -35,31 +36,31 @@ beforeEach(() => {
   );
 });
 
-test('superstruct works as expected', () => {
-  const schema = globals['repo'].args.schema;
+// test('superstruct works as expected', () => {
+//   const schema = globals['repo'].args.schema;
 
-  const j = mask({
-    id: 'hey',
-    jimm: 'yo',
-    country: 'usa',
-    city: 'yay',
-    state: 'ut',
-    followers: []
-  }, schema);
-  expect(j).toEqual({
-    id: 'hey',
-    country: 'usa',
-    city: 'yay',
-    state: 'ut',
-    followers: []
-  })
+//   const j = mask({
+//     id: 'hey',
+//     jimm: 'yo',
+//     country: 'usa',
+//     city: 'yay',
+//     state: 'ut',
+//     followers: []
+//   }, schema);
+//   expect(j).toEqual({
+//     id: 'hey',
+//     country: 'usa',
+//     city: 'yay',
+//     state: 'ut',
+//     followers: []
+//   })
 
-  const b = mask({
-    id: 'hey',
-    followers: []
-  }, partial(schema));
-  expect(b).toEqual({id: 'hey', followers:[]})
-})
+//   const b = mask({
+//     id: 'hey',
+//     followers: []
+//   }, partial(schema));
+//   expect(b).toEqual({id: 'hey', followers:[]})
+// })
 
 test('updateUnsafe should call document client with correct params', () => {
   globals['stub'].update.returns({ promise: () => ({}) } as any);

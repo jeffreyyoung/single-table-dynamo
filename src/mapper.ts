@@ -1,8 +1,6 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { GetRequest } from './batch-get';
 import { Repository } from './repository';
-import { mask, partial, Struct } from 'superstruct';
-import { StructSchema } from 'superstruct/lib/utils';
 import { UnwrapPromise } from './utils/UnwrapPromise';
 import { removeUndefined } from './utils/removeUndefined';
 import { takeWhile } from './utils/takeWhile';
@@ -40,13 +38,17 @@ export type onHooks<T, R extends Repository> = {
   query?: (results: { result: T, keyInfo: GetRequest }[]) => any
 }
 
+export type ZodesqueSchema<TInput = unknown> = {
+  parse: (input: any) => TInput;
+};
+
 export type RepositoryArgs<
   T = Record<string, any>,
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = '',
   SecondaryIndexTag extends string = string,
 > = {
-  schema: Struct<T, StructSchema<T>>;
+  schema: ZodesqueSchema<T>;
   tableName: string;
   typeName: string;
   getDocument?: (args: Parameters<DocumentClient['get']>[0]) => ReturnType<ReturnType<DocumentClient['get']>['promise']>
@@ -76,11 +78,12 @@ export class Mapper<
   }
 
   partialAssert(obj: Partial<T>): Partial<T> {
-    return removeUndefined(mask(obj, partial(this.args.schema as any)) as any);
+    const parsedPartial = (this.args.schema as any).partial().parse(obj);
+    return removeUndefined(parsedPartial);
   }
 
   assert(obj: T): T {
-    return mask(obj, this.args.schema);
+    return this.args.schema.parse(obj);
   }
 
   getKey(id: Id | T) {
