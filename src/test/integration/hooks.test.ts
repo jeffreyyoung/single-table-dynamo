@@ -1,8 +1,6 @@
 import { Repository } from '../../repository';
-import { batchWrite } from '../../batch-write';
-import { batchGet } from '../../batch-get';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { object, string } from 'superstruct';
+import { z } from 'zod';
 import sinon from 'sinon';
 
 const ddb = new DocumentClient({
@@ -23,9 +21,9 @@ test('hooks should get called', async () => {
   };
   const thingRepo = new Repository(
     {
-      schema: object({
-        id: string(),
-        name: string(),
+      schema: z.object({
+        id: z.string(),
+        name: z.string()
       }),
       tableName: 'table1',
       typeName: 'Thing',

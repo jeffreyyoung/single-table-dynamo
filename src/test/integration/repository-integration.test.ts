@@ -1,6 +1,6 @@
 import { Repository } from '../../repository';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { array, object, string } from 'superstruct';
+import { z } from 'zod';
 const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
     endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
@@ -13,12 +13,12 @@ const getUserRepo = () =>
     {
       tableName: 'table1',
       typeName: 'User',
-      schema: object({
-        id: string(),
-        followers: array(string()),
-        country: string(),
-        city: string(),
-        state: string(),
+      schema: z.object({
+        id: z.string(),
+        followers: z.array(z.string()),
+        country: z.string(),
+        city: z.string(),
+        state: z.string(),
       }),
       primaryIndex: {
         tag: 'primary',
@@ -250,9 +250,9 @@ test('curosr pagination should work', async () => {
 test('sort ascending/descending should work', async () => {
   const wordRepo = new Repository(
     {
-      schema: object({
-        lang: string(),
-        word: string(),
+      schema: z.object({
+        lang: z.string(),
+        word: z.string(),
       }),
       primaryIndex: {
         fields: ['lang', 'word'],

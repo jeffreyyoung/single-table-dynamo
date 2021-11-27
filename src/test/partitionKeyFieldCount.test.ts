@@ -1,14 +1,13 @@
-import { object, string } from 'superstruct';
 import { Repository } from '../repository';
 import { getDocumentClient } from './utils/getDocumentClient';
 import { tableConfig } from './utils/table_config';
-
+import { z } from 'zod';
 const repository = new Repository(
   {
-    schema: object({
-      state: string(),
-      country: string(),
-      createdAt: string(),
+    schema: z.object({
+      state: z.string(),
+      country: z.string(),
+      createdAt: z.string(),
     }),
     tableName: tableConfig.tableName,
     typeName: 'User',
@@ -171,10 +170,10 @@ test('query should work', async () => {
 test('should work when partitionKeyFieldCount > fields.length', async () => {
   const repository = new Repository(
     {
-      schema: object({
-        state: string(),
-        country: string(),
-        createdAt: string(),
+      schema: z.object({
+        state: z.string(),
+        country: z.string(),
+        createdAt: z.string(),
       }),
       tableName: tableConfig.tableName,
       typeName: 'User1',

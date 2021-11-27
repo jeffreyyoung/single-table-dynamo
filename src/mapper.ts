@@ -40,6 +40,9 @@ export type onHooks<T, R extends Repository> = {
 
 export type ZodesqueSchema<TInput = unknown> = {
   parse: (input: any) => TInput;
+  partial: () => {
+    parse: (input: any) => TInput;
+  }
 };
 
 export type RepositoryArgs<
@@ -77,12 +80,17 @@ export class Mapper<
     this.args = args;
   }
 
-  partialAssert(obj: Partial<T>): Partial<T> {
-    const parsedPartial = (this.args.schema as any).partial().parse(obj);
+  partialParse(obj: any): Partial<T> {
+    const parsedPartial = this.args.schema.partial().parse(obj);
     return removeUndefined(parsedPartial);
   }
 
-  assert(obj: T): T {
+  /**
+   * 
+   * @param obj 
+   * @returns 
+   */
+  parse(obj: any): T {
     return this.args.schema.parse(obj);
   }
 
@@ -92,7 +100,7 @@ export class Mapper<
 
   decorateWithKeys(thing: T, options: {assert?: boolean} = {}): T & Record<string, string> {
     if (options.assert) {
-      this.assert(thing);
+      thing = this.parse(thing);
     }
     const indexes = [
       this.args.primaryIndex,
