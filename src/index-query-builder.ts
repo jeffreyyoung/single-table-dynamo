@@ -1,5 +1,5 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { FieldsToProject, getDefaultFieldsToProject } from 'utils/ProjectFields';
+import { FieldsToProject } from './utils/ProjectFields';
 import { Mapper, ifSecondaryIndexGetName, IndexBase } from './mapper';
 import { QueryBuilder } from './query-builder';
 

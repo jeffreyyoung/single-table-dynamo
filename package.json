@@ -5,17 +5,14 @@
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
   "main": "dist/index.js",
-  "module": "dist/single-table-dynamo.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build",
-    "test": "tsdx test",
-    "tdd": "tsdx test --watchAll",
-    "lint": "tsdx lint",
+    "build": "rm -rf ./dist && tsc",
+    "test": "jest",
+    "tdd": "jest --watchAll",
     "deploy": "yarn test && yarn build && yarn publish"
   },
   "prettier": {
@@ -25,19 +22,22 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
+    "@tsconfig/node12": "^1.0.9",
     "@types/jest": "^24.0.22",
     "@types/sinon": "^9.0.9",
     "aws-sdk": "^2.566.0",
     "dotenv": "^8.2.0",
     "husky": "^3.0.9",
+    "jest": "^27.3.1",
     "jest-dynalite": "^3.2.3",
     "sinon": "^9.2.1",
     "superstruct": "0.14.0",
-    "tsdx": "^0.14.1",
-    "tslib": "^1.10.0",
-    "typescript": "^3.7.2"
+    "ts-jest": "^27.0.7",
+    "typescript": "^4.5.2"
   },
-  "dependencies": {},
+  "dependencies": {
+    
+  },
   "peerDependencies": {
     "superstruct": "0.14.0"
   }

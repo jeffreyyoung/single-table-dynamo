@@ -1,4 +1,4 @@
-import { FieldsToProject } from 'utils/ProjectFields'
+import { FieldsToProject } from './utils/ProjectFields'
 import { AttributeRegistry } from './utils/AttributeRegistry'
 
 type Operator = "<" | "<=" | "<>" | "=" | ">" | ">=" | "BETWEEN" | "IN" | "BEGINS_WITH"

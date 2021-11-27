@@ -1,6 +1,6 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { GetRequest } from 'batch-get';
-import { Repository } from 'repository';
+import { GetRequest } from './batch-get';
+import { Repository } from './repository';
 import { mask, partial, Struct } from 'superstruct';
 import { StructSchema } from 'superstruct/lib/utils';
 import { UnwrapPromise } from './utils/UnwrapPromise';
@@ -134,7 +134,7 @@ export class Mapper<
       if (stringify) {
         return stringify(fieldName, thing as IdOrT);
       } else {
-        return thing[fieldName as any];
+        return thing[fieldName as keyof IdOrT];
       }
     }
 

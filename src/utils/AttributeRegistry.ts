@@ -2,8 +2,8 @@ export class AttributeRegistry {
   attributeI = 0;
   valueI = 0;
 
-  ExpressionAttributeNames = {};
-  ExpressionAttributeValues = {};
+  ExpressionAttributeNames: Record<string, any> = {};
+  ExpressionAttributeValues: Record<string, any> = {};
 
   key(key: string) {
     const name= `#attr${this.attributeI}`;

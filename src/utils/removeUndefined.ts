@@ -1,11 +1,13 @@
-export const removeUndefined = (obj: any) => {
+export const removeUndefined = <T>(obj: T): Partial<T> => {
   if (Array.isArray(obj)) {
     return obj
   }
-  let newObj = {};
-  Object.keys(obj).forEach((key) => {
-    if (obj[key] === Object(obj[key])) newObj[key] = removeUndefined(obj[key]);
-    else if (obj[key] !== undefined) newObj[key] = obj[key];
-  });
+  let newObj: Partial<T> = {};
+  (Object.keys(obj) as Array<keyof T>).forEach((key) => {
+    if (obj[key] !== undefined) {
+      newObj[key] = obj[key]
+    }
+  })
+
   return newObj;
 };

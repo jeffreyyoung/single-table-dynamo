@@ -26,7 +26,7 @@ export async function batchGet<Requests extends readonly GetRequest[]>(ddb: Docu
     return getStringKey(r);
   });
 
-  const stringKeyToResult = {};
+  const stringKeyToResult: Record<string, any> = {};
 
   const uniqRequests = uniqueBy(requestsIn as any as GetRequest<any>[], getStringKey);
 
