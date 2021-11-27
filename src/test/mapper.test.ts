@@ -1,6 +1,5 @@
-import { Mapper } from '../mapper';
-import { z } from 'zod';
-
+import { Mapper } from "../mapper";
+import { z } from "zod";
 
 const mapper = new Mapper({
   schema: z.object({
@@ -9,102 +8,101 @@ const mapper = new Mapper({
     createdAt: z.string(),
     id: z.string(),
     updatedAt: z.string(),
-    count: z.number()
+    count: z.number(),
   }),
-  tableName: 'yay',
-  typeName: 'User',
+  tableName: "yay",
+  typeName: "User",
   primaryIndex: {
-    pk: 'pk1',
-    sk: 'sk1',
-    fields: ['country', 'state', 'createdAt']
+    pk: "pk1",
+    sk: "sk1",
+    fields: ["country", "state", "createdAt"],
   },
   secondaryIndexes: {
-    'no': {
-      fields: ['state', 'country', 'createdAt'],
-      indexName: 'index1',
-      pk: 'pk2',
-      sk: 'sk2',
+    no: {
+      fields: ["state", "country", "createdAt"],
+      indexName: "index1",
+      pk: "pk2",
+      sk: "sk2",
       stringifyField: {
-        createdAt: () => 'yeehaw'
-      }
-    }
-  }
-})
+        createdAt: () => "yeehaw",
+      },
+    },
+  },
+});
 
-
-
-test('should format object for dynamodb properly', () => {
+test("should format object for dynamodb properly", () => {
   expect(
     mapper.decorateWithKeys({
-      updatedAt: 'today',
-      createdAt: 'yesterday',
-      country: 'USA',
-      id: '1234',
-      state: 'WA',
+      updatedAt: "today",
+      createdAt: "yesterday",
+      country: "USA",
+      id: "1234",
+      state: "WA",
       count: 25,
     })
   ).toEqual({
-    updatedAt: 'today',
-    createdAt: 'yesterday',
-    country: 'USA',
-    id: '1234',
-    state: 'WA',
+    updatedAt: "today",
+    createdAt: "yesterday",
+    country: "USA",
+    id: "1234",
+    state: "WA",
     count: 25,
 
-    pk1: 'User#USA',
-    pk2: 'User#WA',
-    sk1: 'User#WA#yesterday',
-    sk2: 'User#USA#yeehaw',
+    pk1: "User#USA",
+    pk2: "User#WA",
+    sk1: "User#WA#yesterday",
+    sk2: "User#USA#yeehaw",
   });
 
   expect(
     mapper.decorateWithKeys({
-      updatedAt: 'today',
-      createdAt: 'tomorrow',
-      country: 'USA',
-      id: '1235',
-      state: 'UT',
+      updatedAt: "today",
+      createdAt: "tomorrow",
+      country: "USA",
+      id: "1235",
+      state: "UT",
       count: 33,
     })
   ).toEqual({
-    updatedAt: 'today',
-    createdAt: 'tomorrow',
-    country: 'USA',
-    id: '1235',
-    state: 'UT',
+    updatedAt: "today",
+    createdAt: "tomorrow",
+    country: "USA",
+    id: "1235",
+    state: "UT",
     count: 33,
 
-    pk1: 'User#USA',
-    sk1: 'User#UT#tomorrow',
+    pk1: "User#USA",
+    sk1: "User#UT#tomorrow",
 
-    pk2: 'User#UT',
-    sk2: 'User#USA#yeehaw',
+    pk2: "User#UT",
+    sk2: "User#USA#yeehaw",
   });
 });
 
-test('should format partial index properly', () => {
+test("should format partial index properly", () => {
   expect(
     mapper.getIndexKey(
-      { country: 'USA', state: 'UT' },
+      { country: "USA", state: "UT" },
       mapper.args.primaryIndex,
-      {partial: true}
+      { partial: true }
     )
   ).toEqual({
-    pk1: 'User#USA',
-    sk1: 'User#UT',
+    pk1: "User#USA",
+    sk1: "User#UT",
   });
 
   expect(
-    mapper.getIndexKey({ country: 'USA' }, mapper.args.primaryIndex, {partial: true})
+    mapper.getIndexKey({ country: "USA" }, mapper.args.primaryIndex, {
+      partial: true,
+    })
   ).toEqual({
-    pk1: 'User#USA',
-    sk1: 'User'
+    pk1: "User#USA",
+    sk1: "User",
   });
-
 });
 
-test('should throw when no partition key is provided', () => {
-  expect(
-    () => mapper.getIndexKey({ } as any, mapper.args.primaryIndex, {partial: true})
+test("should throw when no partition key is provided", () => {
+  expect(() =>
+    mapper.getIndexKey({} as any, mapper.args.primaryIndex, { partial: true })
   ).toThrow();
-})
+});

@@ -1,18 +1,18 @@
-import { Repository } from '../../repository';
-import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { z } from 'zod';
+import { Repository } from "../../repository";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { z } from "zod";
 const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
     endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
     sslEnabled: false,
-    region: 'local',
+    region: "local",
   }),
 });
 const getUserRepo = () =>
   new Repository(
     {
-      tableName: 'table1',
-      typeName: 'User',
+      tableName: "table1",
+      typeName: "User",
       schema: z.object({
         id: z.string(),
         followers: z.array(z.string()),
@@ -21,77 +21,79 @@ const getUserRepo = () =>
         state: z.string(),
       }),
       primaryIndex: {
-        tag: 'primary',
-        pk: 'pk1',
-        sk: 'sk1',
-        fields: ['id'],
+        tag: "primary",
+        pk: "pk1",
+        sk: "sk1",
+        fields: ["id"],
       },
       secondaryIndexes: {
         byCountryByStateByCity: {
-          pk: 'pk2',
-          sk: 'sk2',
-          fields: ['country', 'state', 'city'],
-          indexName: 'gsi1',
+          pk: "pk2",
+          sk: "sk2",
+          fields: ["country", "state", "city"],
+          indexName: "gsi1",
         },
       },
     },
     ddb
   );
 
-
-test('projection expression should work', async () => {
+test("projection expression should work", async () => {
   const repo = getUserRepo();
 
   await repo.put({
-    city: 'gump',
-    state: 'forest',
-    country: 'vietnam',
+    city: "gump",
+    state: "forest",
+    country: "vietnam",
     followers: [],
-    id: '5'
+    id: "5",
   });
 
-  const got1 = await repo.get({id: '5'}, { fieldsToProject: ['city']})
-  expect(Object.keys(got1 || {})).toMatchObject(['city'])
-})
+  const got1 = await repo.get({ id: "5" }, { fieldsToProject: ["city"] });
+  expect(Object.keys(got1 || {})).toMatchObject(["city"]);
+});
 
-test('getDocument works as expected', async () => {
-  const repo = new Repository({
-    ...getUserRepo().args,
-    getDocument: (args) => ddb.get(args).promise()
-  }, ddb)
+test("getDocument works as expected", async () => {
+  const repo = new Repository(
+    {
+      ...getUserRepo().args,
+      getDocument: (args) => ddb.get(args).promise(),
+    },
+    ddb
+  );
 
   await repo.put({
-    city: 'gump',
-    state: 'forest',
-    country: 'vietnam',
+    city: "gump",
+    state: "forest",
+    country: "vietnam",
     followers: [],
-    id: '5'
+    id: "5",
   });
 
-  await expect(repo.get({id: '5'})).resolves.toMatchObject({
-    city: 'gump',
-    state: 'forest',
-    country: 'vietnam',
+  await expect(repo.get({ id: "5" })).resolves.toMatchObject({
+    city: "gump",
+    state: "forest",
+    country: "vietnam",
     followers: [],
-    id: '5'
-  })
-})
+    id: "5",
+  });
+});
 
-test('get, put, delete, updateUnsafe, and query should work', async () => {
+test("get, put, delete, updateUnsafe, and query should work", async () => {
   const repo = getUserRepo();
-  await expect(repo.get({ id: 'yay' })).resolves.toEqual(null);
+  await expect(repo.get({ id: "yay" })).resolves.toEqual(null);
 
   const obj = {
-    id: 'yay',
-    city: 'scranton',
-    country: 'CA',
+    id: "yay",
+    city: "scranton",
+    country: "CA",
     followers: [],
-    state: 'PA',
+    state: "PA",
   };
 
   await expect(repo.put(obj)).resolves.toEqual(obj);
 
-  await expect(repo.get({ id: 'yay' })).resolves.toMatchInlineSnapshot(`
+  await expect(repo.get({ id: "yay" })).resolves.toMatchInlineSnapshot(`
           Object {
             "city": "scranton",
             "country": "CA",
@@ -102,23 +104,17 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
         `);
 
   await expect(() =>
-    repo
-      .query('primary')
-      .where({ city: 'scranton' })
-      .exec()
+    repo.query("primary").where({ city: "scranton" }).exec()
   ).toThrow();
 
   await expect(() =>
-    repo
-      .query('byCountryByStateByCity')
-      .where({ city: 'scranton' })
-      .exec()
+    repo.query("byCountryByStateByCity").where({ city: "scranton" }).exec()
   ).toThrow();
 
   await expect(
     repo
-      .query('byCountryByStateByCity')
-      .where({ country: 'CA' })
+      .query("byCountryByStateByCity")
+      .where({ country: "CA" })
       .project([])
       .exec()
   ).resolves.toMatchInlineSnapshot(`
@@ -142,7 +138,7 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
           }
         `);
 
-  await expect(repo.updateUnsafe({ id: obj.id }, { followers: ['yay1'] }))
+  await expect(repo.updateUnsafe({ id: obj.id }, { followers: ["yay1"] }))
     .resolves.toMatchInlineSnapshot(`
           Object {
             "city": "scranton",
@@ -160,14 +156,11 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
         `);
 
   await expect(() =>
-    repo.updateUnsafe({ id: 'NON_EXISTANT_ID' }, { followers: ['YAY'] })
+    repo.updateUnsafe({ id: "NON_EXISTANT_ID" }, { followers: ["YAY"] })
   ).rejects;
 
   await expect(
-    repo
-      .query('byCountryByStateByCity')
-      .where({ country: 'CA' })
-      .exec()
+    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
   ).resolves.toMatchInlineSnapshot(`
           Object {
             "Count": 1,
@@ -187,67 +180,67 @@ test('get, put, delete, updateUnsafe, and query should work', async () => {
           }
         `);
 
-  await expect(repo.delete({ id: 'yay' })).resolves.toBe(true);
+  await expect(repo.delete({ id: "yay" })).resolves.toBe(true);
 
-  await expect(repo.get({ id: 'yay' })).resolves.toBeUndefined;
+  await expect(repo.get({ id: "yay" })).resolves.toBeUndefined;
 });
 
-test('curosr pagination should work', async () => {
+test("curosr pagination should work", async () => {
   const repo = getUserRepo();
-  const cities = ['Alphaville', 'Betaville', 'Canaryville'];
+  const cities = ["Alphaville", "Betaville", "Canaryville"];
 
   await Promise.all(
-    cities.map(city =>
+    cities.map((city) =>
       repo.put({
-        id: city + 'id',
+        id: city + "id",
         city,
-        country: 'DR',
-        state: 'Peravia',
+        country: "DR",
+        state: "Peravia",
         followers: [],
       })
     )
   );
 
   const where = {
-    country: 'DR',
-    state: 'Peravia',
+    country: "DR",
+    state: "Peravia",
   };
 
-  const res = await repo
-    .query('byCountryByStateByCity')
-    .where(where)
-    .exec();
+  const res = await repo.query("byCountryByStateByCity").where(where).exec();
 
-  expect(res!.Items!.map(i => i.city)).toMatchObject(cities);
+  expect(res!.Items!.map((i) => i.city)).toMatchObject(cities);
 
   const page1 = await repo
-    .query('byCountryByStateByCity')
+    .query("byCountryByStateByCity")
     .where(where)
     .limit(1)
     .exec();
 
-  expect(page1!.Items!.map(i => i.city)).toMatchObject([cities[0]]);
+  expect(page1!.Items!.map((i) => i.city)).toMatchObject([cities[0]]);
 
   const page2 = await repo
-    .query('byCountryByStateByCity')
+    .query("byCountryByStateByCity")
     .where(where)
     .limit(2)
     .cursor(res.encodeCursor(res!.Items![0]))
     .exec();
 
-  expect(page2!.Items!.map(i => i.city)).toMatchObject([cities[1], cities[2]]);
+  expect(page2!.Items!.map((i) => i.city)).toMatchObject([
+    cities[1],
+    cities[2],
+  ]);
 
   const page3 = await repo
-    .query('byCountryByStateByCity')
+    .query("byCountryByStateByCity")
     .where(where)
     .limit(2)
     .cursor(res.encodeCursor(res!.Items![1]))
     .exec();
 
-  expect(page3!.Items!.map(i => i.city)).toMatchObject([cities[2]]);
+  expect(page3!.Items!.map((i) => i.city)).toMatchObject([cities[2]]);
 });
 
-test('sort ascending/descending should work', async () => {
+test("sort ascending/descending should work", async () => {
   const wordRepo = new Repository(
     {
       schema: z.object({
@@ -255,48 +248,46 @@ test('sort ascending/descending should work', async () => {
         word: z.string(),
       }),
       primaryIndex: {
-        fields: ['lang', 'word'],
-        tag: 'primary',
-        pk: 'pk1',
-        sk: 'sk1',
+        fields: ["lang", "word"],
+        tag: "primary",
+        pk: "pk1",
+        sk: "sk1",
       },
-      tableName: 'table1',
-      typeName: 'word',
+      tableName: "table1",
+      typeName: "word",
     },
     ddb
   );
   await Promise.all([
     wordRepo.put({
-      lang: 'en',
-      word: 'a',
+      lang: "en",
+      word: "a",
     }),
     wordRepo.put({
-      lang: 'en',
-      word: 'b',
+      lang: "en",
+      word: "b",
     }),
     wordRepo.put({
-      lang: 'en',
-      word: 'c',
+      lang: "en",
+      word: "c",
     }),
   ]);
 
   const { Items } = await wordRepo
-    .query('primary')
-    .where({ lang: 'en' })
-    .sort('desc')
+    .query("primary")
+    .where({ lang: "en" })
+    .sort("desc")
     .exec();
-  expect(Items).toMatchObject(
-    [{ word: 'c' }, { word: 'b' }, { word: 'a' }],
-  );
+  expect(Items).toMatchObject([{ word: "c" }, { word: "b" }, { word: "a" }]);
 
   const { Items: ItemsAscending } = await wordRepo
-    .query('primary')
-    .where({ lang: 'en' })
-    .sort('asc')
+    .query("primary")
+    .where({ lang: "en" })
+    .sort("asc")
     .exec();
   expect(ItemsAscending).toMatchObject([
-    { word: 'a' },
-    { word: 'b' },
-    { word: 'c' },
+    { word: "a" },
+    { word: "b" },
+    { word: "c" },
   ]);
 });

@@ -1,66 +1,64 @@
-import { InferIdType, InferObjectType, Repository } from '../repository';
-import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { z } from 'zod';
-import { tableConfig } from './utils/table_config';
-import { string } from 'superstruct';
+import { InferIdType, InferObjectType, Repository } from "../repository";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { z } from "zod";
+import { tableConfig } from "./utils/table_config";
 
 enum Role {
-  Admin = 'Admin',
-  Peasant = 'Peasant',
+  Admin = "Admin",
+  Peasant = "Peasant",
 }
 
 enum Sport {
-  Football = 'Football',
-  Basketball = 'Basketball',
+  Football = "Football",
+  Basketball = "Basketball",
 }
 
 enum Craft {
-  Pottery = 'Pottery',
-  Knitting = 'Knitting',
+  Pottery = "Pottery",
+  Knitting = "Knitting",
 }
 
 const schema = z.object({
   id: z.string(),
-  bio: z.string().transform(str => str.trim()),
+  bio: z.string().transform((str) => str.trim()),
   role: z.nativeEnum(Role),
   email: z.string().email().min(5).max(100),
   age: z.number().min(0).max(120),
   hobbies: z.array(
     z.union([
       z.object({
-        type: z.literal('sport'),
-        sportName: z.nativeEnum(Sport)
+        type: z.literal("sport"),
+        sportName: z.nativeEnum(Sport),
       }),
       z.object({
-        type: z.literal('craft'),
+        type: z.literal("craft"),
         craftName: z.nativeEnum(Craft),
         materialsNeeded: z.array(z.string()),
       }),
     ])
-  )
+  ),
 });
 
 const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
     endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
     sslEnabled: false,
-    region: 'local',
+    region: "local",
   }),
 });
 
 const repo = new Repository(
   {
-    typeName: 'User',
+    typeName: "User",
 
     schema,
 
-    tableName: 'table1',
+    tableName: "table1",
 
     primaryIndex: {
       ...tableConfig.primaryIndex,
-      fields: ['id'],
+      fields: ["id"],
     },
-
   },
   ddb
 );
@@ -70,28 +68,28 @@ type Id = InferIdType<typeof repo>;
 
 function getDefault() {
   return {
-    id: 'asdfasdf',
+    id: "asdfasdf",
     age: 119,
-    bio: '  Meeeeooowww \n \n \r \t ',
-    email: 'jeffy@yay.com',
+    bio: "  Meeeeooowww \n \n \r \t ",
+    email: "jeffy@yay.com",
     hobbies: [],
     role: Role.Admin,
   };
 }
 
-test('trim should work', async () => {
+test("trim should work", async () => {
   const res = await repo.put(getDefault());
 
-  expect(res.bio).toBe('Meeeeooowww');
+  expect(res.bio).toBe("Meeeeooowww");
 
   await expect(() =>
-repo.updateUnsafe(
-{ id: res.id },
-{
-  age: 121 })).
-
-
-rejects.toMatchInlineSnapshot(`
+    repo.updateUnsafe(
+      { id: res.id },
+      {
+        age: 121,
+      }
+    )
+  ).rejects.toMatchInlineSnapshot(`
 [ZodError: [
   {
     "code": "too_big",
@@ -107,13 +105,13 @@ rejects.toMatchInlineSnapshot(`
 `);
 });
 
-test('regex validation should work', async () => {
+test("regex validation should work", async () => {
   expect(() =>
-repo.put({
-  ...getDefault(),
-  email: 'not a email' })).
-
-rejects.toMatchInlineSnapshot(`
+    repo.put({
+      ...getDefault(),
+      email: "not a email",
+    })
+  ).rejects.toMatchInlineSnapshot(`
 [ZodError: [
   {
     "validation": "email",
@@ -127,17 +125,17 @@ rejects.toMatchInlineSnapshot(`
 `);
 });
 
-test('union should work', async () => {
+test("union should work", async () => {
   const res = await repo.put({
     ...getDefault(),
     hobbies: [
       {
-        type: 'craft',
+        type: "craft",
         craftName: Craft.Knitting,
-        materialsNeeded: ['yarn'],
+        materialsNeeded: ["yarn"],
       },
       {
-        type: 'sport',
+        type: "sport",
         sportName: Sport.Basketball,
       },
     ],

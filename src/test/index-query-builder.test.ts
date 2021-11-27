@@ -1,10 +1,10 @@
-import { IndexQueryBuilder } from '../index-query-builder';
-import { IndexBase, Mapper } from '../mapper';
-import { z } from 'zod';
+import { IndexQueryBuilder } from "../index-query-builder";
+import { IndexBase, Mapper } from "../mapper";
+import { z } from "zod";
 
 const mapper = new Mapper({
-  typeName: 'User',
-  tableName: 'table1',
+  typeName: "User",
+  tableName: "table1",
   schema: z.object({
     state: z.string(),
     country: z.string(),
@@ -14,20 +14,20 @@ const mapper = new Mapper({
     count: z.number(),
   }),
   primaryIndex: {
-    pk: 'pk1',
-    sk: 'sk1',
-    tag: 'countryByStateByCreatedAt',
-    fields: ['country', 'state', 'createdAt'],
+    pk: "pk1",
+    sk: "sk1",
+    tag: "countryByStateByCreatedAt",
+    fields: ["country", "state", "createdAt"],
   },
   secondaryIndexes: {
     stateByCountryByYeehaw: {
-      indexName: 'third',
-      pk: 'pk2',
-      sk: 'sk2',
+      indexName: "third",
+      pk: "pk2",
+      sk: "sk2",
       stringifyField: {
-        count: (name, src) => 'yeehaw',
+        count: (name, src) => "yeehaw",
       },
-      fields: ['state', 'country', 'count'],
+      fields: ["state", "country", "count"],
     },
     // {
     //   indexName: 'countryByUpdatedAt',
@@ -39,111 +39,110 @@ const mapper = new Mapper({
 });
 
 const getBuilder = <T>(index: IndexBase<T>) =>
-  new IndexQueryBuilder<any>({ tableName: 'yeehaw', index, mapper } as any);
+  new IndexQueryBuilder<any>({ tableName: "yeehaw", index, mapper } as any);
 
-test('should build query with no sortkey', () => {
+test("should build query with no sortkey", () => {
   expect(
     getBuilder(mapper.args.primaryIndex as any)
       .where({
-        country: 'USA',
+        country: "USA",
       })
       .limit(25)
       .build()
   ).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'pk1',
-      '#attr1': 'sk1',
+      "#attr0": "pk1",
+      "#attr1": "sk1",
     },
     ExpressionAttributeValues: {
-      ':value0': 'User#USA',
-      ':value1': 'User',
+      ":value0": "User#USA",
+      ":value1": "User",
     },
     Limit: 25,
-    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
+    KeyConditionExpression: "#attr0 = :value0 and begins_with(#attr1, :value1)",
     ScanIndexForward: true,
-    TableName: 'yeehaw',
+    TableName: "yeehaw",
   });
 
   expect(
     getBuilder(mapper.args.primaryIndex as any)
       .where({
-        country: 'USA',
+        country: "USA",
       })
       .limit(25)
-      .sort('asc')
+      .sort("asc")
       .build()
   ).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'pk1',
-      '#attr1': 'sk1',
+      "#attr0": "pk1",
+      "#attr1": "sk1",
     },
     ExpressionAttributeValues: {
-      ':value0': 'User#USA',
-      ':value1': 'User',
+      ":value0": "User#USA",
+      ":value1": "User",
     },
     Limit: 25,
-    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
+    KeyConditionExpression: "#attr0 = :value0 and begins_with(#attr1, :value1)",
     ScanIndexForward: true,
-    TableName: 'yeehaw',
-  });
-
-});
-
-test('should build query with extra fields', () => {
-  expect(
-    getBuilder(mapper.args.primaryIndex as any)
-      .where({
-        country: 'USA',
-        createdAt: '2010-10-21',
-      })
-      .limit(25)
-      .build()
-  ).toEqual({
-    ExpressionAttributeNames: {
-      '#attr0': 'pk1',
-      '#attr1': 'sk1',
-    },
-    ExpressionAttributeValues: {
-      ':value0': 'User#USA',
-      ':value1': 'User',
-    },
-    Limit: 25,
-    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
-    ScanIndexForward: true,
-    TableName: 'yeehaw',
+    TableName: "yeehaw",
   });
 });
 
-test('should build query with sortkey', () => {
+test("should build query with extra fields", () => {
+  expect(
+    getBuilder(mapper.args.primaryIndex as any)
+      .where({
+        country: "USA",
+        createdAt: "2010-10-21",
+      })
+      .limit(25)
+      .build()
+  ).toEqual({
+    ExpressionAttributeNames: {
+      "#attr0": "pk1",
+      "#attr1": "sk1",
+    },
+    ExpressionAttributeValues: {
+      ":value0": "User#USA",
+      ":value1": "User",
+    },
+    Limit: 25,
+    KeyConditionExpression: "#attr0 = :value0 and begins_with(#attr1, :value1)",
+    ScanIndexForward: true,
+    TableName: "yeehaw",
+  });
+});
+
+test("should build query with sortkey", () => {
   expect(
     getBuilder(mapper.args.primaryIndex)
       .where({
-        country: 'USA',
-        state: 'UT',
+        country: "USA",
+        state: "UT",
       })
       .limit(25)
       .build()
   ).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'pk1',
-      '#attr1': 'sk1',
+      "#attr0": "pk1",
+      "#attr1": "sk1",
     },
     ExpressionAttributeValues: {
-      ':value0': 'User#USA',
-      ':value1': 'User#UT',
+      ":value0": "User#USA",
+      ":value1": "User#UT",
     },
-    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
+    KeyConditionExpression: "#attr0 = :value0 and begins_with(#attr1, :value1)",
     ScanIndexForward: true,
     Limit: 25,
-    TableName: 'yeehaw',
+    TableName: "yeehaw",
   });
 });
 
-test('should throw with no partition key', () => {
+test("should throw with no partition key", () => {
   expect(() =>
     getBuilder(mapper.args.primaryIndex)
       .where({
-        state: 'UT',
+        state: "UT",
       })
       .limit(25)
       .build()
@@ -152,26 +151,26 @@ test('should throw with no partition key', () => {
   );
 });
 
-test('should build non primary index', () => {
+test("should build non primary index", () => {
   expect(
-    getBuilder(mapper.args.secondaryIndexes!['stateByCountryByYeehaw'])
+    getBuilder(mapper.args.secondaryIndexes!["stateByCountryByYeehaw"])
       .where({
-        state: 'WA',
+        state: "WA",
       })
       .build()
   ).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'pk2',
-      '#attr1': 'sk2',
+      "#attr0": "pk2",
+      "#attr1": "sk2",
     },
     ExpressionAttributeValues: {
-      ':value0': 'User#WA',
-      ':value1': 'User',
+      ":value0": "User#WA",
+      ":value1": "User",
     },
-    KeyConditionExpression: '#attr0 = :value0 and begins_with(#attr1, :value1)',
-    IndexName: 'third',
+    KeyConditionExpression: "#attr0 = :value0 and begins_with(#attr1, :value1)",
+    IndexName: "third",
     Limit: 25,
     ScanIndexForward: true,
-    TableName: 'yeehaw',
+    TableName: "yeehaw",
   });
 });

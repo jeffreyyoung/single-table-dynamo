@@ -1,6 +1,6 @@
-import { Mapper } from '../mapper';
-import { tableConfig } from './utils/table_config';
-import { z } from 'zod';
+import { Mapper } from "../mapper";
+import { tableConfig } from "./utils/table_config";
+import { z } from "zod";
 
 const schema = z.object({
   id: z.string(),
@@ -13,34 +13,34 @@ const schema = z.object({
 });
 
 const mapper = new Mapper({
-  typeName: 'User',
-  tableName: 'Yeehaw',
+  typeName: "User",
+  tableName: "Yeehaw",
   schema,
   primaryIndex: {
     ...tableConfig.primaryIndex,
-    tag: 'countryByStateByCreatedAt',
-    fields: ['country', 'state', 'createdAt'],
+    tag: "countryByStateByCreatedAt",
+    fields: ["country", "state", "createdAt"],
   },
   secondaryIndexes: {
     stateByCountryByYeehaw: {
       ...tableConfig.secondaryIndexes[0],
-      fields: ['state', 'country', 'count'],
+      fields: ["state", "country", "count"],
       stringifyField: {
-        count: () => 'yeehaw',
+        count: () => "yeehaw",
       },
     },
     stateCreatedAt: {
       ...tableConfig.secondaryIndexes[1],
-      shouldWriteIndex: src => src.state === 'UT',
-      fields: ['state', 'createdAt', 'count'],
+      shouldWriteIndex: (src) => src.state === "UT",
+      fields: ["state", "createdAt", "count"],
       stringifyField: {
-        count: () => 'yeehaw',
+        count: () => "yeehaw",
       },
     },
     byBannedById: {
       ...tableConfig.secondaryIndexes[2],
       onlyWriteWhenAllFieldsPresent: true,
-      fields: ['banned', 'id'],
+      fields: ["banned", "id"],
     },
     // countryByUpdatedAt: {
     // ...tableConfig.secondaryIndexes[3],
@@ -52,16 +52,16 @@ const mapper = new Mapper({
   },
 });
 
-test('should decorate all fields', () => {
+test("should decorate all fields", () => {
   expect(
     mapper.decorateWithKeys({
-      id: 'yay',
+      id: "yay",
       count: 23,
-      banned: 'yes',
-      country: 'usa',
-      state: 'UT',
-      createdAt: 'today',
-      updatedAt: 'tomorrow',
+      banned: "yes",
+      country: "usa",
+      state: "UT",
+      createdAt: "today",
+      updatedAt: "tomorrow",
     })
   ).toMatchInlineSnapshot(`
     Object {
@@ -82,15 +82,15 @@ test('should decorate all fields', () => {
   `);
 });
 
-test('should decorate all fields except pk3,sk3', () => {
+test("should decorate all fields except pk3,sk3", () => {
   expect(
     mapper.decorateWithKeys({
-      id: 'yay',
+      id: "yay",
       count: 23,
-      country: 'usa',
-      state: 'UT',
-      createdAt: 'today',
-      updatedAt: 'tomorrow',
+      country: "usa",
+      state: "UT",
+      createdAt: "today",
+      updatedAt: "tomorrow",
     })
   ).toMatchInlineSnapshot(`
     Object {
@@ -108,16 +108,16 @@ test('should decorate all fields except pk3,sk3', () => {
   `);
 });
 
-test('should decorate all fields except pk2, sk2 ', () => {
+test("should decorate all fields except pk2, sk2 ", () => {
   expect(
     mapper.decorateWithKeys({
-      id: 'yay',
+      id: "yay",
       count: 23,
-      country: 'usa',
-      state: 'WA',
-      createdAt: 'today',
-      updatedAt: 'tomorrow',
-      banned: 'yes',
+      country: "usa",
+      state: "WA",
+      createdAt: "today",
+      updatedAt: "tomorrow",
+      banned: "yes",
     })
   ).toMatchInlineSnapshot(`
     Object {

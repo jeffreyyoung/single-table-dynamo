@@ -4,9 +4,8 @@ module.exports = {
   setupFilesAfterEnv: [
     "jest-dynalite/setupTables",
     // Optional (but recommended)
-    "jest-dynalite/clearAfterEach"
-  ]
-
+    "jest-dynalite/clearAfterEach",
+  ],
 
   //preset: "jest-dynalite"
-}
+};

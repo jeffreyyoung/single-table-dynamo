@@ -1,53 +1,53 @@
-import { Repository } from '../repository';
-import sinon from 'sinon';
-import Sinon from 'sinon';
-import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { z } from 'zod';
+import { Repository } from "../repository";
+import sinon from "sinon";
+import Sinon from "sinon";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { z } from "zod";
 
 function getRepoAndStub() {
   const stub = sinon.stub(new DocumentClient());
   const repo = new Repository(
     {
-      tableName: 'meow',
-      typeName: 'User',
+      tableName: "meow",
+      typeName: "User",
       schema: z.object({
         id: z.string(),
         followers: z.array(z.string()).default([]),
         country: z.string(),
         city: z.string(),
-        state: z.string()
+        state: z.string(),
       }),
       primaryIndex: {
-        tag: 'primary',
-        pk: 'yay',
-        sk: 'meow',
-        fields: ['id'],
+        tag: "primary",
+        pk: "yay",
+        sk: "meow",
+        fields: ["id"],
       },
     },
     stub
   );
 
-  return { repo, stub }
+  return { repo, stub };
 }
 
-describe('Repository', () => {
-  let { repo, stub} = getRepoAndStub();
+describe("Repository", () => {
+  let { repo, stub } = getRepoAndStub();
   beforeEach(() => {
     let args = getRepoAndStub();
     repo = args.repo;
     stub = args.stub;
-  })
+  });
 
-  test('updateUnsafe should call document client with correct params', () => {
+  test("updateUnsafe should call document client with correct params", () => {
     stub.update.returns({ promise: () => ({}) } as any);
     repo.updateUnsafe(
-      { id: 'meow' },
+      { id: "meow" },
       {
-        city: 'jimmy',
-        state: 'hendricks',
+        city: "jimmy",
+        state: "hendricks",
       }
     );
-  
+
     expect(stub.update.called).toBe(true);
     expect(stub.update.getCall(0)?.args).toMatchInlineSnapshot(`
       Array [
@@ -74,8 +74,4 @@ describe('Repository', () => {
       ]
     `);
   });
-})
-
-
-
-
+});

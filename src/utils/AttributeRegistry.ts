@@ -6,17 +6,17 @@ export class AttributeRegistry {
   ExpressionAttributeValues: Record<string, any> = {};
 
   key(key: string) {
-    const name= `#attr${this.attributeI}`;
+    const name = `#attr${this.attributeI}`;
     this.ExpressionAttributeNames[name] = key;
-    this.attributeI+=1;
+    this.attributeI += 1;
     return name;
   }
 
   value(value: any) {
-    const attributeValueName= `:value${this.valueI}`;
+    const attributeValueName = `:value${this.valueI}`;
     this.ExpressionAttributeValues[attributeValueName] = value;
-    this.valueI+=1;
-    return attributeValueName
+    this.valueI += 1;
+    return attributeValueName;
   }
 
   get() {
