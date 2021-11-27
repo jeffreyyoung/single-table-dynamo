@@ -12,8 +12,7 @@ yarn add single-table-dynamo
 
 ```typescript
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { object, string } from "superstruct";
-import { Repository } from "single-table-dynamo";
+import { z } from "zod";
 
 // create a repository that can be used for CRUD/Query operations
 const repo = new Repository(
@@ -22,9 +21,9 @@ const repo = new Repository(
     typeName: "User",
 
     // create a schema for the entity
-    schema: object({
-      id: string(),
-      country: string(),
+    schema: z.object({
+      id: z.string(),
+      country: z.enums(["usa", "canada", "mexico"]),
       state: string(),
       city: string(),
     }),
