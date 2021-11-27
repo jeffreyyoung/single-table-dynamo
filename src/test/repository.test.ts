@@ -3,6 +3,7 @@ import sinon from "sinon";
 import Sinon from "sinon";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
+import { expectTypeOf } from "expect-type";
 
 function getRepoAndStub() {
   const stub = sinon.stub(new DocumentClient());
@@ -73,5 +74,54 @@ describe("Repository", () => {
         },
       ]
     `);
+  });
+
+  test("parse works", () => {
+    expect(() =>
+      repo.mapper.parse({
+        id: "yay",
+      })
+    ).toThrowError();
+
+    expect(
+      repo.mapper.parse({
+        id: "yay",
+        followers: ["123"],
+        country: "usa",
+        city: "richland",
+        state: "wa",
+      })
+    ).toEqual({
+      id: "yay",
+      followers: ["123"],
+      country: "usa",
+      city: "richland",
+      state: "wa",
+    });
+
+    expect(
+      repo.mapper.parse({
+        id: "yay",
+        country: "usa",
+        city: "richland",
+        state: "wa",
+      })
+    ).toEqual({
+      id: "yay",
+      followers: [],
+      country: "usa",
+      city: "richland",
+      state: "wa",
+    });
+  });
+
+  test("partial parse works", () => {
+    expect(
+      repo.mapper.partialParse({
+        id: "yay",
+      })
+    ).toEqual({
+      id: "yay",
+    });
   });
 });
