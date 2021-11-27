@@ -54,7 +54,7 @@ export class Repository<
 
   async updateUnsafe(id: ID, src: Partial<Src>, options: {upsert: boolean, returnValues?: 'ALL_NEW' | 'ALL_OLD'} = { upsert: false}) {
     
-    const updates = this.mapper.partialAssert(src);    
+    const updates = this.mapper.partialParse(src);    
 
     const res = await this.ddb.update({
       TableName: this.args.tableName,
@@ -78,15 +78,15 @@ export class Repository<
   }
 
   async put(src: Src) {
-    const masked = this.mapper.assert(src);
+    const parsed = this.mapper.parse(src);
     await this.ddb
       .put({
         TableName: this.args.tableName,
-        Item: this.mapper.decorateWithKeys(masked),
+        Item: this.mapper.decorateWithKeys(parsed),
       })
       .promise();
-    this.args.on?.put?.([src], masked, this.getHookKeyInfo(masked))
-    return masked;
+    this.args.on?.put?.([src], parsed, this.getHookKeyInfo(parsed))
+    return parsed;
   }
 
   async delete(id: ID) {

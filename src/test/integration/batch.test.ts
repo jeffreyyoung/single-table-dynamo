@@ -1,9 +1,8 @@
 import { Repository } from '../../repository';
 import { batchPut, batchWrite } from '../../batch-write';
-import { batchGet, convertRequestsToBatchGetInput } from '../../batch-get';
+import { batchGet } from '../../batch-get';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import { object, string } from 'superstruct';
-
+import { z } from 'zod';
 const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
     endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
@@ -13,9 +12,9 @@ const ddb = new DocumentClient({
 });
 const personRepo = new Repository(
   {
-    schema: object({
-      personId: string(),
-      name: string(),
+    schema: z.object({
+      personId: z.string(),
+      name: z.string()
     }),
     tableName: 'table1',
     typeName: 'Person',
@@ -31,9 +30,9 @@ const personRepo = new Repository(
 
 const thingRepo = new Repository(
   {
-    schema: object({
-      id: string(),
-      name: string(),
+    schema: z.object({
+      id: z.string(),
+      name: z.string()
     }),
     tableName: 'table1',
     typeName: 'Thing',

@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "7.0.15",
+  "version": "7.1.4",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -31,14 +31,13 @@
     "jest": "^27.3.1",
     "jest-dynalite": "^3.2.3",
     "sinon": "^9.2.1",
-    "superstruct": "0.14.0",
+    "tozod": "^3.0.0",
     "ts-jest": "^27.0.7",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.2",
+    "zod": "^3.11.6"
   },
-  "dependencies": {
-    
-  },
+  "dependencies": {},
   "peerDependencies": {
-    "superstruct": "0.14.0"
+    "zod": "^3.11.6"
   }
 }

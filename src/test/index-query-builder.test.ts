@@ -1,17 +1,17 @@
-import { number, object, string } from 'superstruct';
 import { IndexQueryBuilder } from '../index-query-builder';
 import { IndexBase, Mapper } from '../mapper';
+import { z } from 'zod';
 
 const mapper = new Mapper({
   typeName: 'User',
   tableName: 'table1',
-  schema: object({
-    state: string(),
-    country: string(),
-    createdAt: string(),
-    id: string(),
-    updatedAt: string(),
-    count: number(),
+  schema: z.object({
+    state: z.string(),
+    country: z.string(),
+    createdAt: z.string(),
+    id: z.string(),
+    updatedAt: z.string(),
+    count: z.number(),
   }),
   primaryIndex: {
     pk: 'pk1',

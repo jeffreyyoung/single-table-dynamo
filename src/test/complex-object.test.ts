@@ -1,19 +1,8 @@
 import { InferIdType, InferObjectType, Repository } from '../repository';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
-import {
-  array,
-  object,
-  string,
-  size,
-  enums,
-  union,
-  literal,
-  number,
-  pattern,
-  trimmed,
-} from 'superstruct';
-
+import { z } from 'zod';
 import { tableConfig } from './utils/table_config';
+import { string } from 'superstruct';
 
 enum Role {
   Admin = 'Admin',
@@ -30,25 +19,25 @@ enum Craft {
   Knitting = 'Knitting',
 }
 
-const schema = object({
-  id: string(),
-  bio: trimmed(string()),
-  role: enums(Object.values(Role)),
-  email: size(trimmed(pattern(string(), /\S+@\S+\.\S+/)), 5, 100),
-  age: size(number(), 0, 120),
-  hobbies: array(
-    union([
-      object({
-        type: literal('sport'),
-        sportName: enums(Object.values(Sport)),
+const schema = z.object({
+  id: z.string(),
+  bio: z.string().transform(str => str.trim()),
+  role: z.nativeEnum(Role),
+  email: z.string().email().min(5).max(100),
+  age: z.number().min(0).max(120),
+  hobbies: z.array(
+    z.union([
+      z.object({
+        type: z.literal('sport'),
+        sportName: z.nativeEnum(Sport)
       }),
-      object({
-        type: literal('craft'),
-        craftName: enums(Object.values(Craft)),
-        materialsNeeded: array(string()),
+      z.object({
+        type: z.literal('craft'),
+        craftName: z.nativeEnum(Craft),
+        materialsNeeded: z.array(z.string()),
       }),
     ])
-  ),
+  )
 });
 
 const ddb = new DocumentClient({
@@ -96,26 +85,46 @@ test('trim should work', async () => {
   expect(res.bio).toBe('Meeeeooowww');
 
   await expect(() =>
-    repo.updateUnsafe(
-      { id: res.id },
-      {
-        age: 121,
-      }
-    )
-  ).rejects.toMatchInlineSnapshot(
-    `[StructError: At path: age -- Expected a number between \`0\` and \`120\` but received \`121\`]`
-  );
+repo.updateUnsafe(
+{ id: res.id },
+{
+  age: 121 })).
+
+
+rejects.toMatchInlineSnapshot(`
+[ZodError: [
+  {
+    "code": "too_big",
+    "maximum": 120,
+    "type": "number",
+    "inclusive": true,
+    "message": "Value should be less than or equal to 120",
+    "path": [
+      "age"
+    ]
+  }
+]]
+`);
 });
 
 test('regex validation should work', async () => {
   expect(() =>
-    repo.put({
-      ...getDefault(),
-      email: 'not a email',
-    })
-  ).rejects.toMatchInlineSnapshot(
-    `[StructError: At path: email -- Expected a string matching \`/\\S+@\\S+\\.\\S+/\` but received "not a email"]`
-  );
+repo.put({
+  ...getDefault(),
+  email: 'not a email' })).
+
+rejects.toMatchInlineSnapshot(`
+[ZodError: [
+  {
+    "validation": "email",
+    "code": "invalid_string",
+    "message": "Invalid email",
+    "path": [
+      "email"
+    ]
+  }
+]]
+`);
 });
 
 test('union should work', async () => {

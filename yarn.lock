@@ -3285,11 +3285,6 @@ subleveldown@^5.0.0:
     levelup "^4.4.0"
     reachdown "^1.1.0"
 
-superstruct@0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/superstruct/-/superstruct-0.14.0.tgz#bcb39a880df84431f4ebc212a43f4a08bf2e4275"
-  integrity sha512-ZAbLEckVHuq6Np4Apb4poT90uVw8cCdzg2in7tapumcBOTRWM8ZsBdsQnUIPIZOHRa7Ohfh1YZ0nMvomJHbYig==
-
 supports-color@^5.3.0:
   version "5.5.0"
   resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-5.5.0.tgz#e2e69a44ac8772f78a1ec0b35b689df6530efc8f"
@@ -3371,6 +3366,11 @@ tough-cookie@^4.0.0:
     psl "^1.1.33"
     punycode "^2.1.1"
     universalify "^0.1.2"
+
+tozod@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/tozod/-/tozod-3.0.0.tgz#ee72eb95de3647076ddc198f5c291b1dc728298e"
+  integrity sha512-R03/moNPEGgWKoTdCsEJuyEoP6NtXyhWg9L9lJhF2XyCR2Ce9XE+yXaswaVmqyBpHsRPC2Pk38mK8Ex7iHaXcg==
 
 tr46@^2.1.0:
   version "2.1.0"
@@ -3622,3 +3622,8 @@ yargs@^16.2.0:
     string-width "^4.2.0"
     y18n "^5.0.5"
     yargs-parser "^20.2.2"
+
+zod@^3.11.6:
+  version "3.11.6"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-3.11.6.tgz#e43a5e0c213ae2e02aefe7cb2b1a6fa3d7f1f483"
+  integrity sha512-daZ80A81I3/9lIydI44motWe6n59kRBfNzTuS2bfzVh1nAXi667TOTWWtatxyG+fwgNUiagSj/CWZwRRbevJIg==

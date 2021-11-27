@@ -1,15 +1,15 @@
-import { number, object, string, optional, Infer } from 'superstruct';
 import { Mapper } from '../mapper';
 import { tableConfig } from './utils/table_config';
+import { z } from 'zod';
 
-const schema = object({
-  id: string(),
-  state: string(),
-  country: string(),
-  createdAt: string(),
-  updatedAt: string(),
-  count: number(),
-  banned: optional(string()),
+const schema = z.object({
+  id: z.string(),
+  state: z.string(),
+  country: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  count: z.number().min(0),
+  banned: z.string().optional(),
 });
 
 const mapper = new Mapper({
