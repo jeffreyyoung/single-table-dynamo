@@ -1,5 +1,5 @@
 import { Mapper } from "../mapper";
-import { tableConfig } from "./utils/table_config";
+import { tableConfig } from "./utils/tableConfig";
 import { z } from "zod";
 
 const schema = z.object({
@@ -64,22 +64,24 @@ test("should decorate all fields", () => {
       updatedAt: "tomorrow",
     })
   ).toMatchInlineSnapshot(`
-    Object {
-      "banned": "yes",
-      "count": 23,
-      "country": "usa",
-      "createdAt": "today",
-      "id": "yay",
-      "pk1": "User#UT",
-      "pk2": "User#UT",
-      "pk3": "User#yes",
-      "sk1": "User#usa#yeehaw",
-      "sk2": "User#today#yeehaw",
-      "sk3": "User#yay",
-      "state": "UT",
-      "updatedAt": "tomorrow",
-    }
-  `);
+Object {
+  "banned": "yes",
+  "count": 23,
+  "country": "usa",
+  "createdAt": "today",
+  "id": "yay",
+  "pk0": "User#usa",
+  "pk1": "User#UT",
+  "pk2": "User#UT",
+  "pk3": "User#yes",
+  "sk0": "User#UT#today",
+  "sk1": "User#usa#yeehaw",
+  "sk2": "User#today#yeehaw",
+  "sk3": "User#yay",
+  "state": "UT",
+  "updatedAt": "tomorrow",
+}
+`);
 });
 
 test("should decorate all fields except pk3,sk3", () => {
@@ -93,19 +95,21 @@ test("should decorate all fields except pk3,sk3", () => {
       updatedAt: "tomorrow",
     })
   ).toMatchInlineSnapshot(`
-    Object {
-      "count": 23,
-      "country": "usa",
-      "createdAt": "today",
-      "id": "yay",
-      "pk1": "User#UT",
-      "pk2": "User#UT",
-      "sk1": "User#usa#yeehaw",
-      "sk2": "User#today#yeehaw",
-      "state": "UT",
-      "updatedAt": "tomorrow",
-    }
-  `);
+Object {
+  "count": 23,
+  "country": "usa",
+  "createdAt": "today",
+  "id": "yay",
+  "pk0": "User#usa",
+  "pk1": "User#UT",
+  "pk2": "User#UT",
+  "sk0": "User#UT#today",
+  "sk1": "User#usa#yeehaw",
+  "sk2": "User#today#yeehaw",
+  "state": "UT",
+  "updatedAt": "tomorrow",
+}
+`);
 });
 
 test("should decorate all fields except pk2, sk2 ", () => {
@@ -120,18 +124,20 @@ test("should decorate all fields except pk2, sk2 ", () => {
       banned: "yes",
     })
   ).toMatchInlineSnapshot(`
-    Object {
-      "banned": "yes",
-      "count": 23,
-      "country": "usa",
-      "createdAt": "today",
-      "id": "yay",
-      "pk1": "User#WA",
-      "pk3": "User#yes",
-      "sk1": "User#usa#yeehaw",
-      "sk3": "User#yay",
-      "state": "WA",
-      "updatedAt": "tomorrow",
-    }
-  `);
+Object {
+  "banned": "yes",
+  "count": 23,
+  "country": "usa",
+  "createdAt": "today",
+  "id": "yay",
+  "pk0": "User#usa",
+  "pk1": "User#WA",
+  "pk3": "User#yes",
+  "sk0": "User#WA#today",
+  "sk1": "User#usa#yeehaw",
+  "sk3": "User#yay",
+  "state": "WA",
+  "updatedAt": "tomorrow",
+}
+`);
 });

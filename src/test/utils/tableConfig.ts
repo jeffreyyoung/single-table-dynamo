@@ -1,10 +1,10 @@
 export const range = (count: number) => [...Array(count).keys()];
 
 export const tableConfig = {
-  tableName: "table1",
+  tableName: "THINGS_TABLE",
   primaryIndex: {
-    pk: "pk1",
-    sk: "sk1",
+    pk: "pk0",
+    sk: "sk0",
   },
   secondaryIndexes: range(24).map((i) => ({
     indexName: "gsi" + (i + 1),

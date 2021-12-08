@@ -1,7 +1,7 @@
 import { InferIdType, InferObjectType, Repository } from "../repository";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
-import { tableConfig } from "./utils/table_config";
+import { tableConfig } from "./utils/tableConfig";
 
 enum Role {
   Admin = "Admin",
@@ -53,7 +53,7 @@ const repo = new Repository(
 
     schema,
 
-    tableName: "table1",
+    tableName: tableConfig.tableName,
 
     primaryIndex: {
       ...tableConfig.primaryIndex,

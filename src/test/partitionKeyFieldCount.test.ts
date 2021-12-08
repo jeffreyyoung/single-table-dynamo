@@ -1,6 +1,6 @@
 import { Repository } from "../repository";
 import { getDocumentClient } from "./utils/getDocumentClient";
-import { tableConfig } from "./utils/table_config";
+import { tableConfig } from "./utils/tableConfig";
 import { z } from "zod";
 const repository = new Repository(
   {
@@ -34,9 +34,8 @@ test("should format object for dynamodb properly", () => {
     createdAt: "yesterday",
     country: "USA",
     state: "WA",
-
-    pk1: "User#USA#WA",
-    sk1: "User#yesterday",
+    pk0: "User#USA#WA",
+    sk0: "User#yesterday",
   });
 
   expect(
@@ -50,8 +49,8 @@ test("should format object for dynamodb properly", () => {
     country: "USA",
     state: "UT",
 
-    pk1: "User#USA#UT",
-    sk1: "User#tomorrow",
+    pk0: "User#USA#UT",
+    sk0: "User#tomorrow",
   });
 });
 
@@ -63,8 +62,8 @@ test("should format partial index properly", () => {
       { partial: true }
     )
   ).toEqual({
-    pk1: "User#USA#UT",
-    sk1: "User",
+    pk0: "User#USA#UT",
+    sk0: "User",
   });
 });
 
@@ -194,14 +193,14 @@ test("should work when partitionKeyFieldCount > fields.length", async () => {
       createdAt: "1990",
     })
   ).toMatchInlineSnapshot(`
-    Object {
-      "country": "USA",
-      "createdAt": "1990",
-      "pk1": "User1#USA#UT#1990",
-      "sk1": "User1",
-      "state": "UT",
-    }
-  `);
+Object {
+  "country": "USA",
+  "createdAt": "1990",
+  "pk0": "User1#USA#UT#1990",
+  "sk0": "User1",
+  "state": "UT",
+}
+`);
 
   await expect(
     repository.put({
@@ -242,7 +241,7 @@ test("should work when partitionKeyFieldCount > fields.length", async () => {
   await expect(() =>
     repository.query("pk").where({ state: "UT" }).exec()
   ).toThrowErrorMatchingInlineSnapshot(
-    `"To query index: {\\"pk\\":\\"pk1\\",\\"sk\\":\\"sk1\\",\\"tag\\":\\"pk\\",\\"fields\\":[\\"country\\",\\"state\\",\\"createdAt\\"],\\"partitionKeyFieldCount\\":100}, field: country is required, recieved {\\"state\\":\\"UT\\"}, debugInfo: {}"`
+    `"To query index: {\\"pk\\":\\"pk0\\",\\"sk\\":\\"sk0\\",\\"tag\\":\\"pk\\",\\"fields\\":[\\"country\\",\\"state\\",\\"createdAt\\"],\\"partitionKeyFieldCount\\":100}, field: country is required, recieved {\\"state\\":\\"UT\\"}, debugInfo: {}"`
   );
 
   await expect(

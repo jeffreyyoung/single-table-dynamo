@@ -1,6 +1,6 @@
 import { Repository } from "..";
 import { z } from "zod";
-import { tableConfig } from "./utils/table_config";
+import { tableConfig } from "./utils/tableConfig";
 import { getDocumentClient } from "./utils/getDocumentClient";
 
 describe("repo.partialUpdate", () => {
@@ -75,10 +75,10 @@ describe("repo.partialUpdate", () => {
       country: "usa",
       id: "yay",
       name: "fred",
-      pk1: "User#yay",
+      pk0: "User#yay",
       pk2: "User#usa",
       pk3: "User#1990",
-      sk1: "User",
+      sk0: "User",
       sk2: "User#fred",
       sk3: "User#fred",
     });
@@ -112,10 +112,10 @@ describe("repo.partialUpdate", () => {
       country: "usa",
       id: "yay",
       name: "jim",
-      pk1: "User#yay",
+      pk0: "User#yay",
       pk2: "User#usa",
       pk3: "User#1990",
-      sk1: "User",
+      sk0: "User",
       sk2: "User#jim",
       sk3: "User#jim",
     };
