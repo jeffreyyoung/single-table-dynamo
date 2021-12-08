@@ -63,6 +63,54 @@ export class Repository<
     return this.mapper.getKey(id);
   }
 
+  /**
+   * Returns null if the object does not exist and does not update.
+   * Only updates indexes where every index dependency is present in the updates
+   * param
+   * @param id
+   * @param updates
+   * @param options.upsertArgs If present and the document with id does not
+   *                           exist, a put will occur with the upsert args
+   */
+  async partialUpdate(
+    _id: ID,
+    _updates: Partial<Src>,
+    options: {
+      objectToPutIfNotExists?: Src;
+    } = {}
+  ) {
+    const id = _id;
+    const updates = this.mapper.partialParse(_updates);
+    const decoratedUpdates = this.mapper.partialDecorateWithKeys(updates);
+
+    const updated = (await this.ddb
+      .update({
+        TableName: this.args.tableName,
+        Key: this.mapper.getKey(id),
+        ...getDDBUpdateExpression(
+          decoratedUpdates,
+          Object.keys(this.mapper.getKey(id))
+        ),
+        ReturnValues: "ALL_NEW",
+      })
+      .promise()
+      .then((res) => res.Attributes || null)
+      .catch((e) => {
+        // we expect the ConditionalCheck to fail when
+        // the attribut does not exist
+        if (e.code === "ConditionalCheckFailedException") {
+          return null;
+        } else {
+          throw e;
+        }
+      })) as Promise<Src | null>;
+
+    if (!updated && options.objectToPutIfNotExists) {
+      return this.put(options.objectToPutIfNotExists);
+    }
+    return updated;
+  }
+
   async updateUnsafe(
     id: ID,
     src: Partial<Src>,

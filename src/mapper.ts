@@ -119,6 +119,10 @@ export class Mapper<
     }
   }
 
+  parseId(id: Id): Id {
+    return id;
+  }
+
   partialParse(obj: any): Partial<T> {
     const parsedPartial = this.args.schema.partial().parse(obj);
     return removeUndefined(parsedPartial);
@@ -144,14 +148,33 @@ export class Mapper<
     if (options.assert) {
       thing = this.parse(thing);
     }
-    const indexes = [
+    const indexes = this.getIndexes();
+    const keys = indexes
+      .map((i) => this.getIndexKey(thing, i))
+      .reduce((prev = {}, cur) => ({ ...prev, ...cur }), {});
+    return Object.assign({}, thing, keys);
+  }
+
+  /**
+   * Only writes the index fields for which every index.fields field is present
+   * @param thing
+   * @returns
+   */
+  partialDecorateWithKeys<T1 extends Partial<T>>(
+    thing: T1
+  ): T1 & Record<string, string> {
+    const keys = this.getIndexes()
+      .filter((i) => i.fields.every((requiredField) => requiredField in thing))
+      .map((i) => this.getIndexKey(thing, i))
+      .reduce((prev = {}, cur) => ({ ...prev, ...cur }), {});
+    return Object.assign({}, thing, keys);
+  }
+
+  getIndexes() {
+    return [
       this.args.primaryIndex,
       ...Object.values(this.args.secondaryIndexes || {}),
     ] as IndexBase<T>[];
-    const keys = indexes
-      .map((i) => this.getIndexKey(thing, i))
-      .reduce((prev = {}, cur) => ({ ...prev, ...cur }));
-    return Object.assign({}, thing, keys);
   }
 
   getIndexKey<IdOrT>(

@@ -1,9 +1,7 @@
 import { Repository } from "../repository";
 import sinon from "sinon";
-import Sinon from "sinon";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
-import { expectTypeOf } from "expect-type";
 
 function getRepoAndStub() {
   const stub = sinon.stub(new DocumentClient());
@@ -119,6 +117,7 @@ describe("Repository", () => {
     expect(
       repo.mapper.partialParse({
         id: "yay",
+        randomField: "baaaaa",
       })
     ).toEqual({
       id: "yay",

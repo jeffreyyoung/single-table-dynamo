@@ -106,3 +106,93 @@ test("should throw when no partition key is provided", () => {
     mapper.getIndexKey({} as any, mapper.args.primaryIndex, { partial: true })
   ).toThrow();
 });
+
+test("mapper.updateWithSomeFields should work", () => {
+  const mapper = new Mapper({
+    schema: z.object({
+      id: z.string(),
+      name: z.string(),
+      birthDate: z.string(),
+      country: z.string(),
+    }),
+    tableName: "yay",
+    typeName: "User",
+    primaryIndex: {
+      pk: "pk0",
+      sk: "sk0",
+      fields: ["id"],
+    },
+    secondaryIndexes: {
+      "country,name": {
+        fields: ["country", "name"],
+        indexName: "index1",
+        pk: "pk1",
+        sk: "sk1",
+      },
+      "birthDate,name": {
+        fields: ["birthDate", "name"],
+        indexName: "index2",
+        pk: "pk2",
+        sk: "sk2",
+      },
+    },
+  });
+
+  expect(
+    mapper.partialDecorateWithKeys({ birthDate: "1990-01-01", name: "Phil" })
+  ).toMatchObject({
+    birthDate: "1990-01-01",
+    name: "Phil",
+    pk2: "User#1990-01-01",
+    sk2: "User#Phil",
+  });
+
+  expect(
+    mapper.partialDecorateWithKeys({ country: "USA", name: "Phil" })
+  ).toMatchObject({
+    country: "USA",
+    name: "Phil",
+    pk1: "User#USA",
+    sk1: "User#Phil",
+  });
+
+  expect(() =>
+    mapper.decorateWithKeys({
+      id: "1",
+      country: "usa",
+    } as any)
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index: {\\"fields\\":[\\"country\\",\\"name\\"],\\"indexName\\":\\"index1\\",\\"pk\\":\\"pk1\\",\\"sk\\":\\"sk1\\"}, field: name is required, recieved {\\"id\\":\\"1\\",\\"country\\":\\"usa\\"}, debugInfo: {}"`
+  );
+
+  const fullObject = {
+    birthDate: "1990",
+    country: "usa",
+    id: "1",
+    name: "sally",
+    pk0: "User#1",
+    pk1: "User#usa",
+    pk2: "User#1990",
+    sk0: "User",
+    sk1: "User#sally",
+    sk2: "User#sally",
+  };
+
+  expect(
+    mapper.decorateWithKeys({
+      id: "1",
+      birthDate: "1990",
+      country: "usa",
+      name: "sally",
+    })
+  ).toMatchObject(fullObject);
+
+  expect(
+    mapper.partialDecorateWithKeys({
+      id: "1",
+      birthDate: "1990",
+      country: "usa",
+      name: "sally",
+    })
+  ).toMatchObject(fullObject);
+});
