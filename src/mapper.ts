@@ -96,6 +96,27 @@ export class Mapper<
     args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>
   ) {
     this.args = args;
+    //validate args
+    this.validateIndexes();
+  }
+
+  validateIndexes() {
+    let seen = new Map();
+    if (this.args.secondaryIndexes) {
+      Object.entries(this.args.secondaryIndexes).forEach(([key, idx]) => {
+        let index = idx as any as SecondaryIndex<any>;
+        if (seen.has(index.indexName)) {
+          throw new Error(
+            `SingleTableIndexValidationError: indexes ${key} and ${seen.get(
+              index.indexName
+            )} both write to the same index ${
+              index.indexName
+            }.  Each secondary index should be associated with a unique index.`
+          );
+        }
+        seen.set(index.indexName, key);
+      });
+    }
   }
 
   partialParse(obj: any): Partial<T> {
