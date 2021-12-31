@@ -134,7 +134,9 @@ describe("repo.partialUpdate", () => {
 
     // should not update any indexes
     expect(obj1).toMatchObject({
-      ...initialObject,
+      birthDate: "1990",
+      country: "usa",
+      id: "yay",
       name: "george",
     });
 
@@ -155,10 +157,10 @@ describe("repo.partialUpdate", () => {
     );
 
     expect(obj2).toMatchObject({
-      ...initialObject,
+      birthDate: "1990",
+      country: "usa",
+      id: "yay",
       name: "george",
-      pk3: "User#1990",
-      sk3: "User#george",
     });
 
     expect(await getRaw(repo.getKey({ id: "yay" }))).toMatchObject({

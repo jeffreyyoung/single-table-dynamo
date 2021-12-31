@@ -4,6 +4,7 @@ import { Repository } from "./repository";
 import { UnwrapPromise } from "./utils/UnwrapPromise";
 import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
+import { createSTDDBError } from "./utils/errorHandling";
 
 export type IndexField<T> = Extract<keyof T, string>;
 
@@ -54,10 +55,24 @@ export type onHooks<T, R extends Repository> = {
   query?: (results: { result: T; keyInfo: GetRequest }[]) => any;
 };
 
+export type identity<T> = T;
+export type flatten<T extends object> = identity<{ [k in keyof T]: T[k] }>;
+
+export type noNeverKeys<T extends any> = {
+  [k in keyof T]: [T[k]] extends [never] ? never : k;
+}[keyof T];
+
+export type noNever<T extends any> = identity<{
+  [k in noNeverKeys<T>]: k extends keyof T ? T[k] : never;
+}>;
+
 export type ZodesqueSchema<TInput = unknown> = {
   parse: (input: any) => TInput;
   partial: () => {
     parse: (input: any) => Partial<TInput>;
+  };
+  pick(m: any): {
+    parse: (input: any) => any;
   };
 };
 
@@ -120,12 +135,54 @@ export class Mapper<
   }
 
   parseId(id: Id): Id {
+    try {
+      return id;
+    } catch (error) {
+      throw createSTDDBError({
+        error,
+        entityTypeName: this.args.typeName,
+        methodsTrace: ["parseId"],
+        type: "id-validation",
+      });
+    }
     return id;
   }
 
-  partialParse(obj: any): Partial<T> {
-    const parsedPartial = this.args.schema.partial().parse(obj);
-    return removeUndefined(parsedPartial);
+  pickedParse<Mask extends keyof T>(
+    obj: any,
+    fields: Mask[],
+    type: "input" | "output"
+  ) {
+    try {
+      let mask: any = {};
+      fields.forEach((field) => (mask[field] = true));
+      return this.args.schema.pick(mask).parse(obj);
+    } catch (error) {
+      throw createSTDDBError({
+        error,
+        entityTypeName: this.args.typeName,
+        methodsTrace: ["parseId"],
+        type: type === "input" ? "input-validation" : "ouput-validation",
+      });
+    }
+  }
+
+  partialParse(
+    obj: any,
+    type: "input" | "output" = "input",
+    fields?: (keyof T)[]
+  ): Partial<T> {
+    try {
+      const parsedPartial = this.args.schema.partial().parse(obj);
+      return removeUndefined(parsedPartial);
+    } catch (error) {
+      throw createSTDDBError({
+        error,
+        entityTypeName: this.args.typeName,
+        methodsTrace: ["partialParse"],
+        type: type === "input" ? "input-validation" : "ouput-validation",
+      });
+    }
   }
 
   /**
@@ -133,8 +190,17 @@ export class Mapper<
    * @param obj
    * @returns
    */
-  parse(obj: any): T {
-    return this.args.schema.parse(obj);
+  parse(obj: any, type: "input" | "output" = "input"): T {
+    try {
+      return this.args.schema.parse(obj);
+    } catch (error) {
+      throw createSTDDBError({
+        error,
+        entityTypeName: this.args.typeName,
+        methodsTrace: ["parse"],
+        type: type === "input" ? "input-validation" : "ouput-validation",
+      });
+    }
   }
 
   getKey(id: Id | T) {
@@ -146,7 +212,7 @@ export class Mapper<
     options: { assert?: boolean } = {}
   ): T & Record<string, string> {
     if (options.assert) {
-      thing = this.parse(thing);
+      thing = this.parse(thing, "input");
     }
     const indexes = this.getIndexes();
     const keys = indexes

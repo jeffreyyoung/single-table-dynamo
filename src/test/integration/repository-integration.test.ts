@@ -147,10 +147,6 @@ test("get, put, delete, updateUnsafe, and query should work", async () => {
               "yay1",
             ],
             "id": "yay",
-            "pk1": "User#yay",
-            "pk2": "User#CA",
-            "sk1": "User",
-            "sk2": "User#PA#scranton",
             "state": "PA",
           }
         `);

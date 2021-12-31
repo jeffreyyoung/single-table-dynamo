@@ -1,11 +1,11 @@
 # Single Table Dynamodb
 
-There are a few other dynamodb clients that help simplify using dynamodb in a node environment, but most encourage the use of multiple tables. This client is built with the idea of storing all data in a single table. https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+There are a few other dynamodb clients that help simplify using dynamodb in a node environment, but most encourage the use of multiple tables. This client is built with the idea of storing all data in a single table. It is built with typescript and is strongly typed https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
 
 ## Getting started
 
 ```
-yarn add single-table-dynamo
+yarn add single-table-dynamo zod
 ```
 
 ## Example

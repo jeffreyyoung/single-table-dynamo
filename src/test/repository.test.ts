@@ -76,9 +76,12 @@ describe("Repository", () => {
 
   test("parse works", () => {
     expect(() =>
-      repo.mapper.parse({
-        id: "yay",
-      })
+      repo.mapper.parse(
+        {
+          id: "yay",
+        },
+        "input"
+      )
     ).toThrowError();
 
     expect(

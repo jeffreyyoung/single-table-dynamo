@@ -83,14 +83,22 @@ test("trim should work", async () => {
   expect(res.bio).toBe("Meeeeooowww");
 
   await expect(() =>
-    repo.updateUnsafe(
-      { id: res.id },
-      {
-        age: 121,
-      }
-    )
-  ).rejects.toMatchInlineSnapshot(`
-[ZodError: [
+repo.updateUnsafe(
+{ id: res.id },
+{
+  age: 121 })).
+
+
+rejects.toMatchInlineSnapshot(`
+Object {
+  "__stddbError": true,
+  "entityTypeName": "User",
+  "method": "updateUnsafe",
+  "methodsTrace": Array [
+    "updateUnsafe",
+    "partialParse",
+  ],
+  "originalError": [ZodError: [
   {
     "code": "too_big",
     "maximum": 120,
@@ -101,18 +109,28 @@ test("trim should work", async () => {
       "age"
     ]
   }
-]]
+]],
+  "type": "input-validation",
+}
 `);
 });
 
 test("regex validation should work", async () => {
   expect(() =>
-    repo.put({
-      ...getDefault(),
-      email: "not a email",
-    })
-  ).rejects.toMatchInlineSnapshot(`
-[ZodError: [
+repo.put({
+  ...getDefault(),
+  email: "not a email" })).
+
+rejects.toMatchInlineSnapshot(`
+Object {
+  "__stddbError": true,
+  "entityTypeName": "User",
+  "method": "put",
+  "methodsTrace": Array [
+    "put",
+    "parse",
+  ],
+  "originalError": [ZodError: [
   {
     "validation": "email",
     "code": "invalid_string",
@@ -121,7 +139,9 @@ test("regex validation should work", async () => {
       "email"
     ]
   }
-]]
+]],
+  "type": "input-validation",
+}
 `);
 });
 

@@ -160,8 +160,6 @@ test("hooks should get called", async () => {
         Object {
           "id": "1",
           "name": "yeehaw",
-          "pk1": "Thing#1",
-          "sk1": "Thing",
         },
         Object {
           "Key": Object {

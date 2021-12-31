@@ -8,6 +8,7 @@ import {
   toProjectionExpression,
   getDefaultFieldsToProject,
 } from "./utils/ProjectFields";
+import { handleError } from "./utils/errorHandling";
 
 type ExtraQueryParams<T> = {
   fieldsToProject: FieldsToProject<T>;
@@ -53,10 +54,21 @@ export class Repository<
       fieldsToProject: getDefaultFieldsToProject<Src>(this.args as any),
     }
   ) {
-    const res = await this.doGet(id, extraParams);
-    const item = (res.Item as Src) || null;
-    this.args.on?.get?.([id, extraParams], item, this.getHookKeyInfo(id));
-    return item;
+    try {
+      const res = await this.doGet(id, extraParams);
+
+      let item = res.Item
+        ? this.mapper.pickedParse(
+            res.Item,
+            extraParams.fieldsToProject,
+            "output"
+          )
+        : null;
+      this.args.on?.get?.([id, extraParams], item, this.getHookKeyInfo(id));
+      return item;
+    } catch (e) {
+      throw handleError(e, "get", this.mapper.args.typeName);
+    }
   }
 
   getKey(id: ID | Src) {
@@ -79,36 +91,42 @@ export class Repository<
       objectToPutIfNotExists?: Src;
     } = {}
   ) {
-    const id = _id;
-    const updates = this.mapper.partialParse(_updates);
-    const decoratedUpdates = this.mapper.partialDecorateWithKeys(updates);
+    try {
+      const id = _id;
+      const updates = this.mapper.partialParse(_updates, "input");
+      const decoratedUpdates = this.mapper.partialDecorateWithKeys(updates);
 
-    const updated = (await this.ddb
-      .update({
-        TableName: this.args.tableName,
-        Key: this.mapper.getKey(id),
-        ...getDDBUpdateExpression(
-          decoratedUpdates,
-          Object.keys(this.mapper.getKey(id))
-        ),
-        ReturnValues: "ALL_NEW",
-      })
-      .promise()
-      .then((res) => res.Attributes || null)
-      .catch((e) => {
-        // we expect the ConditionalCheck to fail when
-        // the attribut does not exist
-        if (e.code === "ConditionalCheckFailedException") {
-          return null;
-        } else {
-          throw e;
-        }
-      })) as Promise<Src | null>;
+      const updated = await this.ddb
+        .update({
+          TableName: this.args.tableName,
+          Key: this.mapper.getKey(id),
+          ...getDDBUpdateExpression(
+            decoratedUpdates,
+            Object.keys(this.mapper.getKey(id))
+          ),
+          ReturnValues: "ALL_NEW",
+        })
+        .promise()
+        .then((res) =>
+          res.Attributes ? this.mapper.parse(res.Attributes, "output") : null
+        )
+        .catch((e) => {
+          // we expect the ConditionalCheck to fail when
+          // the attribut does not exist
+          if (e.code === "ConditionalCheckFailedException") {
+            return null;
+          } else {
+            throw e;
+          }
+        });
 
-    if (!updated && options.objectToPutIfNotExists) {
-      return this.put(options.objectToPutIfNotExists);
+      if (!updated && options.objectToPutIfNotExists) {
+        return this.put(options.objectToPutIfNotExists);
+      }
+      return updated;
+    } catch (e) {
+      throw handleError(e, "partialUpdate", this.mapper.args.typeName);
     }
-    return updated;
   }
 
   async updateUnsafe(
@@ -118,29 +136,36 @@ export class Repository<
       upsert: false,
     }
   ) {
-    const updates = this.mapper.partialParse(src);
+    try {
+      const updates = this.mapper.partialParse(src, "input");
 
-    const res = await this.ddb
-      .update({
-        TableName: this.args.tableName,
-        Key: this.mapper.getKey(id),
-        ...getDDBUpdateExpression(
-          updates,
-          options.upsert ? [] : Object.keys(this.mapper.getKey(id))
-        ),
-        ReturnValues: options?.returnValues ?? "ALL_NEW",
-      })
-      .promise();
-    const updated = (res.Attributes as Src) || null;
-    if (updated) {
-      this.args.on?.updateUnsafe?.(
-        [id, src, options],
-        updated,
-        this.getHookKeyInfo(updated)
-      );
+      const res = await this.ddb
+        .update({
+          TableName: this.args.tableName,
+          Key: this.mapper.getKey(id),
+          ...getDDBUpdateExpression(
+            updates,
+            options.upsert ? [] : Object.keys(this.mapper.getKey(id))
+          ),
+          ReturnValues: options?.returnValues ?? "ALL_NEW",
+        })
+        .promise();
+      let updated = res.Attributes
+        ? this.mapper.parse(res.Attributes, "output")
+        : null;
+
+      if (updated) {
+        this.args.on?.updateUnsafe?.(
+          [id, src, options],
+          updated,
+          this.getHookKeyInfo(updated)
+        );
+      }
+
+      return updated;
+    } catch (e) {
+      throw handleError(e, "updateUnsafe", this.mapper.args.typeName);
     }
-
-    return updated;
   }
 
   private getHookKeyInfo(thing: Src | ID) {
@@ -151,26 +176,34 @@ export class Repository<
   }
 
   async put(src: Src) {
-    const parsed = this.mapper.parse(src);
-    await this.ddb
-      .put({
-        TableName: this.args.tableName,
-        Item: this.mapper.decorateWithKeys(parsed),
-      })
-      .promise();
-    this.args.on?.put?.([src], parsed, this.getHookKeyInfo(parsed));
-    return parsed;
+    try {
+      const parsed = this.mapper.parse(src, "input");
+      await this.ddb
+        .put({
+          TableName: this.args.tableName,
+          Item: this.mapper.decorateWithKeys(parsed),
+        })
+        .promise();
+      this.args.on?.put?.([src], parsed, this.getHookKeyInfo(parsed));
+      return parsed;
+    } catch (e) {
+      throw handleError(e, "put", this.mapper.args.typeName);
+    }
   }
 
   async delete(id: ID) {
-    await this.ddb
-      .delete({
-        TableName: this.args.tableName,
-        Key: this.mapper.getKey(id),
-      })
-      .promise();
-    this.args.on?.delete?.([id], true, this.getHookKeyInfo(id));
-    return true;
+    try {
+      await this.ddb
+        .delete({
+          TableName: this.args.tableName,
+          Key: this.mapper.getKey(id),
+        })
+        .promise();
+      this.args.on?.delete?.([id], true, this.getHookKeyInfo(id));
+      return true;
+    } catch (e) {
+      throw handleError(e, "get", this.mapper.args.typeName);
+    }
   }
   getIndexByTag(indexTag: IndexTag | SecondaryIndexTag): IndexBase<Src> {
     let index;
