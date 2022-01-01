@@ -83,66 +83,50 @@ test("trim should work", async () => {
   expect(res.bio).toBe("Meeeeooowww");
 
   await expect(() =>
-repo.updateUnsafe(
-{ id: res.id },
-{
-  age: 121 })).
+    repo.updateUnsafe(
+      { id: res.id },
+      {
+        age: 121,
+      }
+    )
+  ).rejects.toMatchObject({
+    entityTypeName: "User",
+    method: "updateUnsafe",
+    methodsTrace: ["updateUnsafe", "partialParse"],
+    type: "input-validation",
 
-
-rejects.toMatchInlineSnapshot(`
-Object {
-  "__stddbError": true,
-  "entityTypeName": "User",
-  "method": "updateUnsafe",
-  "methodsTrace": Array [
-    "updateUnsafe",
-    "partialParse",
-  ],
-  "originalError": [ZodError: [
-  {
-    "code": "too_big",
-    "maximum": 120,
-    "type": "number",
-    "inclusive": true,
-    "message": "Value should be less than or equal to 120",
-    "path": [
-      "age"
-    ]
-  }
-]],
-  "type": "input-validation",
-}
-`);
+    originalError: {
+      issues: [
+        {
+          code: "too_big",
+          maximum: 120,
+          type: "number",
+          inclusive: true,
+          message: "Value should be less than or equal to 120",
+          path: ["age"],
+        },
+      ],
+    },
+  });
 });
 
 test("regex validation should work", async () => {
   expect(() =>
-repo.put({
-  ...getDefault(),
-  email: "not a email" })).
-
-rejects.toMatchInlineSnapshot(`
-Object {
-  "__stddbError": true,
-  "entityTypeName": "User",
-  "method": "put",
-  "methodsTrace": Array [
-    "put",
-    "parse",
-  ],
-  "originalError": [ZodError: [
-  {
-    "validation": "email",
-    "code": "invalid_string",
-    "message": "Invalid email",
-    "path": [
-      "email"
-    ]
-  }
-]],
-  "type": "input-validation",
-}
-`);
+    repo.put({
+      ...getDefault(),
+      email: "not a email",
+    })
+  ).rejects.toMatchObject({
+    methodsTrace: ["put", "parse"],
+    type: "input-validation",
+    originalError: {
+      issues: [
+        {
+          path: ["email"],
+        },
+      ],
+    },
+  });
 });
 
 test("union should work", async () => {

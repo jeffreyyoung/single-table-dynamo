@@ -1,14 +1,32 @@
 import type { Repository } from "../repository";
 
 type MethodName = keyof Repository | "parse" | "partialParse" | "parseId";
-
-type SingleTableDynamoError = {
-  __stddbError: true;
+class SingleTableDynamoError extends Error {
+  __stddbError = true;
   type: "input-validation" | "ouput-validation" | "id-validation" | "other";
   entityTypeName: string;
-  get method(): MethodName;
   methodsTrace: MethodName[];
   originalError: any;
+  constructor(args: SingleTableDynamoErrorArgs) {
+    super(args.message);
+    this.type = args.type;
+    this.entityTypeName = args.entityTypeName;
+    this.methodsTrace = args.methodsTrace;
+    this.originalError = args.originalError;
+  }
+
+  get method() {
+    if (this.methodsTrace.length > 0) {
+      return this.methodsTrace[0];
+    }
+  }
+}
+type SingleTableDynamoErrorArgs = {
+  type: "input-validation" | "ouput-validation" | "id-validation" | "other";
+  entityTypeName: string;
+  methodsTrace: MethodName[];
+  originalError: any;
+  message?: string;
 };
 
 export function isSingleTableDynamoError(
@@ -20,17 +38,13 @@ export function isSingleTableDynamoError(
 export function createSTDDBError({
   error,
   ...args
-}: Omit<SingleTableDynamoError, "__stddbError" | "originalError" | "method"> & {
+}: Omit<SingleTableDynamoErrorArgs, "originalError"> & {
   error: any;
 }): SingleTableDynamoError {
-  return {
-    __stddbError: true,
+  return new SingleTableDynamoError({
     ...args,
-    get method() {
-      return args.methodsTrace[0];
-    },
     originalError: error,
-  };
+  });
 }
 
 export function handleError(

@@ -53,14 +53,14 @@ function rawPut(obj: { id: string } & any) {
 
 test("put should work with null values", async () => {
   expect(
-await getUserRepo().put({
-  id: "meow",
-  country: "usa",
-  city: "richland",
-  state: null,
-  followers: [] })).
-
-toMatchInlineSnapshot(`
+    await getUserRepo().put({
+      id: "meow",
+      country: "usa",
+      city: "richland",
+      state: null,
+      followers: [],
+    })
+  ).toMatchInlineSnapshot(`
 Object {
   "city": "richland",
   "country": "usa",
@@ -83,54 +83,43 @@ Object {
 
 test("output error should be thrown", async () => {
   await rawPut({ id: "meow", invalidField: "wat" });
-  expect(getUserRepo().get({ id: "meow" })).rejects.toMatchInlineSnapshot(`
-Object {
-  "__stddbError": true,
-  "entityTypeName": "User",
-  "method": "get",
-  "methodsTrace": Array [
-    "get",
-    "parseId",
-  ],
-  "originalError": [ZodError: [
-  {
-    "code": "invalid_type",
-    "expected": "array",
-    "received": "undefined",
-    "path": [
-      "followers"
-    ],
-    "message": "Required"
-  },
-  {
-    "code": "invalid_type",
-    "expected": "string",
-    "received": "undefined",
-    "path": [
-      "country"
-    ],
-    "message": "Required"
-  },
-  {
-    "code": "invalid_type",
-    "expected": "string",
-    "received": "undefined",
-    "path": [
-      "city"
-    ],
-    "message": "Required"
-  },
-  {
-    "code": "invalid_type",
-    "expected": "string",
-    "received": "undefined",
-    "path": [
-      "state"
-    ],
-    "message": "Required"
-  }
-]],
-  "type": "ouput-validation",
-}
-`);
+  expect(getUserRepo().get({ id: "meow" })).rejects.toMatchObject({
+    __stddbError: true,
+    entityTypeName: "User",
+    method: "get",
+    methodsTrace: ["get", "parseId"],
+    originalError: {
+      issues: [
+        {
+          code: "invalid_type",
+          expected: "array",
+          received: "undefined",
+          path: ["followers"],
+          message: "Required",
+        },
+        {
+          code: "invalid_type",
+          expected: "string",
+          received: "undefined",
+          path: ["country"],
+          message: "Required",
+        },
+        {
+          code: "invalid_type",
+          expected: "string",
+          received: "undefined",
+          path: ["city"],
+          message: "Required",
+        },
+        {
+          code: "invalid_type",
+          expected: "string",
+          received: "undefined",
+          path: ["state"],
+          message: "Required",
+        },
+      ],
+    },
+    type: "ouput-validation",
+  });
 });
