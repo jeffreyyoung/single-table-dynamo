@@ -57,7 +57,7 @@ export class Repository<
     try {
       const res = await this.doGet(id, extraParams);
 
-      let item = res.Item
+      let item: Src | null = res.Item
         ? this.mapper.pickedParse(
             res.Item,
             extraParams.fieldsToProject,
