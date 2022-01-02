@@ -207,17 +207,25 @@ export class Mapper<
     return this.getIndexKey(id as any, this.args.primaryIndex);
   }
 
+  /**
+   * This should be renamed to getIndexFields
+   * @param thing
+   * @returns
+   */
+  getIndexKeys(thing: T, { assert = true } = {}) {
+    if (assert) {
+      thing = this.parse(thing, "input");
+    }
+    return this.getIndexes()
+      .map((i) => this.getIndexKey(thing, i))
+      .reduce((prev = {}, cur) => ({ ...prev, ...cur }), {});
+  }
+
   decorateWithKeys(
     thing: T,
     options: { assert?: boolean } = {}
   ): T & Record<string, string> {
-    if (options.assert) {
-      thing = this.parse(thing, "input");
-    }
-    const indexes = this.getIndexes();
-    const keys = indexes
-      .map((i) => this.getIndexKey(thing, i))
-      .reduce((prev = {}, cur) => ({ ...prev, ...cur }), {});
+    const keys = this.getIndexKeys(thing, { assert: !!options.assert });
     return Object.assign({}, thing, keys);
   }
 

@@ -55,6 +55,22 @@ test("should format object for dynamodb properly", () => {
   });
 
   expect(
+    mapper.getIndexKeys({
+      updatedAt: "today",
+      createdAt: "yesterday",
+      country: "USA",
+      id: "1234",
+      state: "WA",
+      count: 25,
+    })
+  ).toEqual({
+    pk1: "User#USA",
+    pk2: "User#WA",
+    sk1: "User#WA#yesterday",
+    sk2: "User#USA#yeehaw",
+  });
+
+  expect(
     mapper.decorateWithKeys({
       updatedAt: "today",
       createdAt: "tomorrow",
