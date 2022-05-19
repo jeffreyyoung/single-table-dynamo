@@ -108,3 +108,5 @@ const db: CommunityDb = {
   },
   visibility: "LISTED",
 };
+
+test("pass", () => expect(true).toBe(true));
