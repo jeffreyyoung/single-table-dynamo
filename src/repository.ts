@@ -264,22 +264,18 @@ export class Repository<
   }
 }
 
-export type InferInputType<Repo> = Repo extends Repository<
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  infer Input
->
-  ? Input
-  : never;
+export type AnyRepository = Repository<any, any, any, any, any, any, any>;
 
-export type InferObjectType<Repo> = Repo extends Repository<any, infer Output>
-  ? Output
-  : never;
-export type InferIdType<Repo> = Repo extends Repository<
+export type InferInputType<Repo extends AnyRepository> =
+  Repo extends Repository<any, any, any, any, any, any, infer Input>
+    ? Input
+    : never;
+
+export type InferObjectType<Repo extends AnyRepository> =
+  Repo extends Repository<any, infer Output, any, any, any, any, any>
+    ? Output
+    : never;
+export type InferIdType<Repo extends AnyRepository> = Repo extends Repository<
   any,
   infer T,
   infer IdField

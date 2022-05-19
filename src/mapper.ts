@@ -32,7 +32,7 @@ type SecondaryIndex<T> = {
   shouldWriteIndex?: (src: T) => boolean;
 };
 
-export type onHooks<T, R extends Repository> = {
+export type onHooks<T> = {
   get?: (
     args: Parameters<Repository["get"]>,
     returned: UnwrapPromise<ReturnType<Repository["get"]>>,
@@ -82,7 +82,7 @@ export type RepositoryArgs<
   getDocument?: (
     args: Parameters<DocumentClient["get"]>[0]
   ) => ReturnType<ReturnType<DocumentClient["get"]>["promise"]>;
-  on?: onHooks<T, Repository>;
+  on?: onHooks<T>;
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
