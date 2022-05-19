@@ -102,7 +102,7 @@ test("trim should work", async () => {
           maximum: 120,
           type: "number",
           inclusive: true,
-          message: "Value should be less than or equal to 120",
+          message: "Number must be less than or equal to 120",
           path: ["age"],
         },
       ],

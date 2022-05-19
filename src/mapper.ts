@@ -5,6 +5,7 @@ import { UnwrapPromise } from "./utils/UnwrapPromise";
 import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
 import { createSTDDBError } from "./utils/errorHandling";
+import { z } from "zod";
 
 export type IndexField<T> = Extract<keyof T, string>;
 
@@ -66,23 +67,16 @@ export type noNever<T extends any> = identity<{
   [k in noNeverKeys<T>]: k extends keyof T ? T[k] : never;
 }>;
 
-export type ZodesqueSchema<TInput = unknown> = {
-  parse: (input: any) => TInput;
-  partial: () => {
-    parse: (input: any) => Partial<TInput>;
-  };
-  pick(m: any): {
-    parse: (input: any) => any;
-  };
-};
+export type ZodesqueSchema<Ouput = unknown, Input = unknown> = z.AnyZodObject;
 
 export type RepositoryArgs<
-  T = Record<string, any>,
+  Schema extends z.AnyZodObject = z.AnyZodObject,
+  T = z.infer<Schema>,
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = "",
   SecondaryIndexTag extends string = string
 > = {
-  schema: ZodesqueSchema<T>;
+  schema: Schema;
   tableName: string;
   typeName: string;
   getDocument?: (
@@ -99,16 +93,29 @@ export type RepositoryArgs<
 };
 
 export class Mapper<
-  T = any,
-  PrimaryKeyField extends IndexField<T> = any,
+  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Output = z.infer<Schema>,
+  PrimaryKeyField extends IndexField<Output> = any,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
-  Id = Pick<T, PrimaryKeyField>
+  Id = Pick<Output, PrimaryKeyField>
 > {
-  public args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>;
+  public args: RepositoryArgs<
+    Schema,
+    Output,
+    PrimaryKeyField,
+    IndexTag,
+    SecondaryIndexTag
+  >;
 
   constructor(
-    args: RepositoryArgs<T, PrimaryKeyField, IndexTag, SecondaryIndexTag>
+    args: RepositoryArgs<
+      Schema,
+      Output,
+      PrimaryKeyField,
+      IndexTag,
+      SecondaryIndexTag
+    >
   ) {
     this.args = args;
     //validate args
@@ -148,7 +155,7 @@ export class Mapper<
     return id;
   }
 
-  pickedParse<Mask extends keyof T>(
+  pickedParse<Mask extends keyof Output>(
     obj: any,
     fields: Mask[],
     type: "input" | "output"
@@ -170,10 +177,11 @@ export class Mapper<
   partialParse(
     obj: any,
     type: "input" | "output" = "input",
-    fields?: (keyof T)[]
-  ): Partial<T> {
+    fields?: (keyof Output)[]
+  ): Partial<Output> {
     try {
       const parsedPartial = this.args.schema.partial().parse(obj);
+      //@ts-ignore
       return removeUndefined(parsedPartial);
     } catch (error) {
       throw createSTDDBError({
@@ -190,8 +198,9 @@ export class Mapper<
    * @param obj
    * @returns
    */
-  parse(obj: any, type: "input" | "output" = "input"): T {
+  parse(obj: any, type: "input" | "output" = "input"): Output {
     try {
+      // @ts-ignore
       return this.args.schema.parse(obj);
     } catch (error) {
       throw createSTDDBError({
@@ -203,7 +212,7 @@ export class Mapper<
     }
   }
 
-  getKey(id: Id | T) {
+  getKey(id: Id | Output) {
     return this.getIndexKey(id as any, this.args.primaryIndex);
   }
 
@@ -212,7 +221,7 @@ export class Mapper<
    * @param thing
    * @returns
    */
-  getIndexKeys(thing: T, { assert = true } = {}) {
+  getIndexKeys(thing: Output, { assert = true } = {}) {
     if (assert) {
       thing = this.parse(thing, "input");
     }
@@ -222,9 +231,9 @@ export class Mapper<
   }
 
   decorateWithKeys(
-    thing: T,
+    thing: Output,
     options: { assert?: boolean } = {}
-  ): T & Record<string, string> {
+  ): Output & Record<string, string> {
     const keys = this.getIndexKeys(thing, { assert: !!options.assert });
     return Object.assign({}, thing, keys);
   }
@@ -234,7 +243,7 @@ export class Mapper<
    * @param thing
    * @returns
    */
-  partialDecorateWithKeys<T1 extends Partial<T>>(
+  partialDecorateWithKeys<T1 extends Partial<Output>>(
     thing: T1
   ): T1 & Record<string, string> {
     const keys = this.getIndexes()
@@ -248,7 +257,7 @@ export class Mapper<
     return [
       this.args.primaryIndex,
       ...Object.values(this.args.secondaryIndexes || {}),
-    ] as IndexBase<T>[];
+    ] as IndexBase<Output>[];
   }
 
   getIndexKey<IdOrT>(

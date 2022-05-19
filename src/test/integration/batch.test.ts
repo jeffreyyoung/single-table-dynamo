@@ -13,8 +13,8 @@ const ddb = new DocumentClient({
 const personRepo = new Repository(
   {
     schema: z.object({
-      personId: z.string(),
-      name: z.string(),
+      personId: z.string().default(() => Math.random() + ""),
+      name: z.string().default("jimmy"),
     }),
     tableName: "table1",
     typeName: "Person",

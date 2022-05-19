@@ -5,17 +5,23 @@ import {
 import { GetRequest } from "./batch-get";
 import { DeleteRequest, PutRequest } from "./batch-write";
 import { Mapper } from "./mapper";
+import { z } from "zod";
 
-export class BatchArgsHandler<Id, T> {
-  private mapper: Mapper<T>;
+export class BatchArgsHandler<
+  Id,
+  Schema extends z.AnyZodObject,
+  Input = z.input<Schema>,
+  Output = z.output<Schema>
+> {
+  private mapper: Mapper<Schema>;
   private tableName: string;
 
-  constructor(mapper: Mapper<T>) {
+  constructor(mapper: Mapper<Schema>) {
     this.tableName = mapper.args.tableName;
     this.mapper = mapper;
   }
 
-  put(item: T): PutRequest<T> {
+  put(item: Input): PutRequest<Input> {
     return {
       TableName: this.tableName,
       Operation: {
@@ -28,7 +34,7 @@ export class BatchArgsHandler<Id, T> {
 
   get(
     item: Id,
-    extraArgs?: { fieldsToProject?: FieldsToProject<T> }
+    extraArgs?: { fieldsToProject?: FieldsToProject<Output> }
   ): GetRequest<any> {
     return {
       TableName: this.tableName,

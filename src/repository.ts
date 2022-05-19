@@ -9,34 +9,56 @@ import {
   getDefaultFieldsToProject,
 } from "./utils/ProjectFields";
 import { handleError } from "./utils/errorHandling";
+import { z } from "zod";
 
 type ExtraQueryParams<T> = {
   fieldsToProject: FieldsToProject<T>;
 };
 
 export class Repository<
-  Src = any,
-  PrimaryKeyField extends IndexField<Src> = IndexField<Src>,
+  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Output = z.infer<Schema>,
+  PrimaryKeyField extends IndexField<Output> = IndexField<Output>,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
-  ID = Pick<Src, PrimaryKeyField>
+  ID = Pick<Output, PrimaryKeyField>,
+  Input = z.input<Schema>
 > {
-  args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>;
-  mapper: Mapper<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag, ID>;
-  batch: BatchArgsHandler<ID, Src>;
+  args: RepositoryArgs<
+    Schema,
+    Output,
+    PrimaryKeyField,
+    IndexTag,
+    SecondaryIndexTag
+  >;
+  mapper: Mapper<
+    Schema,
+    Output,
+    PrimaryKeyField,
+    IndexTag,
+    SecondaryIndexTag,
+    ID
+  >;
+  batch: BatchArgsHandler<ID, Schema>;
   ddb: DocumentClient;
 
   constructor(
-    args: RepositoryArgs<Src, PrimaryKeyField, IndexTag, SecondaryIndexTag>,
+    args: RepositoryArgs<
+      Schema,
+      Output,
+      PrimaryKeyField,
+      IndexTag,
+      SecondaryIndexTag
+    >,
     ddb: DocumentClient
   ) {
     this.args = args;
     this.mapper = new Mapper(args);
-    this.batch = new BatchArgsHandler<ID, Src>(this.mapper as any);
+    this.batch = new BatchArgsHandler<ID, Schema>(this.mapper as any);
     this.ddb = ddb;
   }
 
-  private doGet(id: ID, extraParams: ExtraQueryParams<Src>) {
+  private doGet(id: ID, extraParams: ExtraQueryParams<Output>) {
     const args = {
       TableName: this.args.tableName,
       ...toProjectionExpression(extraParams.fieldsToProject),
@@ -50,28 +72,32 @@ export class Repository<
 
   async get(
     id: ID,
-    extraParams: ExtraQueryParams<Src> = {
-      fieldsToProject: getDefaultFieldsToProject<Src>(this.args as any),
+    extraParams: ExtraQueryParams<Output> = {
+      fieldsToProject: getDefaultFieldsToProject<Output>(this.args as any),
     }
   ) {
     try {
       const res = await this.doGet(id, extraParams);
 
-      let item: Src | null = res.Item
-        ? this.mapper.pickedParse(
+      let item: Output | null = res.Item
+        ? (this.mapper.pickedParse(
             res.Item,
             extraParams.fieldsToProject,
             "output"
-          )
+          ) as any)
         : null;
-      this.args.on?.get?.([id, extraParams], item, this.getHookKeyInfo(id));
+      this.args.on?.get?.(
+        [id, extraParams as any],
+        item,
+        this.getHookKeyInfo(id)
+      );
       return item;
     } catch (e) {
       throw handleError(e, "get", this.mapper.args.typeName);
     }
   }
 
-  getKey(id: ID | Src) {
+  getKey(id: ID | Output) {
     return this.mapper.getKey(id);
   }
 
@@ -86,9 +112,9 @@ export class Repository<
    */
   async partialUpdate(
     _id: ID,
-    _updates: Partial<Src>,
+    _updates: Partial<Input>,
     options: {
-      objectToPutIfNotExists?: Src;
+      objectToPutIfNotExists?: Input;
     } = {}
   ) {
     try {
@@ -131,7 +157,7 @@ export class Repository<
 
   async updateUnsafe(
     id: ID,
-    src: Partial<Src>,
+    src: Partial<Output>,
     options: { upsert: boolean; returnValues?: "ALL_NEW" | "ALL_OLD" } = {
       upsert: false,
     }
@@ -168,14 +194,14 @@ export class Repository<
     }
   }
 
-  private getHookKeyInfo(thing: Src | ID) {
+  private getHookKeyInfo(thing: Output | ID) {
     return {
       TableName: this.args.tableName,
       Key: this.getKey(thing),
     };
   }
 
-  async put(src: Src) {
+  async put(src: Input) {
     try {
       const parsed = this.mapper.parse(src, "input");
       await this.ddb
@@ -205,7 +231,7 @@ export class Repository<
       throw handleError(e, "get", this.mapper.args.typeName);
     }
   }
-  getIndexByTag(indexTag: IndexTag | SecondaryIndexTag): IndexBase<Src> {
+  getIndexByTag(indexTag: IndexTag | SecondaryIndexTag): IndexBase<Output> {
     let index;
     if (this.args.secondaryIndexes?.[indexTag as SecondaryIndexTag]) {
       index = this.args.secondaryIndexes[indexTag as SecondaryIndexTag];
@@ -219,7 +245,7 @@ export class Repository<
   }
 
   query(indexTag: IndexTag | SecondaryIndexTag) {
-    const builder = new IndexQueryBuilder<Src>({
+    const builder = new IndexQueryBuilder<Output>({
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
       mapper: this.mapper as any,
@@ -238,9 +264,25 @@ export class Repository<
   }
 }
 
-export type InferObjectType<Repo> = Repo extends Repository<infer T, any>
-  ? T
+export type InferInputType<Repo> = Repo extends Repository<
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  infer Input
+>
+  ? Input
   : never;
-export type InferIdType<Repo> = Repo extends Repository<infer T, infer IdField>
+
+export type InferObjectType<Repo> = Repo extends Repository<any, infer Output>
+  ? Output
+  : never;
+export type InferIdType<Repo> = Repo extends Repository<
+  any,
+  infer T,
+  infer IdField
+>
   ? Pick<T, IdField>
   : never;
