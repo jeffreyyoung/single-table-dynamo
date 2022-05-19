@@ -21,6 +21,8 @@ export type CommunityInput = InferInputType<
   ReturnType<typeof _getCommunityRepo>
 >;
 
+const hooks = {};
+
 const _getCommunityRepo = () => {
   return new Repository(
     {
@@ -64,7 +66,9 @@ const _getCommunityRepo = () => {
         ...tableConfig.primaryIndex,
         fields: ["communityId"],
       },
-      //...dataLoaderHooks(loader),
+      on: {
+        get: () => {},
+      },
     },
     getDocumentClient()
   );

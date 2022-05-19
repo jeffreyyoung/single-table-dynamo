@@ -32,7 +32,7 @@ type SecondaryIndex<T> = {
   shouldWriteIndex?: (src: T) => boolean;
 };
 
-export type onHooks<T> = {
+export type onHooks = {
   get?: (
     args: Parameters<Repository["get"]>,
     returned: UnwrapPromise<ReturnType<Repository["get"]>>,
@@ -53,7 +53,7 @@ export type onHooks<T> = {
     returned: UnwrapPromise<ReturnType<Repository["delete"]>>,
     keyInfo: GetRequest
   ) => any;
-  query?: (results: { result: T; keyInfo: GetRequest }[]) => any;
+  query?: (results: { result: any, keyInfo: GetRequest }[]) => any;
 };
 
 export type identity<T> = T;
@@ -82,7 +82,7 @@ export type RepositoryArgs<
   getDocument?: (
     args: Parameters<DocumentClient["get"]>[0]
   ) => ReturnType<ReturnType<DocumentClient["get"]>["promise"]>;
-  on?: onHooks<T>;
+  on?: onHooks;
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
