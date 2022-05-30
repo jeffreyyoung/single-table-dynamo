@@ -53,7 +53,7 @@ export type onHooks = {
     returned: UnwrapPromise<ReturnType<Repository["delete"]>>,
     keyInfo: GetRequest
   ) => any;
-  query?: (results: { result: any, keyInfo: GetRequest }[]) => any;
+  query?: (args: any, results: any) => any;
 };
 
 export type identity<T> = T;
