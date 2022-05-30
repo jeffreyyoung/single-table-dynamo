@@ -93,11 +93,14 @@ export class IndexQueryBuilder<Src> {
 
   async exec() {
     if (this.ddb) {
-      let res = (await this.ddb
-        .query(this.builder.build() as any)
-        .promise()) as Omit<DocumentClient.QueryOutput, "Items"> & {
+      const expression = this.builder.build();
+      let res = (await this.ddb.query(expression as any).promise()) as Omit<
+        DocumentClient.QueryOutput,
+        "Items"
+      > & {
         Items?: Src[];
       };
+      this.mapper.args.on?.query?.(expression, res);
       return Object.assign(res, { encodeCursor: this.encodeCursor });
     } else {
       throw new Error(
