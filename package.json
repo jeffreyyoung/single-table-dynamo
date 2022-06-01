@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "8.1.13",
+  "version": "8.1.14",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -21,8 +21,8 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@types/node": "^17.0.38",
     "@types/jest": "^24.0.22",
+    "@types/node": "^17.0.38",
     "@types/sinon": "^9.0.9",
     "aws-sdk": "^2.566.0",
     "dotenv": "^8.2.0",
