@@ -84,11 +84,9 @@ Object {
 test("output error should be thrown", async () => {
   await rawPut({ id: "meow", invalidField: "wat" });
   expect(getUserRepo().get({ id: "meow" })).rejects.toMatchObject({
-    __stddbError: true,
-    entityTypeName: "User",
-    method: "get",
-    methodsTrace: ["get", "parseId"],
-    originalError: {
+    message: "Invalid User output",
+    name: "single-table-OutputValidationError",
+    cause: {
       issues: [
         {
           code: "invalid_type",
@@ -120,6 +118,5 @@ test("output error should be thrown", async () => {
         },
       ],
     },
-    type: "ouput-validation",
   });
 });

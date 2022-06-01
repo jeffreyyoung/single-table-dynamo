@@ -1,4 +1,4 @@
-import { isSingleTableDynamoError } from "./utils/errorHandling";
+import { isSingleTableDynamoError } from "./utils/errors";
 
 export * from "./utils/AttributeRegistry";
 export * from "./index-query-builder";

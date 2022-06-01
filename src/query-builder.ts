@@ -45,7 +45,7 @@ export class QueryBuilder {
     };
   }
 
-  cloneWith(data: Partial<QueryData>) {
+  cloneWith(data: Partial<QueryData> = {}) {
     return new QueryBuilder({
       ...this.data,
       ...data,

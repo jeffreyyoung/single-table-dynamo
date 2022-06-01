@@ -118,25 +118,26 @@ test("get, put, delete, updateUnsafe, and query should work", async () => {
       .project([])
       .exec()
   ).resolves.toMatchInlineSnapshot(`
-          Object {
-            "Count": 1,
-            "Items": Array [
-              Object {
-                "city": "scranton",
-                "country": "CA",
-                "followers": Array [],
-                "id": "yay",
-                "pk1": "User#yay",
-                "pk2": "User#CA",
-                "sk1": "User",
-                "sk2": "User#PA#scranton",
-                "state": "PA",
-              },
-            ],
-            "ScannedCount": 1,
-            "encodeCursor": [Function],
-          }
-        `);
+Object {
+  "Count": 1,
+  "Items": Array [
+    Object {
+      "city": "scranton",
+      "country": "CA",
+      "followers": Array [],
+      "id": "yay",
+      "pk1": "User#yay",
+      "pk2": "User#CA",
+      "sk1": "User",
+      "sk2": "User#PA#scranton",
+      "state": "PA",
+    },
+  ],
+  "ScannedCount": 1,
+  "encodeCursor": [Function],
+  "lastCursor": "{\\"pk1\\":\\"User#yay\\",\\"sk1\\":\\"User\\",\\"pk2\\":\\"User#CA\\",\\"sk2\\":\\"User#PA#scranton\\"}",
+}
+`);
 
   await expect(repo.updateUnsafe({ id: obj.id }, { followers: ["yay1"] }))
     .resolves.toMatchInlineSnapshot(`
@@ -158,23 +159,24 @@ test("get, put, delete, updateUnsafe, and query should work", async () => {
   await expect(
     repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
   ).resolves.toMatchInlineSnapshot(`
-          Object {
-            "Count": 1,
-            "Items": Array [
-              Object {
-                "city": "scranton",
-                "country": "CA",
-                "followers": Array [
-                  "yay1",
-                ],
-                "id": "yay",
-                "state": "PA",
-              },
-            ],
-            "ScannedCount": 1,
-            "encodeCursor": [Function],
-          }
-        `);
+Object {
+  "Count": 1,
+  "Items": Array [
+    Object {
+      "city": "scranton",
+      "country": "CA",
+      "followers": Array [
+        "yay1",
+      ],
+      "id": "yay",
+      "state": "PA",
+    },
+  ],
+  "ScannedCount": 1,
+  "encodeCursor": [Function],
+  "lastCursor": "{\\"pk1\\":\\"User#yay\\",\\"sk1\\":\\"User\\",\\"pk2\\":\\"User#CA\\",\\"sk2\\":\\"User#PA#scranton\\"}",
+}
+`);
 
   await expect(repo.delete({ id: "yay" })).resolves.toBe(true);
 
@@ -236,8 +238,8 @@ test("curosr pagination should work", async () => {
   expect(page3!.Items!.map((i) => i.city)).toMatchObject([cities[2]]);
 });
 
-test("sort ascending/descending should work", async () => {
-  const wordRepo = new Repository(
+const getWordRepo = () => {
+  return new Repository(
     {
       schema: z.object({
         lang: z.string(),
@@ -254,6 +256,10 @@ test("sort ascending/descending should work", async () => {
     },
     ddb
   );
+};
+
+test("sort ascending/descending should work", async () => {
+  const wordRepo = getWordRepo();
   await Promise.all([
     wordRepo.put({
       lang: "en",
@@ -286,4 +292,31 @@ test("sort ascending/descending should work", async () => {
     { word: "b" },
     { word: "c" },
   ]);
+});
+
+test("execAll should work", async () => {
+  const wordRepo = getWordRepo();
+  const res = await Promise.all([
+    wordRepo.put({
+      lang: "en",
+      word: "a",
+    }),
+    wordRepo.put({
+      lang: "en",
+      word: "b",
+    }),
+    wordRepo.put({
+      lang: "en",
+      word: "c",
+    }),
+  ]);
+
+  let i = 0;
+  for await (const batch of wordRepo
+    .query("primary")
+    .limit(1)
+    .where({ lang: "en" })
+    .execAll()) {
+    expect(res[i++]).toMatchObject(batch[0]);
+  }
 });

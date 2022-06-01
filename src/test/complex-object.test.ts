@@ -2,6 +2,7 @@ import { InferIdType, InferObjectType, Repository } from "../repository";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
 import { tableConfig } from "./utils/tableConfig";
+import { STDError } from "../utils/errors";
 
 enum Role {
   Admin = "Admin",
@@ -81,7 +82,6 @@ test("trim should work", async () => {
   const res = await repo.put(getDefault());
 
   expect(res.bio).toBe("Meeeeooowww");
-
   await expect(() =>
     repo.updateUnsafe(
       { id: res.id },
@@ -89,13 +89,10 @@ test("trim should work", async () => {
         age: 121,
       }
     )
-  ).rejects.toMatchObject({
-    entityTypeName: "User",
-    method: "updateUnsafe",
-    methodsTrace: ["updateUnsafe", "partialParse"],
-    type: "input-validation",
-
-    originalError: {
+  ).rejects.toMatchObject(<STDError>{
+    name: "single-table-InputValidationError",
+    message: "Unable to partially parse User input",
+    cause: <any>{
       issues: [
         {
           code: "too_big",
@@ -116,16 +113,8 @@ test("regex validation should work", async () => {
       ...getDefault(),
       email: "not a email",
     })
-  ).rejects.toMatchObject({
-    methodsTrace: ["put", "parse"],
-    type: "input-validation",
-    originalError: {
-      issues: [
-        {
-          path: ["email"],
-        },
-      ],
-    },
+  ).rejects.toMatchObject(<STDError>{
+    name: "single-table-InputValidationError",
   });
 });
 

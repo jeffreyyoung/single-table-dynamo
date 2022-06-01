@@ -8,7 +8,7 @@ import {
   toProjectionExpression,
   getDefaultFieldsToProject,
 } from "./utils/ProjectFields";
-import { handleError } from "./utils/errorHandling";
+import { createSTDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
 
 type ExtraQueryParams<T> = {
@@ -92,8 +92,15 @@ export class Repository<
         this.getHookKeyInfo(id)
       );
       return item;
-    } catch (e) {
-      throw handleError(e, "get", this.mapper.args.typeName);
+    } catch (e: any) {
+      if (isSingleTableDynamoError(e)) {
+        throw e;
+      }
+      throw createSTDError({
+        message: `Error getting ${this.args.typeName}`,
+        cause: e,
+        name: "single-table-Error",
+      });
     }
   }
 
@@ -150,8 +157,15 @@ export class Repository<
         return this.put(options.objectToPutIfNotExists);
       }
       return updated;
-    } catch (e) {
-      throw handleError(e, "partialUpdate", this.mapper.args.typeName);
+    } catch (e: any) {
+      if (isSingleTableDynamoError(e)) {
+        throw e;
+      }
+      throw createSTDError({
+        message: `There was an error partialUpdate: ${this.args.typeName}`,
+        cause: e,
+        name: "single-table-Error",
+      });
     }
   }
 
@@ -189,8 +203,15 @@ export class Repository<
       }
 
       return updated;
-    } catch (e) {
-      throw handleError(e, "updateUnsafe", this.mapper.args.typeName);
+    } catch (e: any) {
+      if (isSingleTableDynamoError(e)) {
+        throw e;
+      }
+      throw createSTDError({
+        message: `There was an error updateUnsafe ${this.args.typeName}`,
+        cause: e,
+        name: "single-table-Error",
+      });
     }
   }
 
@@ -212,8 +233,15 @@ export class Repository<
         .promise();
       this.args.on?.put?.([src], parsed, this.getHookKeyInfo(parsed));
       return parsed;
-    } catch (e) {
-      throw handleError(e, "put", this.mapper.args.typeName);
+    } catch (e: any) {
+      if (isSingleTableDynamoError(e)) {
+        throw e;
+      }
+      throw createSTDError({
+        message: `There was an error putting ${this.args.typeName}`,
+        cause: e,
+        name: "single-table-Error",
+      });
     }
   }
 
@@ -227,8 +255,15 @@ export class Repository<
         .promise();
       this.args.on?.delete?.([id], true, this.getHookKeyInfo(id));
       return true;
-    } catch (e) {
-      throw handleError(e, "get", this.mapper.args.typeName);
+    } catch (e: any) {
+      if (isSingleTableDynamoError(e)) {
+        throw e;
+      }
+      throw createSTDError({
+        message: `There was an error deleting ${this.args.typeName}`,
+        cause: e,
+        name: "single-table-Error",
+      });
     }
   }
   getIndexByTag(indexTag: IndexTag | SecondaryIndexTag): IndexBase<Output> {

@@ -61,13 +61,13 @@ export class IndexQueryBuilder<Src> {
     }
   }
 
-  clone(builder: QueryBuilder) {
+  clone(builder: QueryBuilder = this.builder) {
     return new IndexQueryBuilder<Src>({
       tableName: this.tableName,
       mapper: this.mapper,
       index: this.index,
       ddb: this.ddb,
-      builder: builder.cloneWith({}),
+      builder: builder.cloneWith(),
     });
   }
 
@@ -101,7 +101,12 @@ export class IndexQueryBuilder<Src> {
         Items?: Src[];
       };
       this.mapper.args.on?.query?.(expression, res);
-      return Object.assign(res, { encodeCursor: this.encodeCursor });
+      return Object.assign(res, {
+        encodeCursor: this.encodeCursor,
+        lastCursor: res.Items?.length
+          ? this.encodeCursor(res.Items[res.Items.length - 1])
+          : undefined,
+      });
     } else {
       throw new Error(
         "a document client instance must be provided to the constructor in order to execute queries"
@@ -112,6 +117,20 @@ export class IndexQueryBuilder<Src> {
   async execOne() {
     const res = await this.limit(1).exec();
     return res.Items?.[0];
+  }
+
+  async *execAll() {
+    let cursor: string | null = null;
+    do {
+      // @ts-ignore
+      const { Items, lastCursor } = await (cursor
+        ? this.cursor(cursor).exec()
+        : this.exec());
+      if (Items?.length) {
+        yield Items;
+      }
+      cursor = lastCursor;
+    } while (cursor);
   }
 
   where(src: Partial<Src>) {

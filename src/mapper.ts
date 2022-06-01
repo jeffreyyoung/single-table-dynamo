@@ -4,7 +4,7 @@ import { Repository } from "./repository";
 import { UnwrapPromise } from "./utils/UnwrapPromise";
 import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
-import { createSTDDBError } from "./utils/errorHandling";
+import { createSTDError } from "./utils/errors";
 import { z } from "zod";
 
 export type IndexField<T> = Extract<keyof T, string>;
@@ -144,12 +144,11 @@ export class Mapper<
   parseId(id: Id): Id {
     try {
       return id;
-    } catch (error) {
-      throw createSTDDBError({
-        error,
-        entityTypeName: this.args.typeName,
-        methodsTrace: ["parseId"],
-        type: "id-validation",
+    } catch (error: any) {
+      throw createSTDError({
+        cause: error,
+        message: `Unable to parse ${this.args.typeName} id`,
+        name: "single-table-IdValidationError",
       });
     }
     return id;
@@ -164,12 +163,14 @@ export class Mapper<
       let mask: any = {};
       fields.forEach((field) => (mask[field] = true));
       return this.args.schema.pick(mask).parse(obj);
-    } catch (error) {
-      throw createSTDDBError({
-        error,
-        entityTypeName: this.args.typeName,
-        methodsTrace: ["parseId"],
-        type: type === "input" ? "input-validation" : "ouput-validation",
+    } catch (error: any) {
+      throw createSTDError({
+        cause: error,
+        name:
+          type === "input"
+            ? "single-table-InputValidationError"
+            : "single-table-OutputValidationError",
+        message: `Invalid ${this.args.typeName} ${type}`,
       });
     }
   }
@@ -183,12 +184,14 @@ export class Mapper<
       const parsedPartial = this.args.schema.partial().parse(obj);
       //@ts-ignore
       return removeUndefined(parsedPartial);
-    } catch (error) {
-      throw createSTDDBError({
-        error,
-        entityTypeName: this.args.typeName,
-        methodsTrace: ["partialParse"],
-        type: type === "input" ? "input-validation" : "ouput-validation",
+    } catch (error: any) {
+      throw createSTDError({
+        cause: error,
+        name:
+          type === "input"
+            ? "single-table-InputValidationError"
+            : "single-table-OutputValidationError",
+        message: `Unable to partially parse ${this.args.typeName} ${type}`,
       });
     }
   }
@@ -202,12 +205,14 @@ export class Mapper<
     try {
       // @ts-ignore
       return this.args.schema.parse(obj);
-    } catch (error) {
-      throw createSTDDBError({
-        error,
-        entityTypeName: this.args.typeName,
-        methodsTrace: ["parse"],
-        type: type === "input" ? "input-validation" : "ouput-validation",
+    } catch (error: any) {
+      throw createSTDError({
+        cause: error,
+        name:
+          type === "input"
+            ? "single-table-InputValidationError"
+            : "single-table-OutputValidationError",
+        message: `Unable to parse ${this.args.typeName} ${type}`,
       });
     }
   }
