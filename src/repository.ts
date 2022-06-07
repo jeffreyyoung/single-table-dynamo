@@ -6,12 +6,13 @@ import { BatchArgsHandler } from "./batch-args-handler";
 import {
   FieldsToProject,
   toProjectionExpression,
-  getDefaultFieldsToProject,
+  getAllProjectableFields,
 } from "./utils/ProjectFields";
 import { createSTDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
+import { goTry } from "./utils/goTry";
 
-type ExtraQueryParams<T> = {
+type GetOptions<T> = {
   fieldsToProject: FieldsToProject<T>;
 };
 
@@ -58,34 +59,64 @@ export class Repository<
     this.ddb = ddb;
   }
 
-  private doGet(id: ID, extraParams: ExtraQueryParams<Output>) {
+  private async doGet(
+    id: ID,
+    options: GetOptions<Output>
+  ): Promise<Output | null> {
     const args = {
       TableName: this.args.tableName,
-      ...toProjectionExpression(extraParams.fieldsToProject),
+      ...toProjectionExpression(options.fieldsToProject),
       Key: this.mapper.getKey(id),
     };
 
-    return this.args.getDocument
+    const res = await (this.args.getDocument
       ? this.args.getDocument(args)
-      : this.ddb.get(args).promise();
+      : this.ddb.get(args).promise());
+
+    if (!res.Item) {
+      return null;
+    }
+    const [item, err] = goTry(() =>
+      this.mapper.pickedParse(res.Item, options.fieldsToProject, "output")
+    );
+    // we got a parse error :O
+    if (err) {
+      if (this.args.migrate) {
+        if (this.isProjectingAllFields(options.fieldsToProject)) {
+          // if this is the full version that's in the db
+          return this.args.migrate(res.Item);
+        } else {
+          const fullMigratedResult = await this.doGet(id, {
+            fieldsToProject: getAllProjectableFields(this.args),
+          });
+
+          return this.mapper.pickedParse(
+            fullMigratedResult,
+            options.fieldsToProject,
+            "output"
+          ) as any;
+        }
+      }
+      throw err;
+    }
+    return item as Output;
+  }
+
+  isProjectingAllFields(fieldsToProject: FieldsToProject<Output>) {
+    const s = new Set(fieldsToProject);
+    const allFields = getAllProjectableFields(this.args);
+    return allFields.every((f) => s.has(f));
   }
 
   async get(
     id: ID,
-    extraParams: ExtraQueryParams<Output> = {
-      fieldsToProject: getDefaultFieldsToProject<Output>(this.args as any),
+    extraParams: GetOptions<Output> = {
+      fieldsToProject: getAllProjectableFields(this.args),
     }
   ) {
     try {
-      const res = await this.doGet(id, extraParams);
+      const item: Output | null = await this.doGet(id, extraParams);
 
-      let item: Output | null = res.Item
-        ? (this.mapper.pickedParse(
-            res.Item,
-            extraParams.fieldsToProject,
-            "output"
-          ) as any)
-        : null;
       this.args.on?.get?.(
         [id, extraParams as any],
         item,
@@ -284,7 +315,7 @@ export class Repository<
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
       mapper: this.mapper as any,
-      fieldsToProject: getDefaultFieldsToProject(this.args),
+      fieldsToProject: getAllProjectableFields(this.args),
       ddb: this.ddb,
     });
     return builder;

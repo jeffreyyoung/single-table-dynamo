@@ -119,8 +119,8 @@ test("should format partial index properly", () => {
 
 test("should throw when no partition key is provided", () => {
   expect(() =>
-    mapper.getIndexKey({} as any, mapper.args.primaryIndex, { partial: true })
-  ).toThrow();
+mapper.getIndexKey(({} as any), mapper.args.primaryIndex, { partial: true })).
+toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: country is required, recieved {}"`);
 });
 
 test("mapper.updateWithSomeFields should work", () => {
@@ -173,13 +173,11 @@ test("mapper.updateWithSomeFields should work", () => {
   });
 
   expect(() =>
-    mapper.decorateWithKeys({
-      id: "1",
-      country: "usa",
-    } as any)
-  ).toThrowErrorMatchingInlineSnapshot(
-    `"To query index: {\\"fields\\":[\\"country\\",\\"name\\"],\\"indexName\\":\\"index1\\",\\"pk\\":\\"pk1\\",\\"sk\\":\\"sk1\\"}, field: name is required, recieved {\\"id\\":\\"1\\",\\"country\\":\\"usa\\"}, debugInfo: {}"`
-  );
+mapper.decorateWithKeys(({
+  id: "1",
+  country: "usa" } as
+any))).
+toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: name is required, recieved {\\"id\\":\\"1\\",\\"country\\":\\"usa\\"}"`);
 
   const fullObject = {
     birthDate: "1990",

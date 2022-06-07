@@ -86,6 +86,12 @@ export type RepositoryArgs<
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
+  /**
+   * Called when zod throws a validation error after retrieving an object
+   * from the database.  In migrate, an attempt should be made to fix the
+   * error and write the object back to the database.
+   */
+  migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T>;
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
@@ -170,7 +176,10 @@ export class Mapper<
           type === "input"
             ? "single-table-InputValidationError"
             : "single-table-OutputValidationError",
-        message: `Invalid ${this.args.typeName} ${type}`,
+        message:
+          type === "input"
+            ? `Recieved invalid data for ${this.args.typeName}`
+            : `Invalid data for ${this.args.typeName} is stored in the database`,
       });
     }
   }
@@ -285,11 +294,9 @@ export class Mapper<
     [...pkFields, ...skFields].forEach((f) => {
       if (!Object(thing).hasOwnProperty(f)) {
         throw new Error(
-          `To query index: ${JSON.stringify(
-            index
-          )}, field: ${f} is required, recieved ${JSON.stringify(
-            thing
-          )}, debugInfo: ${JSON.stringify(options?.debugInfo || {})}`
+          `To query index (${index.pk}, ${
+            index.sk
+          }), field: ${f} is required, recieved ${JSON.stringify(thing)}`
         );
       }
     });

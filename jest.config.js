@@ -6,6 +6,6 @@ module.exports = {
     // Optional (but recommended)
     "jest-dynalite/clearAfterEach",
   ],
-
+  testTimeout: 20000,
   //preset: "jest-dynalite"
 };

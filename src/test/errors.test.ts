@@ -84,7 +84,7 @@ Object {
 test("output error should be thrown", async () => {
   await rawPut({ id: "meow", invalidField: "wat" });
   expect(getUserRepo().get({ id: "meow" })).rejects.toMatchObject({
-    message: "Invalid User output",
+    message: "Invalid data for User is stored in the database",
     name: "single-table-OutputValidationError",
     cause: {
       issues: [

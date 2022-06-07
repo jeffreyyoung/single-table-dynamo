@@ -82,7 +82,7 @@ describe("Repository", () => {
         },
         "input"
       )
-    ).toThrowError();
+    ).toThrowErrorMatchingInlineSnapshot(`"Unable to parse User input"`);
 
     expect(
       repo.mapper.parse({

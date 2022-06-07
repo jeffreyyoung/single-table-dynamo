@@ -69,10 +69,10 @@ test("should format partial index properly", () => {
 
 test("should throw when not all partition keys are provided", () => {
   expect(() =>
-    mapper.getIndexKey({ country: "USA" }, mapper.args.primaryIndex, {
-      partial: true,
-    })
-  ).toThrow();
+mapper.getIndexKey({ country: "USA" }, mapper.args.primaryIndex, {
+  partial: true })).
+
+toThrowErrorMatchingInlineSnapshot(`"To query index (pk0, sk0), field: state is required, recieved {\\"country\\":\\"USA\\"}"`);
 });
 
 test("query should work", async () => {
@@ -115,14 +115,14 @@ test("query should work", async () => {
         `);
 
   await expect(
-repository.
-query("byCountryByState").
-where({
-  state: "WA",
-  country: "USA" }).
-
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repository
+      .query("byCountryByState")
+      .where({
+        state: "WA",
+        country: "USA",
+      })
+      .exec()
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 2,
   "Items": Array [
@@ -144,14 +144,14 @@ Object {
 `);
 
   await expect(
-repository.
-query("byCountryByState").
-where({
-  state: "UT",
-  country: "USA" }).
-
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repository
+      .query("byCountryByState")
+      .where({
+        state: "UT",
+        country: "USA",
+      })
+      .exec()
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -241,17 +241,15 @@ Object {
   ).resolves.toMatchInlineSnapshot(`null`);
 
   await expect(() =>
-    repository.query("pk").where({ state: "UT" }).exec()
-  ).toThrowErrorMatchingInlineSnapshot(
-    `"To query index: {\\"pk\\":\\"pk0\\",\\"sk\\":\\"sk0\\",\\"tag\\":\\"pk\\",\\"fields\\":[\\"country\\",\\"state\\",\\"createdAt\\"],\\"partitionKeyFieldCount\\":100}, field: country is required, recieved {\\"state\\":\\"UT\\"}, debugInfo: {}"`
-  );
+repository.query("pk").where({ state: "UT" }).exec()).
+toThrowErrorMatchingInlineSnapshot(`"To query index (pk0, sk0), field: country is required, recieved {\\"state\\":\\"UT\\"}"`);
 
   await expect(
-repository.
-query("pk").
-where({ state: "UT", country: "USA", createdAt: "1990" }).
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repository
+      .query("pk")
+      .where({ state: "UT", country: "USA", createdAt: "1990" })
+      .exec()
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [

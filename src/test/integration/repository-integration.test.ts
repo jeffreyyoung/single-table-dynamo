@@ -104,12 +104,12 @@ test("get, put, delete, updateUnsafe, and query should work", async () => {
         `);
 
   await expect(() =>
-    repo.query("primary").where({ city: "scranton" }).exec()
-  ).toThrow();
+repo.query("primary").where({ city: "scranton" }).exec()).
+toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: id is required, recieved {\\"city\\":\\"scranton\\"}"`);
 
   await expect(() =>
-    repo.query("byCountryByStateByCity").where({ city: "scranton" }).exec()
-  ).toThrow();
+repo.query("byCountryByStateByCity").where({ city: "scranton" }).exec()).
+toThrowErrorMatchingInlineSnapshot(`"To query index (pk2, sk2), field: country is required, recieved {\\"city\\":\\"scranton\\"}"`);
 
   await expect(
     repo

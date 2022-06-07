@@ -1,9 +1,8 @@
-import { RepositoryArgs } from "../mapper";
 import type { toZod } from "tozod";
 
-export type FieldsToProject<T = any> = (string & keyof T)[];
+export type FieldsToProject<T = any> = (keyof T & string)[];
 
-export function getDefaultFieldsToProject<Src>(args: {
+export function getAllProjectableFields<Src>(args: {
   schema: any;
 }): FieldsToProject<Src> {
   // horid hack but it is what it is 🤷‍♂️

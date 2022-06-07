@@ -69,78 +69,78 @@ test("hooks should get called", async () => {
     ]
   `);
   expect(spies.get.getCalls().map((c) => c.args)).toMatchInlineSnapshot(`
+Array [
+  Array [
     Array [
-      Array [
-        Array [
-          Object {
-            "id": "1",
-          },
-          Object {
-            "fieldsToProject": Array [
-              "id",
-              "name",
-            ],
-          },
+      Object {
+        "id": "1",
+      },
+      Object {
+        "fieldsToProject": Array [
+          "id",
+          "name",
         ],
-        Object {
-          "id": "1",
-          "name": "meow",
-        },
-        Object {
-          "Key": Object {
-            "pk1": "Thing#1",
-            "sk1": "Thing",
-          },
-          "TableName": "table1",
-        },
-      ],
-      Array [
-        Array [
-          Object {
-            "id": "1",
-          },
-          Object {
-            "fieldsToProject": Array [
-              "id",
-              "name",
-            ],
-          },
+      },
+    ],
+    Object {
+      "id": "1",
+      "name": "meow",
+    },
+    Object {
+      "Key": Object {
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      "TableName": "table1",
+    },
+  ],
+  Array [
+    Array [
+      Object {
+        "id": "1",
+      },
+      Object {
+        "fieldsToProject": Array [
+          "id",
+          "name",
         ],
-        Object {
-          "id": "1",
-          "name": "yeehaw",
-        },
-        Object {
-          "Key": Object {
-            "pk1": "Thing#1",
-            "sk1": "Thing",
-          },
-          "TableName": "table1",
-        },
-      ],
-      Array [
-        Array [
-          Object {
-            "id": "1",
-          },
-          Object {
-            "fieldsToProject": Array [
-              "id",
-              "name",
-            ],
-          },
+      },
+    ],
+    Object {
+      "id": "1",
+      "name": "yeehaw",
+    },
+    Object {
+      "Key": Object {
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      "TableName": "table1",
+    },
+  ],
+  Array [
+    Array [
+      Object {
+        "id": "1",
+      },
+      Object {
+        "fieldsToProject": Array [
+          "id",
+          "name",
         ],
-        null,
-        Object {
-          "Key": Object {
-            "pk1": "Thing#1",
-            "sk1": "Thing",
-          },
-          "TableName": "table1",
-        },
-      ],
-    ]
-  `);
+      },
+    ],
+    null,
+    Object {
+      "Key": Object {
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      "TableName": "table1",
+    },
+  ],
+]
+`);
   expect(spies.updateUnsafe.getCalls().map((c) => c.args))
     .toMatchInlineSnapshot(`
     Array [
