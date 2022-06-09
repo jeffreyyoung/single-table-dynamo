@@ -47,7 +47,35 @@ function rawPut(
     .promise();
 }
 
-test.skip("migrate should work when getting full object", async () => {
+test.only("migrate should work for query", async () => {
+  const repo = getUserRepo();
+  await rawPut({
+    id: "meh",
+    country: "usa",
+    followers: [],
+  });
+
+  // todo: handle migrations in queries
+  expect(
+    repo
+      .query("primary")
+      .where({
+        id: "meh",
+      })
+      .exec()
+      .then((res) => res.Items)
+  ).resolves.toMatchInlineSnapshot(`
+Array [
+  Object {
+    "country": "usa",
+    "followers": Array [],
+    "id": "meh",
+  },
+]
+`);
+});
+
+test("migrate should work when getting full object", async () => {
   const repo = getUserRepo();
   await rawPut({
     id: "meh",
