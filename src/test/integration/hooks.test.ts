@@ -1,7 +1,6 @@
 import { Repository } from "../../repository";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
-import sinon from "sinon";
 
 const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
@@ -13,11 +12,11 @@ const ddb = new DocumentClient({
 
 test("hooks should get called", async () => {
   const spies = {
-    get: sinon.spy(),
-    delete: sinon.spy(),
-    put: sinon.spy(),
-    query: sinon.spy(),
-    updateUnsafe: sinon.spy(),
+    get: jest.fn(),
+    delete: jest.fn(),
+    put: jest.fn(),
+    query: jest.fn(),
+    updateUnsafe: jest.fn(),
   };
   const thingRepo = new Repository(
     {
@@ -45,7 +44,7 @@ test("hooks should get called", async () => {
   await thingRepo.delete({ id: "1" });
   await thingRepo.get({ id: "1" });
 
-  expect(spies.put.getCalls().map((c) => c.args)).toMatchInlineSnapshot(`
+  expect(spies.put.mock.calls).toMatchInlineSnapshot(`
     Array [
       Array [
         Array [
@@ -68,7 +67,7 @@ test("hooks should get called", async () => {
       ],
     ]
   `);
-  expect(spies.get.getCalls().map((c) => c.args)).toMatchInlineSnapshot(`
+  expect(spies.get.mock.calls).toMatchInlineSnapshot(`
 Array [
   Array [
     Array [
@@ -141,8 +140,7 @@ Array [
   ],
 ]
 `);
-  expect(spies.updateUnsafe.getCalls().map((c) => c.args))
-    .toMatchInlineSnapshot(`
+  expect(spies.updateUnsafe.mock.calls).toMatchInlineSnapshot(`
     Array [
       Array [
         Array [
@@ -171,7 +169,7 @@ Array [
       ],
     ]
   `);
-  expect(spies.delete.getCalls().map((c) => c.args)).toMatchInlineSnapshot(`
+  expect(spies.delete.mock.calls).toMatchInlineSnapshot(`
     Array [
       Array [
         Array [

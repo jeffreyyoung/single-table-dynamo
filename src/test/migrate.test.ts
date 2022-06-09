@@ -47,7 +47,7 @@ function rawPut(
     .promise();
 }
 
-test.only("migrate should work for query", async () => {
+test("migrate should work for query", async () => {
   const repo = getUserRepo();
   await rawPut({
     id: "meh",
