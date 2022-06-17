@@ -89,7 +89,8 @@ export type RepositoryArgs<
   /**
    * Called when zod throws a validation error after retrieving an object
    * from the database.  In migrate, an attempt should be made to fix the
-   * error and write the object back to the database.
+   * error.  The returned value from migrate will be validated against
+   * the object schema
    */
   migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T> | T;
   secondaryIndexes?: Record<
