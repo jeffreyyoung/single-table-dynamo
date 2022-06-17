@@ -1,14 +1,11 @@
-import type { toZod } from "tozod";
+import { AnyZodObject } from "zod";
 
 export type FieldsToProject<T = any> = (keyof T & string)[];
 
 export function getAllProjectableFields<Src>(args: {
-  schema: any;
+  schema: AnyZodObject;
 }): FieldsToProject<Src> {
-  // horid hack but it is what it is 🤷‍♂️
-  let schema: toZod<{ meow: boolean }> = args.schema as any;
-
-  return Object.keys(schema._def.shape()) as any;
+  return Object.keys(args.schema._def.shape()) as any;
 }
 
 export function toProjectionExpression(fields: FieldsToProject) {

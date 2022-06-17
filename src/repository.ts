@@ -76,19 +76,40 @@ export class Repository<
     if (!res.Item) {
       return null;
     }
+
+    return this.parseAndMigrate(res.Item, options);
+  }
+
+  private defaultGetOptions(): GetOptions<Output> {
+    return {
+      fieldsToProject: getAllProjectableFields(this.args),
+    };
+  }
+
+  async parseAndMigrate(
+    object: NonNullable<any>,
+    options: GetOptions<Output> = this.defaultGetOptions()
+  ): Promise<Output> {
     const [item, err] = goTry(() =>
-      this.mapper.pickedParse(res.Item, options.fieldsToProject, "output")
+      this.mapper.pickedParse(object, options.fieldsToProject, "output")
     );
     // we got a parse error :O
     if (err) {
       if (this.args.migrate) {
         if (this.isProjectingAllFields(options.fieldsToProject)) {
           // if this is the full version that's in the db
-          return this.args.migrate(res.Item);
+          return this.mapper.pickedParse(
+            await this.args.migrate(object),
+            options.fieldsToProject,
+            "output"
+          ) as any;
         } else {
-          const fullMigratedResult = await this.doGet(id, {
-            fieldsToProject: getAllProjectableFields(this.args),
-          });
+          const fullMigratedResult = await this.doGet(
+            this.mapper.parseId(object),
+            {
+              fieldsToProject: getAllProjectableFields(this.args),
+            }
+          );
 
           return this.mapper.pickedParse(
             fullMigratedResult,
@@ -108,20 +129,11 @@ export class Repository<
     return allFields.every((f) => s.has(f));
   }
 
-  async get(
-    id: ID,
-    extraParams: GetOptions<Output> = {
-      fieldsToProject: getAllProjectableFields(this.args),
-    }
-  ) {
+  async get(id: ID, options: GetOptions<Output> = this.defaultGetOptions()) {
     try {
-      const item: Output | null = await this.doGet(id, extraParams);
+      const item: Output | null = await this.doGet(id, options);
 
-      this.args.on?.get?.(
-        [id, extraParams as any],
-        item,
-        this.getHookKeyInfo(id)
-      );
+      this.args.on?.get?.([id, options as any], item, this.getHookKeyInfo(id));
       return item;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -200,7 +212,15 @@ export class Repository<
     }
   }
 
-  async updateUnsafe(
+  /**
+   * This method is dangerous because no migration code is run
+   *
+   * @param id
+   * @param src
+   * @param options
+   * @returns
+   */
+  async dangerouslyUpdate(
     id: ID,
     src: Partial<Output>,
     options: { upsert: boolean; returnValues?: "ALL_NEW" | "ALL_OLD" } = {
@@ -226,7 +246,7 @@ export class Repository<
         : null;
 
       if (updated) {
-        this.args.on?.updateUnsafe?.(
+        this.args.on?.dangerouslyUpdate?.(
           [id, src, options],
           updated,
           this.getHookKeyInfo(updated)
@@ -239,7 +259,7 @@ export class Repository<
         throw e;
       }
       throw createSTDError({
-        message: `There was an error updateUnsafe ${this.args.typeName}`,
+        message: `There was an error dangerouslyUpdate ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
       });
@@ -314,9 +334,10 @@ export class Repository<
     const builder = new IndexQueryBuilder<Output>({
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
-      mapper: this.mapper as any,
+      mapper: this.mapper as AnyRepository["mapper"],
       fieldsToProject: getAllProjectableFields(this.args),
       ddb: this.ddb,
+      parseAndMigrate: this.parseAndMigrate.bind(this),
     });
     return builder;
   }

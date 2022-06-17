@@ -79,7 +79,7 @@ test("getDocument works as expected", async () => {
   });
 });
 
-test("get, put, delete, updateUnsafe, and query should work", async () => {
+test("get, put, delete, dangerouslyUpdate, and query should work", async () => {
   const repo = getUserRepo();
   await expect(repo.get({ id: "yay" })).resolves.toEqual(null);
 
@@ -104,12 +104,16 @@ test("get, put, delete, updateUnsafe, and query should work", async () => {
         `);
 
   await expect(() =>
-repo.query("primary").where({ city: "scranton" }).exec()).
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: id is required, recieved {\\"city\\":\\"scranton\\"}"`);
+    repo.query("primary").where({ city: "scranton" }).exec()
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk1, sk1), field: id is required, recieved {\\"city\\":\\"scranton\\"}"`
+  );
 
   await expect(() =>
-repo.query("byCountryByStateByCity").where({ city: "scranton" }).exec()).
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk2, sk2), field: country is required, recieved {\\"city\\":\\"scranton\\"}"`);
+    repo.query("byCountryByStateByCity").where({ city: "scranton" }).exec()
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk2, sk2), field: country is required, recieved {\\"city\\":\\"scranton\\"}"`
+  );
 
   await expect(
     repo
@@ -126,10 +130,6 @@ Object {
       "country": "CA",
       "followers": Array [],
       "id": "yay",
-      "pk1": "User#yay",
-      "pk2": "User#CA",
-      "sk1": "User",
-      "sk2": "User#PA#scranton",
       "state": "PA",
     },
   ],
@@ -139,7 +139,7 @@ Object {
 }
 `);
 
-  await expect(repo.updateUnsafe({ id: obj.id }, { followers: ["yay1"] }))
+  await expect(repo.dangerouslyUpdate({ id: obj.id }, { followers: ["yay1"] }))
     .resolves.toMatchInlineSnapshot(`
           Object {
             "city": "scranton",
@@ -153,7 +153,7 @@ Object {
         `);
 
   await expect(() =>
-    repo.updateUnsafe({ id: "NON_EXISTANT_ID" }, { followers: ["YAY"] })
+    repo.dangerouslyUpdate({ id: "NON_EXISTANT_ID" }, { followers: ["YAY"] })
   ).rejects;
 
   await expect(

@@ -37,9 +37,9 @@ describe("Repository", () => {
     stub = args.stub;
   });
 
-  test("updateUnsafe should call document client with correct params", () => {
+  test("dangerouslyUpdate should call document client with correct params", () => {
     stub.update.returns({ promise: () => ({}) } as any);
-    repo.updateUnsafe(
+    repo.dangerouslyUpdate(
       { id: "meow" },
       {
         city: "jimmy",

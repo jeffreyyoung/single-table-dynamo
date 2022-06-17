@@ -2,6 +2,7 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { FieldsToProject } from "./utils/ProjectFields";
 import { Mapper, ifSecondaryIndexGetName, IndexBase } from "./mapper";
 import { QueryBuilder } from "./query-builder";
+import { AnyRepository } from "./repository";
 
 export function getCursorEncoder<Src>(args: {
   primaryIndex: IndexBase<Src>;
@@ -20,42 +21,38 @@ export function getCursorEncoder<Src>(args: {
 type IndexQueryBuilderArgs<T> = {
   tableName: string;
   mapper: Mapper;
+  parseAndMigrate: AnyRepository["parseAndMigrate"];
   fieldsToProject?: FieldsToProject<T>;
   index: IndexBase<T>;
   builder?: QueryBuilder;
-  ddb?: DocumentClient;
+  ddb: DocumentClient;
 };
 
 export class IndexQueryBuilder<Src> {
   tableName: string;
-  mapper: Mapper;
+  mapper: AnyRepository["mapper"];
   index: IndexBase<Src>;
+  parseAndMigrate: AnyRepository["parseAndMigrate"];
   builder: QueryBuilder;
-  ddb?: DocumentClient;
+  ddb: DocumentClient;
   encodeCursor: (src: Src) => string;
 
-  constructor({
-    tableName,
-    mapper,
-    builder,
-    index,
-    ddb,
-    fieldsToProject,
-  }: IndexQueryBuilderArgs<Src>) {
-    this.tableName = tableName;
-    this.mapper = mapper;
-    this.index = index;
-    this.ddb = ddb;
-    this.builder = (builder || new QueryBuilder()).table(tableName);
-    if (fieldsToProject) {
-      this.builder = this.builder.project(fieldsToProject);
+  constructor(args: IndexQueryBuilderArgs<Src>) {
+    this.tableName = args.tableName;
+    this.mapper = args.mapper;
+    this.index = args.index;
+    this.ddb = args.ddb;
+    this.parseAndMigrate = args.parseAndMigrate;
+    this.builder = (args.builder || new QueryBuilder()).table(args.tableName);
+    if (args.fieldsToProject) {
+      this.builder = this.builder.project(args.fieldsToProject);
     }
     this.encodeCursor = getCursorEncoder({
-      secondaryIndex: index,
-      primaryIndex: mapper.args.primaryIndex,
-      mapper,
+      secondaryIndex: args.index,
+      primaryIndex: args.mapper.args.primaryIndex,
+      mapper: args.mapper,
     });
-    const secondaryIndexName = ifSecondaryIndexGetName(index);
+    const secondaryIndexName = ifSecondaryIndexGetName(args.index);
     if (secondaryIndexName) {
       this.builder = this.builder.index(secondaryIndexName);
     }
@@ -67,6 +64,7 @@ export class IndexQueryBuilder<Src> {
       mapper: this.mapper,
       index: this.index,
       ddb: this.ddb,
+      parseAndMigrate: this.parseAndMigrate,
       builder: builder.cloneWith(),
     });
   }
@@ -92,26 +90,31 @@ export class IndexQueryBuilder<Src> {
   }
 
   async exec() {
-    if (this.ddb) {
-      const expression = this.builder.build();
-      let res = (await this.ddb.query(expression as any).promise()) as Omit<
-        DocumentClient.QueryOutput,
-        "Items"
-      > & {
-        Items?: Src[];
-      };
-      this.mapper.args.on?.query?.(expression, res);
-      return Object.assign(res, {
-        encodeCursor: this.encodeCursor,
-        lastCursor: res.Items?.length
-          ? this.encodeCursor(res.Items[res.Items.length - 1])
-          : undefined,
-      });
-    } else {
-      throw new Error(
-        "a document client instance must be provided to the constructor in order to execute queries"
-      );
-    }
+    const expression = this.builder.build();
+    const _res = await this.ddb.query(expression as any).promise();
+    let res = {
+      ..._res,
+      Items: (await Promise.all(
+        (_res.Items || []).map((item) => {
+          return this.parseAndMigrate(
+            item,
+            this.builder.data.fieldsToProject.length > 0
+              ? {
+                  fieldsToProject: this.builder.data.fieldsToProject,
+                }
+              : undefined
+          );
+        })
+      )) as Src[],
+    };
+
+    this.mapper.args.on?.query?.(expression, res);
+    return Object.assign(res, {
+      encodeCursor: this.encodeCursor,
+      lastCursor: res.Items?.length
+        ? this.encodeCursor(res.Items[res.Items.length - 1])
+        : undefined,
+    });
   }
 
   async execOne() {

@@ -38,9 +38,9 @@ export type onHooks = {
     returned: UnwrapPromise<ReturnType<Repository["get"]>>,
     keyInfo: GetRequest
   ) => any;
-  updateUnsafe?: (
-    args: Parameters<Repository["updateUnsafe"]>,
-    returned: UnwrapPromise<ReturnType<Repository["updateUnsafe"]>>,
+  dangerouslyUpdate?: (
+    args: Parameters<Repository["dangerouslyUpdate"]>,
+    returned: UnwrapPromise<ReturnType<Repository["dangerouslyUpdate"]>>,
     keyInfo: GetRequest
   ) => any;
   put?: (
@@ -91,7 +91,7 @@ export type RepositoryArgs<
    * from the database.  In migrate, an attempt should be made to fix the
    * error and write the object back to the database.
    */
-  migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T>;
+  migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T> | T;
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
@@ -186,7 +186,7 @@ export class Mapper<
 
   partialParse(
     obj: any,
-    type: "input" | "output" = "input",
+    type: "input" = "input",
     fields?: (keyof Output)[]
   ): Partial<Output> {
     try {

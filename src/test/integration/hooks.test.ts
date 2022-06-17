@@ -16,7 +16,7 @@ test("hooks should get called", async () => {
     delete: jest.fn(),
     put: jest.fn(),
     query: jest.fn(),
-    updateUnsafe: jest.fn(),
+    dangerouslyUpdate: jest.fn(),
   };
   const thingRepo = new Repository(
     {
@@ -39,7 +39,7 @@ test("hooks should get called", async () => {
 
   await thingRepo.put({ id: "1", name: "meow" });
   await thingRepo.get({ id: "1" });
-  await thingRepo.updateUnsafe({ id: "1" }, { id: "1", name: "yeehaw" });
+  await thingRepo.dangerouslyUpdate({ id: "1" }, { id: "1", name: "yeehaw" });
   await thingRepo.get({ id: "1" });
   await thingRepo.delete({ id: "1" });
   await thingRepo.get({ id: "1" });
@@ -140,7 +140,7 @@ Array [
   ],
 ]
 `);
-  expect(spies.updateUnsafe.mock.calls).toMatchInlineSnapshot(`
+  expect(spies.dangerouslyUpdate.mock.calls).toMatchInlineSnapshot(`
     Array [
       Array [
         Array [

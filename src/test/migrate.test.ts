@@ -56,22 +56,51 @@ test("migrate should work for query", async () => {
   });
 
   // todo: handle migrations in queries
-  expect(
+  await expect(
     repo
       .query("primary")
       .where({
         id: "meh",
       })
       .exec()
-      .then((res) => res.Items)
+  ).rejects.toMatchInlineSnapshot(
+    `[single-table-OutputValidationError: Invalid data for User is stored in the database]`
+  );
+
+  repo.args.migrate = async (rawObject: any) => {
+    const next: InferObjectType<typeof repo> = { ...rawObject };
+    if (!rawObject.city) {
+      next.city = rawObject.id + "-city";
+    }
+    if (!rawObject.state) {
+      next.state = rawObject.id + "-state";
+    }
+    return next;
+  };
+
+  await expect(
+    repo
+      .query("primary")
+      .where({
+        id: "meh",
+      })
+      .exec()
   ).resolves.toMatchInlineSnapshot(`
-Array [
-  Object {
-    "country": "usa",
-    "followers": Array [],
-    "id": "meh",
-  },
-]
+Object {
+  "Count": 1,
+  "Items": Array [
+    Object {
+      "city": "meh-city",
+      "country": "usa",
+      "followers": Array [],
+      "id": "meh",
+      "state": "meh-state",
+    },
+  ],
+  "ScannedCount": 1,
+  "encodeCursor": [Function],
+  "lastCursor": "{\\"pk1\\":\\"User#meh\\",\\"sk1\\":\\"User\\"}",
+}
 `);
 });
 
