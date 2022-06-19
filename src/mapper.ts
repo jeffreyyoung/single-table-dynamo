@@ -93,6 +93,7 @@ export type RepositoryArgs<
    * the object schema
    */
   migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T> | T;
+  fieldsNotPresentInSchemaButNeededForMigration?: string[];
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>

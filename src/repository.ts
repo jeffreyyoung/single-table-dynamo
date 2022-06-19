@@ -62,7 +62,8 @@ export class Repository<
   private async doGet(
     id: ID,
     options: GetOptions<Output>
-  ): Promise<Output | null> {
+  ): Promise<DocumentClient.AttributeMap | null> {
+    console.log("doGet", id, options.fieldsToProject);
     const args = {
       TableName: this.args.tableName,
       ...toProjectionExpression(options.fieldsToProject),
@@ -76,8 +77,7 @@ export class Repository<
     if (!res.Item) {
       return null;
     }
-
-    return this.parseAndMigrate(res.Item, options);
+    return res.Item;
   }
 
   private defaultGetOptions(): GetOptions<Output> {
@@ -87,51 +87,64 @@ export class Repository<
   }
 
   async parseAndMigrate(
-    object: NonNullable<any>,
+    rawObject: NonNullable<any>,
     options: GetOptions<Output> = this.defaultGetOptions()
   ): Promise<Output> {
+    console.log("in parseAndMigrate", rawObject, options.fieldsToProject);
     const [item, err] = goTry(() =>
-      this.mapper.pickedParse(object, options.fieldsToProject, "output")
+      this.mapper.pickedParse(rawObject, options.fieldsToProject, "output")
     );
     // we got a parse error :O
     if (err) {
+      console.log("there was an error parsing");
       if (this.args.migrate) {
-        if (this.isProjectingAllFields(options.fieldsToProject)) {
-          // if this is the full version that's in the db
-          return this.mapper.pickedParse(
-            await this.args.migrate(object),
-            options.fieldsToProject,
-            "output"
-          ) as any;
-        } else {
-          const fullMigratedResult = await this.doGet(
-            this.mapper.parseId(object),
-            {
-              fieldsToProject: getAllProjectableFields(this.args),
-            }
-          );
-
-          return this.mapper.pickedParse(
-            fullMigratedResult,
-            options.fieldsToProject,
-            "output"
-          ) as any;
-        }
+        console.log("there is a migration fn found, will migrate");
+        const hasAllFields = this.isProjectingAllFieldsForMigration(
+          options.fieldsToProject
+        );
+        const objectWithAllFields = hasAllFields
+          ? rawObject
+          : await this.doGet(this.mapper.parseId(rawObject), {
+              fieldsToProject: this.getMigrationProjectionFields() as any,
+            });
+        console.log(
+          "attempting migrate",
+          objectWithAllFields,
+          options.fieldsToProject
+        );
+        return this.mapper.pickedParse(
+          await this.args.migrate(objectWithAllFields),
+          options.fieldsToProject,
+          "output"
+        ) as any;
       }
+      console.log("no migration fn found, throwing error");
       throw err;
     }
     return item as Output;
   }
 
-  isProjectingAllFields(fieldsToProject: FieldsToProject<Output>) {
-    const s = new Set(fieldsToProject);
-    const allFields = getAllProjectableFields(this.args);
+  private getMigrationProjectionFields(): string[] {
+    const migrationFields = getAllProjectableFields(this.args).concat(
+      (this.args.fieldsNotPresentInSchemaButNeededForMigration || []) as any
+    );
+    console.log("getMigrationProjectionFields", migrationFields);
+    return migrationFields;
+  }
+
+  isProjectingAllFieldsForMigration(fieldsToProject: FieldsToProject<Output>) {
+    const s = new Set<string>(fieldsToProject);
+    const allFields = this.getMigrationProjectionFields();
     return allFields.every((f) => s.has(f));
   }
 
   async get(id: ID, options: GetOptions<Output> = this.defaultGetOptions()) {
     try {
-      const item: Output | null = await this.doGet(id, options);
+      const res = await this.doGet(id, options);
+
+      const item: Output | null = res
+        ? await this.parseAndMigrate(res, options)
+        : null;
 
       this.args.on?.get?.([id, options as any], item, this.getHookKeyInfo(id));
       return item;

@@ -53,7 +53,8 @@ test("migrate should work for query", async () => {
     id: "meh",
     country: "usa",
     followers: [],
-  });
+    oldState: "wa",
+  } as any);
 
   // todo: handle migrations in queries
   await expect(
@@ -66,17 +67,20 @@ test("migrate should work for query", async () => {
   ).rejects.toMatchInlineSnapshot(
     `[single-table-OutputValidationError: Invalid data for User is stored in the database]`
   );
-
+  repo.args.fieldsNotPresentInSchemaButNeededForMigration = ["oldState"];
   repo.args.migrate = async (rawObject: any) => {
+    console.log("called migrate!", rawObject);
     const next: InferObjectType<typeof repo> = { ...rawObject };
     if (!rawObject.city) {
       next.city = rawObject.id + "-city";
     }
-    if (!rawObject.state) {
-      next.state = rawObject.id + "-state";
+    if (!rawObject.state && rawObject.oldState) {
+      next.state = rawObject.oldState;
     }
+    console.log("resolving", next);
     return next;
   };
+  const spy = jest.spyOn(repo.args, "migrate");
 
   await expect(
     repo
@@ -94,13 +98,26 @@ Object {
       "country": "usa",
       "followers": Array [],
       "id": "meh",
-      "state": "meh-state",
+      "state": "wa",
     },
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "lastCursor": "{\\"pk1\\":\\"User#meh\\",\\"sk1\\":\\"User\\"}",
 }
+`);
+
+  expect(spy.mock.calls).toMatchInlineSnapshot(`
+Array [
+  Array [
+    Object {
+      "country": "usa",
+      "followers": Array [],
+      "id": "meh",
+      "oldState": "wa",
+    },
+  ],
+]
 `);
 });
 
@@ -128,8 +145,11 @@ test("migrate should work when getting full object", async () => {
   };
   const spy = jest.spyOn(repo.args, "migrate");
 
-  await expect(repo.get({ id: "meh" }, { fieldsToProject: ["id", "country"] }))
-    .resolves.toMatchInlineSnapshot(`
+  await expect(
+    repo
+      .get({ id: "meh" }, { fieldsToProject: ["id", "country"] })
+      .catch((e) => console.error(e))
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "country": "usa",
   "id": "meh",
