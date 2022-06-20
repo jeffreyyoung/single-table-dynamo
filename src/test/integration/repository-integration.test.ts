@@ -49,8 +49,15 @@ test("projection expression should work", async () => {
     id: "5",
   });
 
-  const got1 = await repo.get({ id: "5" }, { fieldsToProject: ["city"] });
-  expect(Object.keys(got1 || {})).toMatchObject(["city"]);
+  await expect(repo.get({ id: "5" })).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "gump",
+  "country": "vietnam",
+  "followers": Array [],
+  "id": "5",
+  "state": "forest",
+}
+`);
 });
 
 test("getDocument works as expected", async () => {
@@ -116,11 +123,7 @@ test("get, put, delete, dangerouslyUpdate, and query should work", async () => {
   );
 
   await expect(
-    repo
-      .query("byCountryByStateByCity")
-      .where({ country: "CA" })
-      .project([])
-      .exec()
+    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
   ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,

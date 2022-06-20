@@ -65,11 +65,9 @@ test("migrate should work for query", async () => {
       })
       .exec()
   ).rejects.toMatchInlineSnapshot(
-    `[single-table-OutputValidationError: Invalid data for User is stored in the database]`
+    `[single-table-OutputValidationError: Unable to parse User output]`
   );
-  repo.args.fieldsNotPresentInSchemaButNeededForMigration = ["oldState"];
   repo.args.migrate = async (rawObject: any) => {
-    console.log("called migrate!", rawObject);
     const next: InferObjectType<typeof repo> = { ...rawObject };
     if (!rawObject.city) {
       next.city = rawObject.id + "-city";
@@ -77,7 +75,6 @@ test("migrate should work for query", async () => {
     if (!rawObject.state && rawObject.oldState) {
       next.state = rawObject.oldState;
     }
-    console.log("resolving", next);
     return next;
   };
   const spy = jest.spyOn(repo.args, "migrate");
@@ -115,6 +112,8 @@ Array [
       "followers": Array [],
       "id": "meh",
       "oldState": "wa",
+      "pk1": "User#meh",
+      "sk1": "User",
     },
   ],
 ]
@@ -129,7 +128,7 @@ test("migrate should work when getting full object", async () => {
     followers: [],
   });
   await expect(() => repo.get({ id: "meh" })).rejects.toMatchInlineSnapshot(
-    `[single-table-OutputValidationError: Invalid data for User is stored in the database]`
+    `[single-table-OutputValidationError: Unable to parse User output]`
   );
 
   // define migrate function
@@ -145,19 +144,18 @@ test("migrate should work when getting full object", async () => {
   };
   const spy = jest.spyOn(repo.args, "migrate");
 
-  await expect(
-    repo
-      .get({ id: "meh" }, { fieldsToProject: ["id", "country"] })
-      .catch((e) => console.error(e))
-  ).resolves.toMatchInlineSnapshot(`
+  await expect(repo.get({ id: "meh" }).catch((e) => console.error(e))).resolves
+    .toMatchInlineSnapshot(`
 Object {
+  "city": "meh-city",
   "country": "usa",
+  "followers": Array [],
   "id": "meh",
+  "state": "meh-state",
 }
 `);
-  // since we're not getting any of the missing fields,
-  // migrate should not be called
-  expect(spy).toHaveBeenCalledTimes(0);
+
+  expect(spy).toHaveBeenCalledTimes(1);
 
   await expect(repo.get({ id: "meh" })).resolves.toMatchInlineSnapshot(`
 Object {
@@ -191,7 +189,7 @@ test("migrate should work when getting partial object", async () => {
     followers: [],
   });
   await expect(() => repo.get({ id: "meh" })).rejects.toMatchInlineSnapshot(
-    `[single-table-OutputValidationError: Invalid data for User is stored in the database]`
+    `[single-table-OutputValidationError: Unable to parse User output]`
   );
 
   // define migrate function
@@ -207,28 +205,35 @@ test("migrate should work when getting partial object", async () => {
   };
   const spy = jest.spyOn(repo.args, "migrate");
 
-  await expect(repo.get({ id: "meh" }, { fieldsToProject: ["id"] })).resolves
-    .toMatchInlineSnapshot(`
-Object {
-  "id": "meh",
-}
-`);
-  expect(spy).toHaveBeenCalledTimes(0);
-
-  await expect(repo.get({ id: "meh" }, { fieldsToProject: ["id", "city"] }))
-    .resolves.toMatchInlineSnapshot(`
+  await expect(repo.get({ id: "meh" })).resolves.toMatchInlineSnapshot(`
 Object {
   "city": "meh-city",
+  "country": "usa",
+  "followers": Array [],
   "id": "meh",
+  "state": "meh-state",
 }
 `);
   expect(spy).toHaveBeenCalledTimes(1);
 
-  await expect(repo.get({ id: "meh" }, { fieldsToProject: ["id", "city"] }))
-    .resolves.toMatchInlineSnapshot(`
+  await expect(repo.get({ id: "meh" })).resolves.toMatchInlineSnapshot(`
 Object {
   "city": "meh-city",
+  "country": "usa",
+  "followers": Array [],
   "id": "meh",
+  "state": "meh-state",
+}
+`);
+  expect(spy).toHaveBeenCalledTimes(1);
+
+  await expect(repo.get({ id: "meh" })).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "meh-city",
+  "country": "usa",
+  "followers": Array [],
+  "id": "meh",
+  "state": "meh-state",
 }
 `);
   expect(spy).toHaveBeenCalledTimes(1);

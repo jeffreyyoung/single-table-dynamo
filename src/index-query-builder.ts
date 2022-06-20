@@ -1,5 +1,4 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { FieldsToProject } from "./utils/ProjectFields";
 import { Mapper, ifSecondaryIndexGetName, IndexBase } from "./mapper";
 import { QueryBuilder } from "./query-builder";
 import { AnyRepository } from "./repository";
@@ -22,7 +21,6 @@ type IndexQueryBuilderArgs<T> = {
   tableName: string;
   mapper: Mapper;
   parseAndMigrate: AnyRepository["parseAndMigrate"];
-  fieldsToProject?: FieldsToProject<T>;
   index: IndexBase<T>;
   builder?: QueryBuilder;
   ddb: DocumentClient;
@@ -44,9 +42,6 @@ export class IndexQueryBuilder<Src> {
     this.ddb = args.ddb;
     this.parseAndMigrate = args.parseAndMigrate;
     this.builder = (args.builder || new QueryBuilder()).table(args.tableName);
-    if (args.fieldsToProject) {
-      this.builder = this.builder.project(args.fieldsToProject);
-    }
     this.encodeCursor = getCursorEncoder({
       secondaryIndex: args.index,
       primaryIndex: args.mapper.args.primaryIndex,
@@ -73,10 +68,6 @@ export class IndexQueryBuilder<Src> {
     return this.clone(this.builder.limit(t));
   }
 
-  project(fieldsToProject: FieldsToProject<Src>) {
-    return this.clone(this.builder.project(fieldsToProject));
-  }
-
   sort(direction: "asc" | "desc") {
     return this.clone(this.builder.sort(direction));
   }
@@ -96,14 +87,7 @@ export class IndexQueryBuilder<Src> {
       ..._res,
       Items: (await Promise.all(
         (_res.Items || []).map((item) => {
-          return this.parseAndMigrate(
-            item,
-            this.builder.data.fieldsToProject.length > 0
-              ? {
-                  fieldsToProject: this.builder.data.fieldsToProject,
-                }
-              : undefined
-          );
+          return this.parseAndMigrate(item);
         })
       )) as Src[],
     };

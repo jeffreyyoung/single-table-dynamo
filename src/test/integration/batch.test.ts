@@ -46,7 +46,7 @@ const thingRepo = new Repository(
   ddb
 );
 
-test("should handle custom fieldsToProject", async () => {
+test("should handle custom fieldsToProject <deprecated/>", async () => {
   await batchPut(ddb, [
     thingRepo.batch.put({ id: "1", name: "yes" }),
     thingRepo.batch.put({ id: "2", name: "no" }),
@@ -55,46 +55,47 @@ test("should handle custom fieldsToProject", async () => {
   ]);
 
   expect(
-    await batchGet(ddb, [
-      thingRepo.batch.get({ id: "1" }, { fieldsToProject: ["name"] }),
-      thingRepo.batch.get({ id: "1" }, { fieldsToProject: ["name"] }),
-      thingRepo.batch.get({ id: "1" }, { fieldsToProject: ["name"] }),
-      personRepo.batch.get(
-        { personId: "hello?" },
-        { fieldsToProject: ["name"] }
-      ),
-    ])
-  ).toMatchInlineSnapshot(`
-    Array [
-      Object {
-        "name": "yes",
-        "pk1": "Thing#1",
-        "sk1": "Thing",
-      },
-      Object {
-        "name": "yes",
-        "pk1": "Thing#1",
-        "sk1": "Thing",
-      },
-      Object {
-        "name": "yes",
-        "pk1": "Thing#1",
-        "sk1": "Thing",
-      },
-      Object {
-        "name": "ok",
-        "pk1": "Person#hello?",
-        "sk1": "Person",
-      },
-    ]
-  `);
+await batchGet(ddb, [
+thingRepo.batch.get({ id: "1" }),
+thingRepo.batch.get({ id: "1" }),
+thingRepo.batch.get({ id: "1" }),
+personRepo.batch.get({ personId: "hello?" })])).
+
+toMatchInlineSnapshot(`
+Array [
+  Object {
+    "id": "1",
+    "name": "yes",
+    "pk1": "Thing#1",
+    "sk1": "Thing",
+  },
+  Object {
+    "id": "1",
+    "name": "yes",
+    "pk1": "Thing#1",
+    "sk1": "Thing",
+  },
+  Object {
+    "id": "1",
+    "name": "yes",
+    "pk1": "Thing#1",
+    "sk1": "Thing",
+  },
+  Object {
+    "name": "ok",
+    "personId": "hello?",
+    "pk1": "Person#hello?",
+    "sk1": "Person",
+  },
+]
+`);
 
   // should merge fields to project
   expect(
     await batchGet(ddb, [
-      thingRepo.batch.get({ id: "1" }, { fieldsToProject: ["id"] }),
-      thingRepo.batch.get({ id: "1" }, { fieldsToProject: ["id"] }),
-      thingRepo.batch.get({ id: "1" }, { fieldsToProject: ["name"] }),
+      thingRepo.batch.get({ id: "1" }),
+      thingRepo.batch.get({ id: "1" }),
+      thingRepo.batch.get({ id: "1" }),
       personRepo.batch.get({ personId: "hello?" }),
     ])
   ).toMatchInlineSnapshot(`

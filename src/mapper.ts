@@ -93,7 +93,6 @@ export type RepositoryArgs<
    * the object schema
    */
   migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T> | T;
-  fieldsNotPresentInSchemaButNeededForMigration?: string[];
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
@@ -178,10 +177,7 @@ export class Mapper<
           type === "input"
             ? "single-table-InputValidationError"
             : "single-table-OutputValidationError",
-        message:
-          type === "input"
-            ? `Recieved invalid data for ${this.args.typeName}`
-            : `Invalid data for ${this.args.typeName} is stored in the database`,
+        message: `Unable to picked parse ${this.args.typeName} ${type}`,
       });
     }
   }

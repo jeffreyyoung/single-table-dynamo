@@ -74,12 +74,6 @@ Array [
       Object {
         "id": "1",
       },
-      Object {
-        "fieldsToProject": Array [
-          "id",
-          "name",
-        ],
-      },
     ],
     Object {
       "id": "1",
@@ -98,12 +92,6 @@ Array [
       Object {
         "id": "1",
       },
-      Object {
-        "fieldsToProject": Array [
-          "id",
-          "name",
-        ],
-      },
     ],
     Object {
       "id": "1",
@@ -121,12 +109,6 @@ Array [
     Array [
       Object {
         "id": "1",
-      },
-      Object {
-        "fieldsToProject": Array [
-          "id",
-          "name",
-        ],
       },
     ],
     null,

@@ -1,10 +1,8 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { FieldsToProject, toProjectionExpression } from "./utils/ProjectFields";
 
 export type GetRequest<ReturnType = any> = {
   TableName: string;
   Key: any;
-  projectionFields?: FieldsToProject<ReturnType>;
 };
 
 const BATCH_GET_REQUEST_LIMIT = 100;
@@ -29,9 +27,7 @@ export async function batchGet<Requests extends readonly GetRequest[]>(
         tableToKeyFields[r.TableName]
       );
     }
-    r.projectionFields?.forEach((f) =>
-      tableToProjectionFields[r.TableName].add(f)
-    );
+
     return getStringKey(r);
   });
 
@@ -106,12 +102,7 @@ export function convertRequestsToBatchGetInput(
       }
       prev.RequestItems[req.TableName].Keys.push(req.Key);
       // add projection expression to this table
-      Object.assign(
-        prev.RequestItems[req.TableName],
-        toProjectionExpression(
-          Array.from(tableToProjectionFields[req.TableName])
-        )
-      );
+
       return prev;
     },
     {

@@ -1,7 +1,3 @@
-import {
-  FieldsToProject,
-  getAllProjectableFields,
-} from "./utils/ProjectFields";
 import { GetRequest } from "./batch-get";
 import { DeleteRequest, PutRequest } from "./batch-write";
 import { Mapper } from "./mapper";
@@ -32,16 +28,10 @@ export class BatchArgsHandler<
     };
   }
 
-  get(
-    item: Id,
-    extraArgs?: { fieldsToProject?: FieldsToProject<Output> }
-  ): GetRequest<any> {
+  get(item: Id): GetRequest<any> {
     return {
       TableName: this.tableName,
       Key: this.mapper.getKey(item as any),
-      projectionFields:
-        extraArgs?.fieldsToProject ||
-        getAllProjectableFields(this.mapper.args as any),
     };
   }
 

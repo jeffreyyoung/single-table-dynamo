@@ -3,18 +3,9 @@ import { IndexBase, IndexField, Mapper, RepositoryArgs } from "./mapper";
 import { getCursorEncoder, IndexQueryBuilder } from "./index-query-builder";
 import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
 import { BatchArgsHandler } from "./batch-args-handler";
-import {
-  FieldsToProject,
-  toProjectionExpression,
-  getAllProjectableFields,
-} from "./utils/ProjectFields";
 import { createSTDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
 import { goTry } from "./utils/goTry";
-
-type GetOptions<T> = {
-  fieldsToProject: FieldsToProject<T>;
-};
 
 export class Repository<
   Schema extends z.AnyZodObject = z.AnyZodObject,
@@ -59,14 +50,9 @@ export class Repository<
     this.ddb = ddb;
   }
 
-  private async doGet(
-    id: ID,
-    options: GetOptions<Output>
-  ): Promise<DocumentClient.AttributeMap | null> {
-    console.log("doGet", id, options.fieldsToProject);
+  private async doGet(id: ID): Promise<DocumentClient.AttributeMap | null> {
     const args = {
       TableName: this.args.tableName,
-      ...toProjectionExpression(options.fieldsToProject),
       Key: this.mapper.getKey(id),
     };
 
@@ -80,73 +66,25 @@ export class Repository<
     return res.Item;
   }
 
-  private defaultGetOptions(): GetOptions<Output> {
-    return {
-      fieldsToProject: getAllProjectableFields(this.args),
-    };
-  }
-
-  async parseAndMigrate(
-    rawObject: NonNullable<any>,
-    options: GetOptions<Output> = this.defaultGetOptions()
-  ): Promise<Output> {
-    console.log("in parseAndMigrate", rawObject, options.fieldsToProject);
-    const [item, err] = goTry(() =>
-      this.mapper.pickedParse(rawObject, options.fieldsToProject, "output")
-    );
+  async parseAndMigrate(rawObject: NonNullable<any>): Promise<Output> {
+    const [item, err] = goTry(() => this.mapper.parse(rawObject, "output"));
     // we got a parse error :O
     if (err) {
-      console.log("there was an error parsing");
       if (this.args.migrate) {
-        console.log("there is a migration fn found, will migrate");
-        const hasAllFields = this.isProjectingAllFieldsForMigration(
-          options.fieldsToProject
-        );
-        const objectWithAllFields = hasAllFields
-          ? rawObject
-          : await this.doGet(this.mapper.parseId(rawObject), {
-              fieldsToProject: this.getMigrationProjectionFields() as any,
-            });
-        console.log(
-          "attempting migrate",
-          objectWithAllFields,
-          options.fieldsToProject
-        );
-        return this.mapper.pickedParse(
-          await this.args.migrate(objectWithAllFields),
-          options.fieldsToProject,
-          "output"
-        ) as any;
+        return this.mapper.parse(await this.args.migrate(rawObject), "output");
       }
-      console.log("no migration fn found, throwing error");
       throw err;
     }
     return item as Output;
   }
 
-  private getMigrationProjectionFields(): string[] {
-    const migrationFields = getAllProjectableFields(this.args).concat(
-      (this.args.fieldsNotPresentInSchemaButNeededForMigration || []) as any
-    );
-    console.log("getMigrationProjectionFields", migrationFields);
-    return migrationFields;
-  }
-
-  isProjectingAllFieldsForMigration(fieldsToProject: FieldsToProject<Output>) {
-    const s = new Set<string>(fieldsToProject);
-    const allFields = this.getMigrationProjectionFields();
-    return allFields.every((f) => s.has(f));
-  }
-
-  async get(id: ID, options: GetOptions<Output> = this.defaultGetOptions()) {
+  async get(id: ID) {
     try {
-      const res = await this.doGet(id, options);
+      const res = await this.doGet(id);
 
-      const item: Output | null = res
-        ? await this.parseAndMigrate(res, options)
-        : null;
+      const item: Output | null = res ? await this.parseAndMigrate(res) : null;
 
-      this.args.on?.get?.([id, options as any], item, this.getHookKeyInfo(id));
+      this.args.on?.get?.([id], item, this.getHookKeyInfo(id));
       return item;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -348,7 +286,6 @@ export class Repository<
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
       mapper: this.mapper as AnyRepository["mapper"],
-      fieldsToProject: getAllProjectableFields(this.args),
       ddb: this.ddb,
       parseAndMigrate: this.parseAndMigrate.bind(this),
     });

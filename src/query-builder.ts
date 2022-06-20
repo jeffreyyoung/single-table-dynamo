@@ -1,4 +1,3 @@
-import { FieldsToProject } from "./utils/ProjectFields";
 import { AttributeRegistry } from "./utils/AttributeRegistry";
 
 type Operator =
@@ -22,7 +21,6 @@ type Where = {
  * query
  */
 export type QueryData = {
-  fieldsToProject: FieldsToProject;
   keyConditions: Where[];
   sortDirection: "asc" | "desc";
   limit: number;
@@ -39,7 +37,6 @@ export class QueryBuilder {
   constructor(data?: QueryData) {
     this.data = data || {
       keyConditions: [],
-      fieldsToProject: [],
       sortDirection: "asc",
       limit: 25,
     };
@@ -54,10 +51,6 @@ export class QueryBuilder {
 
   table(tableName: string) {
     return this.cloneWith({ tableName });
-  }
-
-  project(fieldsToProject: string[]) {
-    return this.cloneWith({ fieldsToProject });
   }
 
   index(indexName: string) {
@@ -102,12 +95,6 @@ export class QueryBuilder {
   _buildConditionExpression() {
     const registry = new AttributeRegistry();
     const KeyConditionExpression: string[] = [];
-    let ProjectionExpression = undefined;
-    if (this.data.fieldsToProject.length > 0) {
-      ProjectionExpression = this.data.fieldsToProject
-        .map((f) => registry.key(f))
-        .join(", ");
-    }
     this.data.keyConditions.forEach((condition) => {
       if (condition.operator === "BEGINS_WITH") {
         KeyConditionExpression.push(
@@ -125,7 +112,6 @@ export class QueryBuilder {
     });
     return {
       ...registry.get(),
-      ProjectionExpression,
       KeyConditionExpression: KeyConditionExpression.join(" and "),
     };
   }
