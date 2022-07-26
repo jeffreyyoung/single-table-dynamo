@@ -6,6 +6,16 @@ import { BatchArgsHandler } from "./batch-args-handler";
 import { createSTDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
 import { goTry } from "./utils/goTry";
+import { AttributeRegistry } from "./utils/AttributeRegistry";
+
+const AddExpr = Symbol("Add");
+// const SetExpr = Symbol("Set");
+// const RemoveExpr = Symbol("Remove");
+// const DeleteExpr = Symbol("Delete");
+
+type UpdateExpression<T> = {
+  [Property in keyof T]: T[Property] | [typeof AddExpr, T[Property]];
+};
 
 export class Repository<
   Schema extends z.AnyZodObject = z.AnyZodObject,
@@ -209,6 +219,7 @@ export class Repository<
       if (isSingleTableDynamoError(e)) {
         throw e;
       }
+      console.error(e);
       throw createSTDError({
         message: `There was an error dangerouslyUpdate ${this.args.typeName}`,
         cause: e,
@@ -222,6 +233,77 @@ export class Repository<
       TableName: this.args.tableName,
       Key: this.getKey(thing),
     };
+  }
+
+  expression = {
+    add<T>(thing: T): [typeof AddExpr, T] {
+      return [AddExpr, thing];
+    },
+  };
+
+  async update(id: ID, expr: UpdateExpression<Omit<Input, keyof ID>>) {
+    const operationMap: Record<string, "ADD" | "SET"> = {};
+    const src: Input = Object.fromEntries(
+      Object.entries(expr).map(([key, value]) => {
+        if (Array.isArray(value) && value[0] === AddExpr) {
+          operationMap[key] = "ADD";
+          return [key, value[1]];
+        }
+        operationMap[key] = "SET";
+        return [key, value];
+      })
+    ) as any;
+
+    const parsed = this.mapper.parse({ ...src, ...id }, "input");
+    const decorated = this.mapper.decorateWithKeys(parsed);
+
+    const setExpressions: string[] = [];
+    const addExpressions: string[] = [];
+    const registry = new AttributeRegistry();
+
+    for (const [key, value] of Object.entries(decorated)) {
+      if (
+        key === this.args.primaryIndex.pk ||
+        key === this.args.primaryIndex.sk
+      ) {
+        // skip updates to primary key and sort key
+      } else if (operationMap[key] === "ADD") {
+        addExpressions.push(`${registry.key(key)} ${registry.value(value)}`);
+      } else {
+        // SET
+        setExpressions.push(`${registry.key(key)} = ${registry.value(value)}`);
+      }
+    }
+
+    const UpdateExpression = [
+      setExpressions.length > 0 ? `SET ${setExpressions.join(", ")}` : null,
+      addExpressions.length > 0 ? `ADD ${addExpressions.join(", ")}` : null,
+    ]
+      .filter((i) => i)
+      .join(" ");
+
+    let ConditionExpression = undefined;
+    const updateArgs = {
+      TableName: this.args.tableName,
+      Key: this.mapper.getKey(id),
+      ...registry.get(),
+      UpdateExpression,
+      ConditionExpression,
+      ReturnValues: "ALL_NEW",
+    };
+
+    const res = await this.ddb.update(updateArgs).promise();
+
+    let updated = res.Attributes
+      ? this.mapper.parse(res.Attributes, "output")
+      : null;
+
+    if (updated) {
+      // todo
+      this.args.on?.put?.([updated], updated, this.getHookKeyInfo(updated));
+    }
+
+    return updated;
   }
 
   async put(src: Input) {

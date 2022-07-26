@@ -31,6 +31,7 @@ function getRepoAndStub() {
 
 describe("Repository", () => {
   let { repo, stub } = getRepoAndStub();
+
   beforeEach(() => {
     let args = getRepoAndStub();
     repo = args.repo;

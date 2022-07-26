@@ -1,13 +1,9 @@
-import { Repository } from "../../repository";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { Repository } from "./repository";
 import { z } from "zod";
-const ddb = new DocumentClient({
-  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-    sslEnabled: false,
-    region: "local",
-  }),
-});
+import { getDocumentClient } from "./test/utils/getDocumentClient";
+import { tableConfig } from "./test/utils/tableConfig";
+const ddb = getDocumentClient();
+
 const getUserRepo = () =>
   new Repository(
     {
@@ -322,4 +318,133 @@ test("execAll should work", async () => {
     .execAll()) {
     expect(res[i++]).toMatchObject(batch[0]);
   }
+});
+
+test("update should work", async () => {
+  const repo = new Repository(
+    {
+      tableName: tableConfig.tableName,
+      schema: z.object({
+        id: z.string(),
+        age: z.number().default(0),
+        name: z.string(),
+      }),
+      typeName: "UserV5",
+      primaryIndex: {
+        fields: ["id"],
+        ...tableConfig.primaryIndex,
+      },
+    },
+    ddb
+  );
+
+  expect(
+    await repo.update(
+      { id: "1" },
+      {
+        age: repo.expression.add(3),
+        name: "jim",
+      }
+    )
+  ).toEqual({
+    id: "1",
+    age: 3,
+    name: "jim",
+  });
+
+  expect(
+    await repo.update(
+      { id: "1" },
+      {
+        age: repo.expression.add(1),
+        name: "meow",
+      }
+    )
+  ).toEqual({
+    id: "1",
+    age: 4,
+    name: "meow",
+  });
+
+  expect(
+    await repo.update(
+      { id: "1" },
+      {
+        age: repo.expression.add(-4),
+        name: "meow",
+      }
+    )
+  ).toEqual({
+    id: "1",
+    age: 0,
+    name: "meow",
+  });
+});
+
+test("update should work with multiple add expressions", async () => {
+  const repo = new Repository(
+    {
+      tableName: tableConfig.tableName,
+      schema: z.object({
+        id: z.string(),
+        age: z.number(),
+        faveNumber: z.number(),
+        name: z.string(),
+      }),
+      typeName: "UserV5",
+      primaryIndex: {
+        fields: ["id"],
+        ...tableConfig.primaryIndex,
+      },
+    },
+    ddb
+  );
+
+  expect(
+    await repo.update(
+      { id: "1" },
+      {
+        age: repo.expression.add(3),
+        faveNumber: repo.expression.add(4),
+        name: "jim",
+      }
+    )
+  ).toEqual({
+    id: "1",
+    age: 3,
+    faveNumber: 4,
+    name: "jim",
+  });
+
+  expect(
+    await repo.update(
+      { id: "1" },
+      {
+        age: repo.expression.add(1),
+        faveNumber: 3,
+        name: "meow",
+      }
+    )
+  ).toEqual({
+    id: "1",
+    age: 4,
+    faveNumber: 3,
+    name: "meow",
+  });
+
+  expect(
+    await repo.update(
+      { id: "1" },
+      {
+        age: repo.expression.add(-4),
+        faveNumber: repo.expression.add(-4),
+        name: "meow",
+      }
+    )
+  ).toEqual({
+    id: "1",
+    age: 0,
+    faveNumber: -1,
+    name: "meow",
+  });
 });

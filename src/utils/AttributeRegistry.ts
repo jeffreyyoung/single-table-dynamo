@@ -2,27 +2,44 @@ export class AttributeRegistry {
   attributeI = 0;
   valueI = 0;
 
-  ExpressionAttributeNames: Record<string, any> = {};
-  ExpressionAttributeValues: Record<string, any> = {};
+  namesMap: Map<string, string> = new Map();
+  valuesMap: Map<any, string> = new Map();
 
   key(key: string) {
-    const name = `#attr${this.attributeI}`;
-    this.ExpressionAttributeNames[name] = key;
-    this.attributeI += 1;
-    return name;
+    if (!this.namesMap.has(key)) {
+      const name = `#attr${this.attributeI}`;
+      this.namesMap.set(key, name);
+      this.attributeI += 1;
+    }
+
+    return this.namesMap.get(key);
   }
 
   value(value: any) {
-    const attributeValueName = `:value${this.valueI}`;
-    this.ExpressionAttributeValues[attributeValueName] = value;
-    this.valueI += 1;
-    return attributeValueName;
+    if (!this.valuesMap.has(value)) {
+      const name = `:value${this.valueI}`;
+      this.valuesMap.set(value, name);
+      this.valueI += 1;
+    }
+    return this.valuesMap.get(value);
+  }
+
+  private mapToObject(thing: Map<any, string>) {
+    const entries = thing.entries();
+    const arr = Array.from(entries);
+    const obj = Object.fromEntries(arr.map(([key, value]) => [value, key]));
+    // console.log({
+    //   entries,
+    //   arr,
+    //   obj,
+    // });
+    return obj;
   }
 
   get() {
     return {
-      ExpressionAttributeNames: this.ExpressionAttributeNames,
-      ExpressionAttributeValues: this.ExpressionAttributeValues,
+      ExpressionAttributeNames: this.mapToObject(this.namesMap),
+      ExpressionAttributeValues: this.mapToObject(this.valuesMap),
     };
   }
 }
