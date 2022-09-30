@@ -42,7 +42,7 @@ export class IndexQueryBuilder<Src> {
     this.ddb = args.ddb;
     this.parseAndMigrate = args.parseAndMigrate;
     this.builder = (args.builder || new QueryBuilder()).table(args.tableName);
-    this.encodeCursor = getCursorEncoder({
+    this.encodeCursor = getCursorEncoder<any>({
       secondaryIndex: args.index,
       primaryIndex: args.mapper.args.primaryIndex,
       mapper: args.mapper,

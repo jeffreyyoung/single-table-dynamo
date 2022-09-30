@@ -23,9 +23,6 @@ const mapper = new Mapper({
       indexName: "index1",
       pk: "pk2",
       sk: "sk2",
-      stringifyField: {
-        createdAt: () => "yeehaw",
-      },
     },
   },
 });
@@ -51,7 +48,7 @@ test("should format object for dynamodb properly", () => {
     pk1: "User#USA",
     pk2: "User#WA",
     sk1: "User#WA#yesterday",
-    sk2: "User#USA#yeehaw",
+    sk2: "User#USA#yesterday",
   });
 
   expect(
@@ -67,7 +64,7 @@ test("should format object for dynamodb properly", () => {
     pk1: "User#USA",
     pk2: "User#WA",
     sk1: "User#WA#yesterday",
-    sk2: "User#USA#yeehaw",
+    sk2: "User#USA#yesterday",
   });
 
   expect(
@@ -91,7 +88,7 @@ test("should format object for dynamodb properly", () => {
     sk1: "User#UT#tomorrow",
 
     pk2: "User#UT",
-    sk2: "User#USA#yeehaw",
+    sk2: "User#USA#tomorrow",
   });
 });
 
@@ -119,8 +116,10 @@ test("should format partial index properly", () => {
 
 test("should throw when no partition key is provided", () => {
   expect(() =>
-mapper.getIndexKey(({} as any), mapper.args.primaryIndex, { partial: true })).
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: country is required, recieved {}"`);
+    mapper.getIndexKey({} as any, mapper.args.primaryIndex, { partial: true })
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk1, sk1), field: country is required, recieved {}"`
+  );
 });
 
 test("mapper.updateWithSomeFields should work", () => {
@@ -173,11 +172,13 @@ test("mapper.updateWithSomeFields should work", () => {
   });
 
   expect(() =>
-mapper.decorateWithKeys(({
-  id: "1",
-  country: "usa" } as
-any))).
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: name is required, recieved {\\"id\\":\\"1\\",\\"country\\":\\"usa\\"}"`);
+    mapper.decorateWithKeys({
+      id: "1",
+      country: "usa",
+    } as any)
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk1, sk1), field: name is required, recieved {\\"id\\":\\"1\\",\\"country\\":\\"usa\\"}"`
+  );
 
   const fullObject = {
     birthDate: "1990",

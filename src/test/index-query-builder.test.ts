@@ -24,9 +24,6 @@ const mapper = new Mapper({
       indexName: "third",
       pk: "pk2",
       sk: "sk2",
-      stringifyField: {
-        count: (name, src) => "yeehaw",
-      },
       fields: ["state", "country", "count"],
     },
     // {
@@ -140,13 +137,15 @@ test("should build query with sortkey", () => {
 
 test("should throw with no partition key", () => {
   expect(() =>
-getBuilder(mapper.args.primaryIndex).
-where({
-  state: "UT" }).
-
-limit(25).
-build()).
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk1, sk1), field: country is required, recieved {\\"state\\":\\"UT\\"}"`);
+    getBuilder(mapper.args.primaryIndex)
+      .where({
+        state: "UT",
+      })
+      .limit(25)
+      .build()
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk1, sk1), field: country is required, recieved {\\"state\\":\\"UT\\"}"`
+  );
 });
 
 test("should build non primary index", () => {

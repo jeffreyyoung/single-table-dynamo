@@ -25,17 +25,11 @@ const mapper = new Mapper({
     stateByCountryByYeehaw: {
       ...tableConfig.secondaryIndexes[0],
       fields: ["state", "country", "count"],
-      stringifyField: {
-        count: () => "yeehaw",
-      },
     },
     stateCreatedAt: {
       ...tableConfig.secondaryIndexes[1],
       shouldWriteIndex: (src) => src.state === "UT",
       fields: ["state", "createdAt", "count"],
-      stringifyField: {
-        count: () => "yeehaw",
-      },
     },
     byBannedById: {
       ...tableConfig.secondaryIndexes[2],
@@ -54,16 +48,16 @@ const mapper = new Mapper({
 
 test("should decorate all fields", () => {
   expect(
-    mapper.decorateWithKeys({
-      id: "yay",
-      count: 23,
-      banned: "yes",
-      country: "usa",
-      state: "UT",
-      createdAt: "today",
-      updatedAt: "tomorrow",
-    })
-  ).toMatchInlineSnapshot(`
+mapper.decorateWithKeys({
+  id: "yay",
+  count: 23,
+  banned: "yes",
+  country: "usa",
+  state: "UT",
+  createdAt: "today",
+  updatedAt: "tomorrow" })).
+
+toMatchInlineSnapshot(`
 Object {
   "banned": "yes",
   "count": 23,
@@ -75,8 +69,8 @@ Object {
   "pk2": "User#UT",
   "pk3": "User#yes",
   "sk0": "User#UT#today",
-  "sk1": "User#usa#yeehaw",
-  "sk2": "User#today#yeehaw",
+  "sk1": "User#usa#23",
+  "sk2": "User#today#23",
   "sk3": "User#yay",
   "state": "UT",
   "updatedAt": "tomorrow",
@@ -86,15 +80,15 @@ Object {
 
 test("should decorate all fields except pk3,sk3", () => {
   expect(
-    mapper.decorateWithKeys({
-      id: "yay",
-      count: 23,
-      country: "usa",
-      state: "UT",
-      createdAt: "today",
-      updatedAt: "tomorrow",
-    })
-  ).toMatchInlineSnapshot(`
+mapper.decorateWithKeys({
+  id: "yay",
+  count: 23,
+  country: "usa",
+  state: "UT",
+  createdAt: "today",
+  updatedAt: "tomorrow" })).
+
+toMatchInlineSnapshot(`
 Object {
   "count": 23,
   "country": "usa",
@@ -104,8 +98,8 @@ Object {
   "pk1": "User#UT",
   "pk2": "User#UT",
   "sk0": "User#UT#today",
-  "sk1": "User#usa#yeehaw",
-  "sk2": "User#today#yeehaw",
+  "sk1": "User#usa#23",
+  "sk2": "User#today#23",
   "state": "UT",
   "updatedAt": "tomorrow",
 }
@@ -114,16 +108,16 @@ Object {
 
 test("should decorate all fields except pk2, sk2 ", () => {
   expect(
-    mapper.decorateWithKeys({
-      id: "yay",
-      count: 23,
-      country: "usa",
-      state: "WA",
-      createdAt: "today",
-      updatedAt: "tomorrow",
-      banned: "yes",
-    })
-  ).toMatchInlineSnapshot(`
+mapper.decorateWithKeys({
+  id: "yay",
+  count: 23,
+  country: "usa",
+  state: "WA",
+  createdAt: "today",
+  updatedAt: "tomorrow",
+  banned: "yes" })).
+
+toMatchInlineSnapshot(`
 Object {
   "banned": "yes",
   "count": 23,
@@ -134,7 +128,7 @@ Object {
   "pk1": "User#WA",
   "pk3": "User#yes",
   "sk0": "User#WA#today",
-  "sk1": "User#usa#yeehaw",
+  "sk1": "User#usa#23",
   "sk3": "User#yay",
   "state": "WA",
   "updatedAt": "tomorrow",

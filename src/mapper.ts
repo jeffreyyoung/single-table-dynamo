@@ -23,7 +23,6 @@ export type IndexBase<T, Field extends IndexField<T> = any> = {
    * partitionKeyFields
    */
   partitionKeyFieldCount?: number;
-  stringifyField?: Partial<Record<Field, (field: Field, obj: T) => string>>;
 };
 
 type SecondaryIndex<T> = {
@@ -300,12 +299,7 @@ export class Mapper<
     });
 
     function stringifyField(fieldName: string) {
-      const stringify = index?.stringifyField?.[fieldName];
-      if (stringify) {
-        return stringify(fieldName, thing as IdOrT);
-      } else {
-        return thing[fieldName as keyof IdOrT];
-      }
+      return thing[fieldName as keyof IdOrT];
     }
 
     return {
