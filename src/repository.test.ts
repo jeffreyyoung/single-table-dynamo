@@ -339,7 +339,7 @@ test("update should work", async () => {
   );
 
   expect(
-    await repo.update(
+    await repo.putExpression(
       { id: "1" },
       {
         age: repo.expression.add(3),
@@ -353,7 +353,7 @@ test("update should work", async () => {
   });
 
   expect(
-    await repo.update(
+    await repo.putExpression(
       { id: "1" },
       {
         age: repo.expression.add(1),
@@ -367,7 +367,7 @@ test("update should work", async () => {
   });
 
   expect(
-    await repo.update(
+    await repo.putExpression(
       { id: "1" },
       {
         age: repo.expression.add(-4),
@@ -401,7 +401,7 @@ test("update should work with multiple add expressions", async () => {
   );
 
   expect(
-    await repo.update(
+    await repo.putExpression(
       { id: "1" },
       {
         age: repo.expression.add(3),
@@ -417,7 +417,7 @@ test("update should work with multiple add expressions", async () => {
   });
 
   expect(
-    await repo.update(
+    await repo.putExpression(
       { id: "1" },
       {
         age: repo.expression.add(1),
@@ -433,7 +433,7 @@ test("update should work with multiple add expressions", async () => {
   });
 
   expect(
-    await repo.update(
+    await repo.putExpression(
       { id: "1" },
       {
         age: repo.expression.add(-4),

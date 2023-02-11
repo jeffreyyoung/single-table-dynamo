@@ -241,7 +241,7 @@ export class Repository<
     },
   };
 
-  async update(id: ID, expr: UpdateExpression<Omit<Input, keyof ID>>) {
+  async putExpression(id: ID, expr: UpdateExpression<Omit<Input, keyof ID>>) {
     const operationMap: Record<string, "ADD" | "SET"> = {};
     const src: Input = Object.fromEntries(
       Object.entries(expr).map(([key, value]) => {
