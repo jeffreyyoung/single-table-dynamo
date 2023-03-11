@@ -448,3 +448,52 @@ test("update should work with multiple add expressions", async () => {
     name: "meow",
   });
 });
+
+test("query only return correct data", async () => {
+  const repo = new Repository(
+    {
+      tableName: tableConfig.tableName,
+      schema: z.object({
+        id: z.string(),
+        firstName: z.string(),
+        lastName: z.string(),
+      }),
+      primaryIndex: {
+        ...tableConfig.primaryIndex,
+        fields: ["id"],
+        tag: "id",
+      },
+      typeName: "users",
+      secondaryIndexes: {
+        "lastName,firstName": {
+          ...tableConfig.secondaryIndexes[0],
+          fields: ["lastName", "firstName"],
+        },
+      },
+    },
+    getDocumentClient()
+  );
+
+  await repo.put({
+    id: "1",
+    firstName: "joe",
+    lastName: "meyer",
+  });
+  await repo.put({
+    id: "2",
+    firstName: "joeseph",
+    lastName: "meyer",
+  });
+
+  await expect(
+    repo
+      .query("lastName,firstName")
+      .where({
+        lastName: "meyer",
+        firstName: "joe",
+      })
+      .exec()
+  ).resolves.toMatchObject({
+    Items: [{ id: "1" }],
+  });
+});

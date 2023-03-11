@@ -122,25 +122,41 @@ export class IndexQueryBuilder<Src> {
 
   where(src: Partial<Src>) {
     let builder = this.builder;
-    const indexes = this.mapper.getIndexKey(src as Src, this.index, {
+    const indexedKeyToValue = this.mapper.getIndexKey(src as Src, this.index, {
       partial: true,
     }) as any;
-    if (indexes[this.index.pk]) {
+    const hasEveryField = this.index.fields.every((f) => hasOwn(src, f));
+    if (indexedKeyToValue[this.index.pk]) {
       builder = builder.where(
         this.index.pk as any,
         "=",
-        indexes[this.index.pk]
+        indexedKeyToValue[this.index.pk]
       );
     }
 
-    if (indexes[this.index.sk!]) {
-      builder = builder.where(
-        this.index.sk as any,
-        "BEGINS_WITH",
-        indexes[this.index.sk!]
-      );
+    if (indexedKeyToValue[this.index.sk!]) {
+      if (hasEveryField) {
+        builder = builder.where(
+          this.index.sk as any,
+          "=",
+          indexedKeyToValue[this.index.sk!]
+        );
+      } else {
+        builder = builder.where(
+          this.index.sk as any,
+          "BEGINS_WITH",
+          indexedKeyToValue[this.index.sk!] // TODO + '#'
+        );
+      }
     }
 
     return this.clone(builder);
   }
+}
+
+function hasOwn(thing: any, field: string) {
+  if (typeof thing === "object" && thing.hasOwnProperty) {
+    return thing.hasOwnProperty(field);
+  }
+  return false;
 }
