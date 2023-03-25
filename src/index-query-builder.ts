@@ -82,6 +82,7 @@ export class IndexQueryBuilder<Src> {
 
   async exec() {
     const expression = this.builder.build();
+    this.mapper.args.on?.queryStart?.(expression);
     const _res = await this.ddb.query(expression as any).promise();
     let res = {
       ..._res,

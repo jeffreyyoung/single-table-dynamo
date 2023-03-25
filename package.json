@@ -32,9 +32,9 @@
     "tozod": "^3.0.0",
     "ts-jest": "^28.0.4",
     "typescript": "^4.5.2",
-    "zod": "^3.16.0"
+    "zod": "^3.21.0"
   },
   "peerDependencies": {
-    "zod": "^3.11.6"
+    "zod": "^3.21.0"
   }
 }

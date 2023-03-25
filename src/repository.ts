@@ -94,7 +94,7 @@ export class Repository<
 
       const item: Output | null = res ? await this.parseAndMigrate(res) : null;
 
-      this.args.on?.get?.([id], item, this.getHookKeyInfo(id));
+      this.args.on?.get?.([id as any], item as any, this.getHookKeyInfo(id));
       return item;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -208,7 +208,7 @@ export class Repository<
 
       if (updated) {
         this.args.on?.dangerouslyUpdate?.(
-          [id, src, options],
+          [id as any, src, options],
           updated,
           this.getHookKeyInfo(updated)
         );
@@ -315,7 +315,11 @@ export class Repository<
           Item: this.mapper.decorateWithKeys(parsed),
         })
         .promise();
-      this.args.on?.put?.([src], parsed, this.getHookKeyInfo(parsed));
+      this.args.on?.put?.(
+        [src as any],
+        parsed as any,
+        this.getHookKeyInfo(parsed)
+      );
       return parsed;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -337,7 +341,7 @@ export class Repository<
           Key: this.mapper.getKey(id),
         })
         .promise();
-      this.args.on?.delete?.([id], true, this.getHookKeyInfo(id));
+      this.args.on?.delete?.([id as any], true, this.getHookKeyInfo(id));
       return true;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
