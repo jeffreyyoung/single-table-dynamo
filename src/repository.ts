@@ -128,7 +128,7 @@ export class Repository<
     options: {
       objectToPutIfNotExists?: Input;
     }
-  ) {
+  ): Promise<Output> {
     const id = updates;
     const existing = await this.get(id);
 
@@ -136,7 +136,7 @@ export class Repository<
       return this.put(options.objectToPutIfNotExists, { mode: "create" });
     }
     if (!existing) {
-      return createSTDError({
+      throw createSTDError({
         name: "single-table-Error",
         message: "Cannot merge into item that does not exist",
       });
@@ -162,7 +162,7 @@ export class Repository<
     options: {
       objectToPutIfNotExists?: Input;
     } = {}
-  ) {
+  ): Promise<Output | null> {
     try {
       const id = _id;
       const updates = this.mapper.partialParse(_updates, "input");
@@ -222,7 +222,7 @@ export class Repository<
     options: { upsert: boolean; returnValues?: "ALL_NEW" | "ALL_OLD" } = {
       upsert: false,
     }
-  ) {
+  ): Promise<Output | null> {
     try {
       const updates = this.mapper.partialParse(src, "input");
 
@@ -279,7 +279,7 @@ export class Repository<
   async putExpression(
     expr: ID & UpdateExpression<Omit<Input, keyof ID>>,
     { mode = "upsert" }: ModeOption = {}
-  ) {
+  ): Promise<Output | null> {
     const operationMap: Record<string, "ADD" | "SET"> = {};
     const src: Input = Object.fromEntries(
       Object.entries(expr).map(([key, value]) => {
@@ -347,7 +347,7 @@ export class Repository<
     return updated;
   }
 
-  async put(src: Input, { mode = "upsert" }: ModeOption = {}) {
+  async put(src: Input, { mode = "upsert" }: ModeOption = {}): Promise<Output> {
     try {
       const parsed = this.mapper.parse(src, "input");
       await this.ddb
@@ -378,7 +378,7 @@ export class Repository<
     }
   }
 
-  async delete(id: ID) {
+  async delete(id: ID): Promise<boolean> {
     try {
       await this.ddb
         .delete({
@@ -412,7 +412,7 @@ export class Repository<
     return index;
   }
 
-  query(indexTag: IndexTag | SecondaryIndexTag) {
+  query(indexTag: IndexTag | SecondaryIndexTag): IndexQueryBuilder<Output> {
     const builder = new IndexQueryBuilder<Output>({
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
