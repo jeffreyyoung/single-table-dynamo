@@ -50,29 +50,27 @@ describe("Repository", () => {
 
     expect(stub.update.called).toBe(true);
     expect(stub.update.getCall(0)?.args).toMatchInlineSnapshot(`
-      Array [
-        Object {
-          "ConditionExpression": "attribute_exists(#attr2) and attribute_exists(#attr3)",
-          "ExpressionAttributeNames": Object {
-            "#attr0": "city",
-            "#attr1": "state",
-            "#attr2": "yay",
-            "#attr3": "meow",
-          },
-          "ExpressionAttributeValues": Object {
-            ":value0": "jimmy",
-            ":value1": "hendricks",
-          },
-          "Key": Object {
-            "meow": "User",
-            "yay": "User#meow",
-          },
-          "ReturnValues": "ALL_NEW",
-          "TableName": "meow",
-          "UpdateExpression": "set #attr0 = :value0, #attr1 = :value1",
-        },
-      ]
-    `);
+Array [
+  Object {
+    "ConditionExpression": "attribute_exists(yay) AND attribute_exists(meow)",
+    "ExpressionAttributeNames": Object {
+      "#attr0": "city",
+      "#attr1": "state",
+    },
+    "ExpressionAttributeValues": Object {
+      ":value0": "jimmy",
+      ":value1": "hendricks",
+    },
+    "Key": Object {
+      "meow": "User",
+      "yay": "User#meow",
+    },
+    "ReturnValues": "ALL_NEW",
+    "TableName": "meow",
+    "UpdateExpression": "set #attr0 = :value0, #attr1 = :value1",
+  },
+]
+`);
   });
 
   test("parse works", () => {

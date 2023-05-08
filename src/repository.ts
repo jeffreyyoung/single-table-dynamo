@@ -8,6 +8,7 @@ import { z } from "zod";
 import { goTry } from "./utils/goTry";
 import { AttributeRegistry } from "./utils/AttributeRegistry";
 import { getConditionExpression } from "./utils/getKeyCondition";
+import { omit } from "./utils/omit";
 
 type ModeOption = {
   mode?: "create" | "upsert" | "update";
@@ -157,24 +158,27 @@ export class Repository<
    *                           exist, a put will occur with the upsert args
    */
   async partialUpdate(
-    _id: ID,
-    _updates: Partial<Input>,
+    _updates: ID & Partial<Input>,
     options: {
       objectToPutIfNotExists?: Input;
     } = {}
   ): Promise<Output | null> {
     try {
-      const id = _id;
+      const id = _updates;
       const updates = this.mapper.partialParse(_updates, "input");
       const decoratedUpdates = this.mapper.partialDecorateWithKeys(updates);
-
+      const withoutPrimaryKeys = omit(decoratedUpdates, [
+        this.args.primaryIndex.pk,
+        this.args.primaryIndex.sk,
+      ]);
       const updated = await this.ddb
         .update({
           TableName: this.args.tableName,
           Key: this.mapper.getKey(id),
-          ...getDDBUpdateExpression(
-            decoratedUpdates,
-            Object.keys(this.mapper.getKey(id))
+          ...getDDBUpdateExpression(withoutPrimaryKeys),
+          ConditionExpression: getConditionExpression(
+            [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
+            "update"
           ),
           ReturnValues: "ALL_NEW",
         })
@@ -230,9 +234,10 @@ export class Repository<
         .update({
           TableName: this.args.tableName,
           Key: this.mapper.getKey(id),
-          ...getDDBUpdateExpression(
-            updates,
-            options.upsert ? [] : Object.keys(this.mapper.getKey(id))
+          ...getDDBUpdateExpression(updates),
+          ConditionExpression: getConditionExpression(
+            [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
+            options.upsert ? "upsert" : "update"
           ),
           ReturnValues: options?.returnValues ?? "ALL_NEW",
         })

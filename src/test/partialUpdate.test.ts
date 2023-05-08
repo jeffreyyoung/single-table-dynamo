@@ -49,8 +49,6 @@ describe("repo.partialUpdate", () => {
     const obj = await repo.partialUpdate(
       {
         id: "yay",
-      },
-      {
         name: "george",
       },
       {
@@ -85,14 +83,10 @@ describe("repo.partialUpdate", () => {
   });
 
   test("should not insert when object doesnt exist", async () => {
-    const obj = await repo.partialUpdate(
-      {
-        id: "yay",
-      },
-      {
-        name: "george",
-      }
-    );
+    const obj = await repo.partialUpdate({
+      id: "yay",
+      name: "george",
+    });
 
     expect(obj).toBe(null);
 
@@ -123,14 +117,10 @@ describe("repo.partialUpdate", () => {
       initialObject
     );
 
-    const obj1 = await repo.partialUpdate(
-      {
-        id: "yay",
-      },
-      {
-        name: "george",
-      }
-    );
+    const obj1 = await repo.partialUpdate({
+      id: "yay",
+      name: "george",
+    });
 
     // should not update any indexes
     expect(obj1).toMatchObject({
@@ -146,15 +136,11 @@ describe("repo.partialUpdate", () => {
     });
 
     // should update birthDate,name index
-    const obj2 = await repo.partialUpdate(
-      {
-        id: "yay",
-      },
-      {
-        name: "george",
-        birthDate: "1990",
-      }
-    );
+    const obj2 = await repo.partialUpdate({
+      id: "yay",
+      name: "george",
+      birthDate: "1990",
+    });
 
     expect(obj2).toMatchObject({
       birthDate: "1990",
