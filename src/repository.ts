@@ -7,6 +7,11 @@ import { createSTDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
 import { goTry } from "./utils/goTry";
 import { AttributeRegistry } from "./utils/AttributeRegistry";
+import { getConditionExpression } from "./utils/getKeyCondition";
+
+type ModeOption = {
+  mode?: "create" | "upsert" | "update";
+};
 
 const AddExpr = Symbol("Add");
 // const SetExpr = Symbol("Set");
@@ -110,6 +115,36 @@ export class Repository<
 
   getKey(id: ID | Output) {
     return this.mapper.getKey(id);
+  }
+
+  /**
+   *
+   * @param updates
+   * @param options
+   * @returns
+   */
+  async merge(
+    updates: ID & Partial<Input>,
+    options: {
+      objectToPutIfNotExists?: Input;
+    }
+  ) {
+    const id = updates;
+    const existing = await this.get(id);
+
+    if (!existing && options.objectToPutIfNotExists) {
+      return this.put(options.objectToPutIfNotExists, { mode: "create" });
+    }
+    if (!existing) {
+      return createSTDError({
+        name: "single-table-Error",
+        message: "Cannot merge into item that does not exist",
+      });
+    }
+
+    const merged: Input = { ...existing, ...updates } as any;
+
+    return this.put(merged, { mode: "update" });
   }
 
   /**
@@ -241,7 +276,10 @@ export class Repository<
     },
   };
 
-  async putExpression(id: ID, expr: UpdateExpression<Omit<Input, keyof ID>>) {
+  async putExpression(
+    expr: ID & UpdateExpression<Omit<Input, keyof ID>>,
+    { mode = "upsert" }: ModeOption = {}
+  ) {
     const operationMap: Record<string, "ADD" | "SET"> = {};
     const src: Input = Object.fromEntries(
       Object.entries(expr).map(([key, value]) => {
@@ -254,7 +292,7 @@ export class Repository<
       })
     ) as any;
 
-    const parsed = this.mapper.parse({ ...src, ...id }, "input");
+    const parsed = this.mapper.parse({ ...src }, "input");
     const decorated = this.mapper.decorateWithKeys(parsed);
 
     const setExpressions: string[] = [];
@@ -282,10 +320,13 @@ export class Repository<
       .filter((i) => i)
       .join(" ");
 
-    let ConditionExpression = undefined;
+    let ConditionExpression = getConditionExpression(
+      [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
+      mode
+    );
     const updateArgs = {
       TableName: this.args.tableName,
-      Key: this.mapper.getKey(id),
+      Key: this.mapper.getKey(expr),
       ...registry.get(),
       UpdateExpression,
       ConditionExpression,
@@ -306,17 +347,21 @@ export class Repository<
     return updated;
   }
 
-  async put(src: Input) {
+  async put(src: Input, { mode = "upsert" }: ModeOption = {}) {
     try {
       const parsed = this.mapper.parse(src, "input");
       await this.ddb
         .put({
           TableName: this.args.tableName,
           Item: this.mapper.decorateWithKeys(parsed),
+          ConditionExpression: getConditionExpression(
+            [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
+            mode
+          ),
         })
         .promise();
       this.args.on?.put?.(
-        [src as any],
+        [src as any, { mode }],
         parsed as any,
         this.getHookKeyInfo(parsed)
       );

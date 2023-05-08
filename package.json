@@ -13,6 +13,7 @@
     "build": "rm -rf ./dist && tsc -p tsconfig.prod.json",
     "test": "jest",
     "tdd": "jest --watchAll",
+    "dev": "jest --watchAll --verbose",
     "deploy": "yarn test && yarn build && yarn publish"
   },
   "prettier": {

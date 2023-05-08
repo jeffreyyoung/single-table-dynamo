@@ -56,6 +56,158 @@ Object {
 `);
 });
 
+test("upsert mode works as expected", async () => {
+  const repo = getUserRepo();
+
+  await expect(
+    repo.put(
+      {
+        city: "gump",
+        state: "forest",
+        country: "vietnam",
+        followers: [],
+        id: "5",
+      },
+
+      { mode: "upsert" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "gump",
+  "country": "vietnam",
+  "followers": Array [],
+  "id": "5",
+  "state": "forest",
+}
+`);
+
+  await expect(
+    repo.put(
+      {
+        city: "gump",
+        state: "forest",
+        country: "vietnam",
+        followers: [],
+        id: "5",
+      },
+
+      { mode: "upsert" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "gump",
+  "country": "vietnam",
+  "followers": Array [],
+  "id": "5",
+  "state": "forest",
+}
+`);
+});
+
+test("update mode works as expected", async () => {
+  const repo = getUserRepo();
+
+  await expect(() =>
+    repo.put(
+      {
+        city: "gump",
+        state: "forest",
+        country: "vietnam",
+        followers: [],
+        id: "5",
+      },
+
+      { mode: "update" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    `[single-table-Error: There was an error putting User]`
+  );
+
+  await expect(
+    repo.put({
+      city: "gump",
+      state: "forest",
+      country: "vietnam",
+      followers: [],
+      id: "5",
+    })
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "gump",
+  "country": "vietnam",
+  "followers": Array [],
+  "id": "5",
+  "state": "forest",
+}
+`);
+
+  await expect(
+    repo.put(
+      {
+        city: "gump",
+        state: "forest",
+        country: "yeehaw",
+        followers: [],
+        id: "5",
+      },
+
+      { mode: "update" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "gump",
+  "country": "yeehaw",
+  "followers": Array [],
+  "id": "5",
+  "state": "forest",
+}
+`);
+});
+
+test("create mode works as expected", async () => {
+  const repo = getUserRepo();
+
+  await expect(
+    repo.put(
+      {
+        city: "gump",
+        state: "forest",
+        country: "vietnam",
+        followers: [],
+        id: "5",
+      },
+
+      { mode: "create" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "city": "gump",
+  "country": "vietnam",
+  "followers": Array [],
+  "id": "5",
+  "state": "forest",
+}
+`);
+
+  await expect(() =>
+    repo.put(
+      {
+        city: "gump",
+        state: "forest",
+        country: "vietnam",
+        followers: [],
+        id: "5",
+      },
+      { mode: "create" }
+    )
+  ).rejects.toMatchObject({
+    message: "There was an error putting User",
+    cause: {
+      message: "The conditional request failed",
+    },
+  });
+});
+
 test("getDocument works as expected", async () => {
   const repo = new Repository(
     {
@@ -339,13 +491,11 @@ test("update should work", async () => {
   );
 
   expect(
-    await repo.putExpression(
-      { id: "1" },
-      {
-        age: repo.expression.add(3),
-        name: "jim",
-      }
-    )
+    await repo.putExpression({
+      id: "1",
+      age: repo.expression.add(3),
+      name: "jim",
+    })
   ).toEqual({
     id: "1",
     age: 3,
@@ -353,13 +503,11 @@ test("update should work", async () => {
   });
 
   expect(
-    await repo.putExpression(
-      { id: "1" },
-      {
-        age: repo.expression.add(1),
-        name: "meow",
-      }
-    )
+    await repo.putExpression({
+      id: "1",
+      age: repo.expression.add(1),
+      name: "meow",
+    })
   ).toEqual({
     id: "1",
     age: 4,
@@ -367,18 +515,88 @@ test("update should work", async () => {
   });
 
   expect(
-    await repo.putExpression(
-      { id: "1" },
-      {
-        age: repo.expression.add(-4),
-        name: "meow",
-      }
-    )
+    await repo.putExpression({
+      id: "1",
+      age: repo.expression.add(-4),
+      name: "meow",
+    })
   ).toEqual({
     id: "1",
     age: 0,
     name: "meow",
   });
+});
+
+test("putExpression with mode = update should work", async () => {
+  const repo = new Repository(
+    {
+      tableName: tableConfig.tableName,
+      schema: z.object({
+        id: z.string(),
+        age: z.number(),
+      }),
+      typeName: "UserV9",
+      primaryIndex: {
+        fields: ["id"],
+        ...tableConfig.primaryIndex,
+      },
+    },
+    ddb
+  );
+
+  await expect(() =>
+    repo.putExpression(
+      { age: repo.expression.add(1), id: "1" },
+      { mode: "update" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    `[ConditionalCheckFailedException: The conditional request failed]`
+  );
+
+  await expect(
+    repo.putExpression(
+      { age: repo.expression.add(1), id: "1" },
+      { mode: "create" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "age": 1,
+  "id": "1",
+}
+`);
+
+  await expect(() =>
+    repo.putExpression(
+      { age: repo.expression.add(1), id: "1" },
+      { mode: "create" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    `[ConditionalCheckFailedException: The conditional request failed]`
+  );
+
+  await expect(
+    repo.putExpression(
+      { age: repo.expression.add(1), id: "1" },
+      { mode: "update" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+  Object {
+    "age": 2,
+    "id": "1",
+  }
+  `);
+
+  await expect(
+    repo.putExpression(
+      { age: repo.expression.add(1), id: "1" },
+      { mode: "upsert" }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+Object {
+  "age": 3,
+  "id": "1",
+}
+`);
 });
 
 test("update should work with multiple add expressions", async () => {
@@ -401,14 +619,12 @@ test("update should work with multiple add expressions", async () => {
   );
 
   expect(
-    await repo.putExpression(
-      { id: "1" },
-      {
-        age: repo.expression.add(3),
-        faveNumber: repo.expression.add(4),
-        name: "jim",
-      }
-    )
+    await repo.putExpression({
+      id: "1",
+      age: repo.expression.add(3),
+      faveNumber: repo.expression.add(4),
+      name: "jim",
+    })
   ).toEqual({
     id: "1",
     age: 3,
@@ -417,14 +633,12 @@ test("update should work with multiple add expressions", async () => {
   });
 
   expect(
-    await repo.putExpression(
-      { id: "1" },
-      {
-        age: repo.expression.add(1),
-        faveNumber: 3,
-        name: "meow",
-      }
-    )
+    await repo.putExpression({
+      id: "1",
+      age: repo.expression.add(1),
+      faveNumber: 3,
+      name: "meow",
+    })
   ).toEqual({
     id: "1",
     age: 4,
@@ -433,14 +647,12 @@ test("update should work with multiple add expressions", async () => {
   });
 
   expect(
-    await repo.putExpression(
-      { id: "1" },
-      {
-        age: repo.expression.add(-4),
-        faveNumber: repo.expression.add(-4),
-        name: "meow",
-      }
-    )
+    await repo.putExpression({
+      id: "1",
+      age: repo.expression.add(-4),
+      faveNumber: repo.expression.add(-4),
+      name: "meow",
+    })
   ).toEqual({
     id: "1",
     age: 0,

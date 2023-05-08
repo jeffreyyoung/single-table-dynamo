@@ -45,28 +45,31 @@ test("hooks should get called", async () => {
   await thingRepo.get({ id: "1" });
 
   expect(spies.put.mock.calls).toMatchInlineSnapshot(`
+Array [
+  Array [
     Array [
-      Array [
-        Array [
-          Object {
-            "id": "1",
-            "name": "meow",
-          },
-        ],
-        Object {
-          "id": "1",
-          "name": "meow",
-        },
-        Object {
-          "Key": Object {
-            "pk1": "Thing#1",
-            "sk1": "Thing",
-          },
-          "TableName": "table1",
-        },
-      ],
-    ]
-  `);
+      Object {
+        "id": "1",
+        "name": "meow",
+      },
+      Object {
+        "mode": "upsert",
+      },
+    ],
+    Object {
+      "id": "1",
+      "name": "meow",
+    },
+    Object {
+      "Key": Object {
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      "TableName": "table1",
+    },
+  ],
+]
+`);
   expect(spies.get.mock.calls).toMatchInlineSnapshot(`
 Array [
   Array [
