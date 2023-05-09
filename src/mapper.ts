@@ -37,11 +37,6 @@ export type onHooks = {
     returned: UnwrapPromise<ReturnType<Repository["get"]>>,
     keyInfo: GetRequest
   ) => any;
-  dangerouslyUpdate?: (
-    args: Parameters<Repository["dangerouslyUpdate"]>,
-    returned: UnwrapPromise<ReturnType<Repository["dangerouslyUpdate"]>>,
-    keyInfo: GetRequest
-  ) => any;
   put?: (
     args: Parameters<Repository["put"]>,
     returned: UnwrapPromise<ReturnType<Repository["put"]>>,
@@ -50,6 +45,11 @@ export type onHooks = {
   delete?: (
     args: Parameters<Repository["delete"]>,
     returned: UnwrapPromise<ReturnType<Repository["delete"]>>,
+    keyInfo: GetRequest
+  ) => any;
+  partialUpdate?: (
+    args: Parameters<Repository["partialUpdate"]>,
+    returned: UnwrapPromise<ReturnType<Repository["partialUpdate"]>>,
     keyInfo: GetRequest
   ) => any;
   queryStart?: (args: any) => any;

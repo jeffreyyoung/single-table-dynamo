@@ -199,6 +199,11 @@ export class Repository<
       if (!updated && options.objectToPutIfNotExists) {
         return this.put(options.objectToPutIfNotExists);
       }
+      this.args.on?.partialUpdate?.(
+        [_updates, options as any],
+        updated as any,
+        this.getHookKeyInfo(_updates)
+      );
       return updated;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -206,62 +211,6 @@ export class Repository<
       }
       throw createSTDError({
         message: `There was an error partialUpdate: ${this.args.typeName}`,
-        cause: e,
-        name: "single-table-Error",
-      });
-    }
-  }
-
-  /**
-   * This method is dangerous because no migration code is run
-   *
-   * @param id
-   * @param src
-   * @param options
-   * @returns
-   */
-  async dangerouslyUpdate(
-    id: ID,
-    src: Partial<Output>,
-    options: { upsert: boolean; returnValues?: "ALL_NEW" | "ALL_OLD" } = {
-      upsert: false,
-    }
-  ): Promise<Output | null> {
-    try {
-      const updates = this.mapper.partialParse(src, "input");
-
-      const res = await this.ddb
-        .update({
-          TableName: this.args.tableName,
-          Key: this.mapper.getKey(id),
-          ...getDDBUpdateExpression(updates),
-          ConditionExpression: getConditionExpression(
-            [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
-            options.upsert ? "upsert" : "update"
-          ),
-          ReturnValues: options?.returnValues ?? "ALL_NEW",
-        })
-        .promise();
-      let updated = res.Attributes
-        ? this.mapper.parse(res.Attributes, "output")
-        : null;
-
-      if (updated) {
-        this.args.on?.dangerouslyUpdate?.(
-          [id as any, src, options],
-          updated,
-          this.getHookKeyInfo(updated)
-        );
-      }
-
-      return updated;
-    } catch (e: any) {
-      if (isSingleTableDynamoError(e)) {
-        throw e;
-      }
-      console.error(e);
-      throw createSTDError({
-        message: `There was an error dangerouslyUpdate ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
       });

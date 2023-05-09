@@ -234,7 +234,7 @@ test("getDocument works as expected", async () => {
   });
 });
 
-test("get, put, delete, dangerouslyUpdate, and query should work", async () => {
+test("get, put, delete, partialUpdate, and query should work", async () => {
   const repo = getUserRepo();
   await expect(repo.get({ id: "yay" })).resolves.toEqual(null);
 
@@ -290,8 +290,8 @@ Object {
 }
 `);
 
-  await expect(repo.dangerouslyUpdate({ id: obj.id }, { followers: ["yay1"] }))
-    .resolves.toMatchInlineSnapshot(`
+  await expect(repo.partialUpdate({ id: obj.id, followers: ["yay1"] })).resolves
+    .toMatchInlineSnapshot(`
           Object {
             "city": "scranton",
             "country": "CA",
@@ -304,7 +304,7 @@ Object {
         `);
 
   await expect(() =>
-    repo.dangerouslyUpdate({ id: "NON_EXISTANT_ID" }, { followers: ["YAY"] })
+    repo.partialUpdate({ id: "NON_EXISTANT_ID", followers: ["YAY"] })
   ).rejects;
 
   await expect(

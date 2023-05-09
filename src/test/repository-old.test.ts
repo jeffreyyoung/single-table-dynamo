@@ -38,15 +38,13 @@ describe("Repository", () => {
     stub = args.stub;
   });
 
-  test("dangerouslyUpdate should call document client with correct params", () => {
-    stub.update.returns({ promise: () => ({}) } as any);
-    repo.dangerouslyUpdate(
-      { id: "meow" },
-      {
-        city: "jimmy",
-        state: "hendricks",
-      }
-    );
+  test("partialUpdate should call document client with correct params", () => {
+    stub.update.returns({ promise: () => Promise.resolve({}) } as any);
+    repo.partialUpdate({
+      id: "meow",
+      city: "jimmy",
+      state: "hendricks",
+    });
 
     expect(stub.update.called).toBe(true);
     expect(stub.update.getCall(0)?.args).toMatchInlineSnapshot(`
@@ -54,12 +52,14 @@ Array [
   Object {
     "ConditionExpression": "attribute_exists(yay) AND attribute_exists(meow)",
     "ExpressionAttributeNames": Object {
-      "#attr0": "city",
-      "#attr1": "state",
+      "#attr0": "id",
+      "#attr1": "city",
+      "#attr2": "state",
     },
     "ExpressionAttributeValues": Object {
-      ":value0": "jimmy",
-      ":value1": "hendricks",
+      ":value0": "meow",
+      ":value1": "jimmy",
+      ":value2": "hendricks",
     },
     "Key": Object {
       "meow": "User",
@@ -67,7 +67,7 @@ Array [
     },
     "ReturnValues": "ALL_NEW",
     "TableName": "meow",
-    "UpdateExpression": "set #attr0 = :value0, #attr1 = :value1",
+    "UpdateExpression": "set #attr0 = :value0, #attr1 = :value1, #attr2 = :value2",
   },
 ]
 `);

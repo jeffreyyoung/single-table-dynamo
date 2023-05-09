@@ -16,7 +16,7 @@ test("hooks should get called", async () => {
     delete: jest.fn(),
     put: jest.fn(),
     query: jest.fn(),
-    dangerouslyUpdate: jest.fn(),
+    partialUpdate: jest.fn(),
   };
   const thingRepo = new Repository(
     {
@@ -39,7 +39,7 @@ test("hooks should get called", async () => {
 
   await thingRepo.put({ id: "1", name: "meow" });
   await thingRepo.get({ id: "1" });
-  await thingRepo.dangerouslyUpdate({ id: "1" }, { id: "1", name: "yeehaw" });
+  await thingRepo.partialUpdate({ id: "1", name: "yeehaw" });
   await thingRepo.get({ id: "1" });
   await thingRepo.delete({ id: "1" });
   await thingRepo.get({ id: "1" });
@@ -125,35 +125,30 @@ Array [
   ],
 ]
 `);
-  expect(spies.dangerouslyUpdate.mock.calls).toMatchInlineSnapshot(`
+  expect(spies.partialUpdate.mock.calls).toMatchInlineSnapshot(`
+Array [
+  Array [
     Array [
-      Array [
-        Array [
-          Object {
-            "id": "1",
-          },
-          Object {
-            "id": "1",
-            "name": "yeehaw",
-          },
-          Object {
-            "upsert": false,
-          },
-        ],
-        Object {
-          "id": "1",
-          "name": "yeehaw",
-        },
-        Object {
-          "Key": Object {
-            "pk1": "Thing#1",
-            "sk1": "Thing",
-          },
-          "TableName": "table1",
-        },
-      ],
-    ]
-  `);
+      Object {
+        "id": "1",
+        "name": "yeehaw",
+      },
+      Object {},
+    ],
+    Object {
+      "id": "1",
+      "name": "yeehaw",
+    },
+    Object {
+      "Key": Object {
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
+      "TableName": "table1",
+    },
+  ],
+]
+`);
   expect(spies.delete.mock.calls).toMatchInlineSnapshot(`
     Array [
       Array [

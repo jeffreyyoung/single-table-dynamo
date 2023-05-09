@@ -83,12 +83,10 @@ test("trim should work", async () => {
 
   expect(res.bio).toBe("Meeeeooowww");
   await expect(() =>
-    repo.dangerouslyUpdate(
-      { id: res.id },
-      {
-        age: 121,
-      }
-    )
+    repo.partialUpdate({
+      id: res.id,
+      age: 121,
+    })
   ).rejects.toMatchObject(<STDError>{
     name: "single-table-InputValidationError",
     message: "Unable to partially parse User input",
