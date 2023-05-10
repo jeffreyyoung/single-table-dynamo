@@ -94,6 +94,14 @@ export class Repository<
     return item as Output;
   }
 
+  /**
+   * Get a single item by id
+   *
+   * Returns null if the item does not exist
+   *
+   * @param id
+   * @returns
+   */
   async get(id: ID) {
     try {
       const res = await this.doGet(id);
@@ -114,11 +122,22 @@ export class Repository<
     }
   }
 
+  /**
+   *
+   * @param id
+   * @returns
+   */
   getKey(id: ID | Output) {
     return this.mapper.getKey(id);
   }
 
   /**
+   *
+   * Invokes repository.get to get the item,
+   * then invokes repository.put to update the item.
+   *
+   * If the item does not exist and objectToPutIfNotExists is not defined,
+   * and error is thrown.
    *
    * @param updates
    * @param options
@@ -149,9 +168,10 @@ export class Repository<
   }
 
   /**
-   * Returns null if the object does not exist and does not update.
-   * Only updates indexes where every index dependency is present in the updates
-   * param
+   * Updates the item if it exists and returns null if it does not exist.
+   * There is risk to using this method as it does not update all indexes.
+   * If you need to update all indexes, use repository.merge instead.
+   *
    * @param id
    * @param updates
    * @param options.upsertArgs If present and the document with id does not
