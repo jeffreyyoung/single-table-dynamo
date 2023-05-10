@@ -409,6 +409,90 @@ const getWordRepo = () => {
   );
 };
 
+test("merge should throw if not exists", async () => {
+  const repo = getWordRepo();
+
+  await expect(() =>
+    repo.merge({
+      lang: "en",
+      word: "hello",
+    })
+  ).rejects.toMatchInlineSnapshot(
+    `[single-table-Error: Cannot merge into item that does not exist]`
+  );
+});
+
+test("merge should writ if not exists", async () => {
+  const repo = getWordRepo();
+
+  await expect(
+    repo.merge(
+      {
+        lang: "en",
+        word: "hello",
+      },
+      {
+        objectToPutIfNotExists: {
+          lang: "en",
+          word: "meow",
+        },
+      }
+    )
+  ).resolves.toMatchObject({
+    lang: "en",
+    word: "meow",
+  });
+});
+
+test("merge should work", async () => {
+  const repo = getUserRepo();
+
+  const obj = await repo.put({
+    id: "yay",
+    state: "PA",
+    city: "scranton",
+    country: "USA",
+    followers: [],
+  });
+
+  await expect(
+    repo.merge({
+      id: "yay",
+      followers: ["yay1"],
+    })
+  ).resolves.toMatchObject({
+    id: "yay",
+    state: "PA",
+    city: "scranton",
+    country: "USA",
+    followers: ["yay1"],
+  });
+
+  await expect(
+    repo.merge(
+      {
+        id: "yay",
+        followers: ["yay2"],
+      },
+      {
+        objectToPutIfNotExists: {
+          id: "yay",
+          state: "PA",
+          city: "scranton",
+          country: "USA",
+          followers: [],
+        },
+      }
+    )
+  ).resolves.toMatchObject({
+    id: "yay",
+    state: "PA",
+    city: "scranton",
+    country: "USA",
+    followers: ["yay2"],
+  });
+});
+
 test("sort ascending/descending should work", async () => {
   const wordRepo = getWordRepo();
   await Promise.all([

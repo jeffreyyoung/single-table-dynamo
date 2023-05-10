@@ -145,14 +145,14 @@ export class Repository<
    */
   async merge(
     updates: ID & Partial<Input>,
-    options: {
+    options?: {
       objectToPutIfNotExists?: Input;
     }
   ): Promise<Output> {
     const id = updates;
     const existing = await this.get(id);
 
-    if (!existing && options.objectToPutIfNotExists) {
+    if (!existing && options?.objectToPutIfNotExists) {
       return this.put(options.objectToPutIfNotExists, { mode: "create" });
     }
     if (!existing) {
