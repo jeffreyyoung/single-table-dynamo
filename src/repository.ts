@@ -219,7 +219,7 @@ export class Repository<
       if (!updated && options.objectToPutIfNotExists) {
         return this.put(options.objectToPutIfNotExists);
       }
-      this.args.on?.merge?.(
+      this.args.on?.mutate?.(
         [_updates, options as any],
         updated as any,
         this.getHookKeyInfo(_updates)

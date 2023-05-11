@@ -47,7 +47,7 @@ export type onHooks = {
     returned: UnwrapPromise<ReturnType<Repository["delete"]>>,
     keyInfo: GetRequest
   ) => any;
-  merge?: (
+  mutate?: (
     args: Parameters<Repository["mutate"]>,
     returned: UnwrapPromise<ReturnType<Repository["mutate"]>>,
     keyInfo: GetRequest
