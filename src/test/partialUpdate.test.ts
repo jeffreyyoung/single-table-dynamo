@@ -46,7 +46,7 @@ describe("repo.partialUpdate", () => {
   }
 
   test("objectToPutIfNotExists should work", async () => {
-    const obj = await repo.partialUpdate(
+    const obj = await repo.mutate(
       {
         id: "yay",
         name: "george",
@@ -83,7 +83,7 @@ describe("repo.partialUpdate", () => {
   });
 
   test("should not insert when object doesnt exist", async () => {
-    const obj = await repo.partialUpdate({
+    const obj = await repo.mutate({
       id: "yay",
       name: "george",
     });
@@ -117,7 +117,7 @@ describe("repo.partialUpdate", () => {
       initialObject
     );
 
-    const obj1 = await repo.partialUpdate({
+    const obj1 = await repo.mutate({
       id: "yay",
       name: "george",
     });
@@ -136,7 +136,7 @@ describe("repo.partialUpdate", () => {
     });
 
     // should update birthDate,name index
-    const obj2 = await repo.partialUpdate({
+    const obj2 = await repo.mutate({
       id: "yay",
       name: "george",
       birthDate: "1990",

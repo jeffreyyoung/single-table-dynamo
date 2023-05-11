@@ -48,8 +48,8 @@ export type onHooks = {
     keyInfo: GetRequest
   ) => any;
   partialUpdate?: (
-    args: Parameters<Repository["partialUpdate"]>,
-    returned: UnwrapPromise<ReturnType<Repository["partialUpdate"]>>,
+    args: Parameters<Repository["mutate"]>,
+    returned: UnwrapPromise<ReturnType<Repository["mutate"]>>,
     keyInfo: GetRequest
   ) => any;
   queryStart?: (args: any) => any;

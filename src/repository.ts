@@ -168,7 +168,7 @@ export class Repository<
   }
 
   /**
-   * Updates the item if it exists and returns null if it does not exist.
+   * Mutates the item in place it exists and returns null if it does not exist.
    * There is risk to using this method as it does not update all indexes.
    * If you need to update all indexes, use repository.merge instead.
    *
@@ -177,7 +177,7 @@ export class Repository<
    * @param options.upsertArgs If present and the document with id does not
    *                           exist, a put will occur with the upsert args
    */
-  async partialUpdate(
+  async mutate(
     _updates: ID & Partial<Input>,
     options: {
       objectToPutIfNotExists?: Input;

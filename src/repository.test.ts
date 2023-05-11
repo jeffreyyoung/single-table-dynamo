@@ -290,7 +290,7 @@ Object {
 }
 `);
 
-  await expect(repo.partialUpdate({ id: obj.id, followers: ["yay1"] })).resolves
+  await expect(repo.mutate({ id: obj.id, followers: ["yay1"] })).resolves
     .toMatchInlineSnapshot(`
           Object {
             "city": "scranton",
@@ -303,9 +303,8 @@ Object {
           }
         `);
 
-  await expect(() =>
-    repo.partialUpdate({ id: "NON_EXISTANT_ID", followers: ["YAY"] })
-  ).rejects;
+  await expect(() => repo.mutate({ id: "NON_EXISTANT_ID", followers: ["YAY"] }))
+    .rejects;
 
   await expect(
     repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()

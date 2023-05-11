@@ -83,7 +83,7 @@ test("trim should work", async () => {
 
   expect(res.bio).toBe("Meeeeooowww");
   await expect(() =>
-    repo.partialUpdate({
+    repo.mutate({
       id: res.id,
       age: 121,
     })

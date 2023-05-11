@@ -39,7 +39,7 @@ test("hooks should get called", async () => {
 
   await thingRepo.put({ id: "1", name: "meow" });
   await thingRepo.get({ id: "1" });
-  await thingRepo.partialUpdate({ id: "1", name: "yeehaw" });
+  await thingRepo.mutate({ id: "1", name: "yeehaw" });
   await thingRepo.get({ id: "1" });
   await thingRepo.delete({ id: "1" });
   await thingRepo.get({ id: "1" });

@@ -40,7 +40,7 @@ describe("Repository", () => {
 
   test("partialUpdate should call document client with correct params", () => {
     stub.update.returns({ promise: () => Promise.resolve({}) } as any);
-    repo.partialUpdate({
+    repo.mutate({
       id: "meow",
       city: "jimmy",
       state: "hendricks",
