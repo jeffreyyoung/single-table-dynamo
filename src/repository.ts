@@ -9,6 +9,7 @@ import { goTry } from "./utils/goTry";
 import { AttributeRegistry } from "./utils/AttributeRegistry";
 import { getConditionExpression } from "./utils/getKeyCondition";
 import { omit } from "./utils/omit";
+import { batchWrite } from "./batch-write";
 
 type ModeOption = {
   mode?: "create" | "upsert" | "update";
@@ -350,6 +351,13 @@ export class Repository<
         name: "single-table-Error",
       });
     }
+  }
+
+  async deleteMany(ids: ID[]): Promise<boolean[]> {
+    return batchWrite(
+      this.ddb,
+      ids.map((id) => this.batch.delete(id))
+    );
   }
 
   async delete(id: ID): Promise<boolean> {
