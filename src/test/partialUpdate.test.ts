@@ -3,7 +3,7 @@ import { z } from "zod";
 import { tableConfig } from "./utils/tableConfig";
 import { getDocumentClient } from "./utils/getDocumentClient";
 
-describe("repo.partialUpdate", () => {
+describe("repo.merge", () => {
   const ddb = getDocumentClient();
   const repo = new Repository(
     {

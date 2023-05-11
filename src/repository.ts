@@ -219,7 +219,7 @@ export class Repository<
       if (!updated && options.objectToPutIfNotExists) {
         return this.put(options.objectToPutIfNotExists);
       }
-      this.args.on?.partialUpdate?.(
+      this.args.on?.merge?.(
         [_updates, options as any],
         updated as any,
         this.getHookKeyInfo(_updates)
@@ -230,7 +230,7 @@ export class Repository<
         throw e;
       }
       throw createSTDError({
-        message: `There was an error partialUpdate: ${this.args.typeName}`,
+        message: `There was an error merge: ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
       });

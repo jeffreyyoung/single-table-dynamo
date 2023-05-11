@@ -234,7 +234,7 @@ test("getDocument works as expected", async () => {
   });
 });
 
-test("get, put, delete, partialUpdate, and query should work", async () => {
+test("get, put, delete, merge, and query should work", async () => {
   const repo = getUserRepo();
   await expect(repo.get({ id: "yay" })).resolves.toEqual(null);
 

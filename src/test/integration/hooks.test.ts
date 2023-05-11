@@ -16,7 +16,7 @@ test("hooks should get called", async () => {
     delete: jest.fn(),
     put: jest.fn(),
     query: jest.fn(),
-    partialUpdate: jest.fn(),
+    merge: jest.fn(),
   };
   const thingRepo = new Repository(
     {
@@ -125,7 +125,7 @@ Array [
   ],
 ]
 `);
-  expect(spies.partialUpdate.mock.calls).toMatchInlineSnapshot(`
+  expect(spies.merge.mock.calls).toMatchInlineSnapshot(`
 Array [
   Array [
     Array [

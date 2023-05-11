@@ -38,7 +38,7 @@ describe("Repository", () => {
     stub = args.stub;
   });
 
-  test("partialUpdate should call document client with correct params", () => {
+  test("merge should call document client with correct params", () => {
     stub.update.returns({ promise: () => Promise.resolve({}) } as any);
     repo.mutate({
       id: "meow",
