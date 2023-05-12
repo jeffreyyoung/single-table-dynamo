@@ -61,6 +61,12 @@ Array [
       "name": "meow",
     },
     Object {
+      "Item": Object {
+        "id": "1",
+        "name": "meow",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
       "Key": Object {
         "pk1": "Thing#1",
         "sk1": "Thing",
@@ -83,6 +89,12 @@ Array [
       "name": "meow",
     },
     Object {
+      "Item": Object {
+        "id": "1",
+        "name": "meow",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
       "Key": Object {
         "pk1": "Thing#1",
         "sk1": "Thing",
@@ -101,6 +113,12 @@ Array [
       "name": "yeehaw",
     },
     Object {
+      "Item": Object {
+        "id": "1",
+        "name": "yeehaw",
+        "pk1": "Thing#1",
+        "sk1": "Thing",
+      },
       "Key": Object {
         "pk1": "Thing#1",
         "sk1": "Thing",
@@ -116,6 +134,7 @@ Array [
     ],
     null,
     Object {
+      "Item": null,
       "Key": Object {
         "pk1": "Thing#1",
         "sk1": "Thing",
@@ -140,6 +159,10 @@ Array [
       "name": "yeehaw",
     },
     Object {
+      "Item": Object {
+        "id": "1",
+        "name": "yeehaw",
+      },
       "Key": Object {
         "pk1": "Thing#1",
         "sk1": "Thing",

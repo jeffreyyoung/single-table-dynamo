@@ -1,5 +1,10 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { Mapper, ifSecondaryIndexGetName, IndexBase } from "./mapper";
+import {
+  Mapper,
+  ifSecondaryIndexGetName,
+  IndexBase,
+  RawResult,
+} from "./mapper";
 import { QueryBuilder } from "./query-builder";
 import { AnyRepository } from "./repository";
 
@@ -92,8 +97,15 @@ export class IndexQueryBuilder<Src> {
         })
       )) as Src[],
     };
+    const hookInfo: RawResult[] =
+      _res.Items?.flatMap((Item) =>
+        Item
+          ? [this.mapper.getHookResultInfo(this.mapper.parseId(Item), Item)]
+          : []
+      ) ?? [];
 
-    this.mapper.args.on?.query?.(expression, res);
+    this.mapper.args.on?.query?.(expression, hookInfo);
+
     return Object.assign(res, {
       encodeCursor: this.encodeCursor,
       lastCursor: res.Items?.length

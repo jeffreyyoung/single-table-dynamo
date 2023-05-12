@@ -31,16 +31,20 @@ type SecondaryIndex<T> = {
   shouldWriteIndex?: (src: T) => boolean;
 };
 
+export type RawResult = GetRequest & {
+  Item: Record<string, any> | null;
+};
+
 export type onHooks = {
   get?: (
     args: Parameters<Repository["get"]>,
     returned: UnwrapPromise<ReturnType<Repository["get"]>>,
-    keyInfo: GetRequest
+    raw: RawResult
   ) => any;
   put?: (
     args: Parameters<Repository["put"]>,
     returned: UnwrapPromise<ReturnType<Repository["put"]>>,
-    keyInfo: GetRequest
+    keyInfo: RawResult
   ) => any;
   delete?: (
     args: Parameters<Repository["delete"]>,
@@ -50,10 +54,10 @@ export type onHooks = {
   mutate?: (
     args: Parameters<Repository["mutate"]>,
     returned: UnwrapPromise<ReturnType<Repository["mutate"]>>,
-    keyInfo: GetRequest
+    keyInfo: RawResult
   ) => any;
   queryStart?: (args: any) => any;
-  query?: (args: any, results: any) => any;
+  query?: (args: any, results: RawResult[]) => any;
 };
 
 export type identity<T> = T;
@@ -310,6 +314,20 @@ export class Mapper<
       [index.sk]: [this.args.typeName, ...skFields.map(stringifyField)].join(
         "#"
       ),
+    };
+  }
+
+  getHookKeyInfo(thing: Output | Id): GetRequest {
+    return {
+      TableName: this.args.tableName,
+      Key: this.getKey(thing),
+    };
+  }
+
+  getHookResultInfo(id: Id, rawResult: Record<string, any> | null): RawResult {
+    return {
+      ...this.getHookKeyInfo(id),
+      Item: rawResult,
     };
   }
 }

@@ -1,5 +1,11 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { IndexBase, IndexField, Mapper, RepositoryArgs } from "./mapper";
+import {
+  IndexBase,
+  IndexField,
+  Mapper,
+  RawResult,
+  RepositoryArgs,
+} from "./mapper";
 import { getCursorEncoder, IndexQueryBuilder } from "./index-query-builder";
 import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
 import { BatchArgsHandler } from "./batch-args-handler";
@@ -10,6 +16,7 @@ import { AttributeRegistry } from "./utils/AttributeRegistry";
 import { getConditionExpression } from "./utils/getKeyCondition";
 import { omit } from "./utils/omit";
 import { batchWrite } from "./batch-write";
+import { GetRequest } from "./batch-get";
 
 type ModeOption = {
   mode?: "create" | "upsert" | "update";
@@ -109,7 +116,11 @@ export class Repository<
 
       const item: Output | null = res ? await this.parseAndMigrate(res) : null;
 
-      this.args.on?.get?.([id as any], item as any, this.getHookKeyInfo(id));
+      this.args.on?.get?.(
+        [id as any],
+        item as any,
+        this.mapper.getHookResultInfo(id, res)
+      );
       return item;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -223,7 +234,7 @@ export class Repository<
       this.args.on?.mutate?.(
         [_updates, options as any],
         updated as any,
-        this.getHookKeyInfo(_updates)
+        this.mapper.getHookResultInfo(_updates, updated ?? null)
       );
       return updated;
     } catch (e: any) {
@@ -236,13 +247,6 @@ export class Repository<
         name: "single-table-Error",
       });
     }
-  }
-
-  private getHookKeyInfo(thing: Output | ID) {
-    return {
-      TableName: this.args.tableName,
-      Key: this.getKey(thing),
-    };
   }
 
   expression = {
@@ -316,7 +320,11 @@ export class Repository<
 
     if (updated) {
       // todo
-      this.args.on?.put?.([updated], updated, this.getHookKeyInfo(updated));
+      this.args.on?.put?.(
+        [updated],
+        updated,
+        this.mapper.getHookResultInfo(expr, res.Attributes ?? null)
+      );
     }
 
     return updated;
@@ -325,10 +333,11 @@ export class Repository<
   async put(src: Input, { mode = "upsert" }: ModeOption = {}): Promise<Output> {
     try {
       const parsed = this.mapper.parse(src, "input");
+      const rawItem = this.mapper.decorateWithKeys(parsed);
       await this.ddb
         .put({
           TableName: this.args.tableName,
-          Item: this.mapper.decorateWithKeys(parsed),
+          Item: rawItem,
           ConditionExpression: getConditionExpression(
             [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
             mode
@@ -338,7 +347,7 @@ export class Repository<
       this.args.on?.put?.(
         [src as any, { mode }],
         parsed as any,
-        this.getHookKeyInfo(parsed)
+        this.mapper.getHookResultInfo(src as any, rawItem)
       );
       return parsed;
     } catch (e: any) {
@@ -368,7 +377,7 @@ export class Repository<
           Key: this.mapper.getKey(id),
         })
         .promise();
-      this.args.on?.delete?.([id as any], true, this.getHookKeyInfo(id));
+      this.args.on?.delete?.([id as any], true, this.mapper.getHookKeyInfo(id));
       return true;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
