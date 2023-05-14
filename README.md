@@ -34,7 +34,7 @@ const repo = new Repository(
 
     // define secondaryIndexes that can be used for additional queries
     secondaryIndexes: {
-      byfirstName: {
+      byFirstName: {
         fields: ["firstName", "lastName"],
       },
       byLastName: {
@@ -57,7 +57,7 @@ const user = await repo.mutate({ id: "123", firstName: "dwight" });
 // { id: "123", firstName: "dwight", lastName: "kong" }
 
 const { Items } = await repo
-  .query("byfirstName")
+  .query("byFirstName")
   .where({ firstName: "dwight" })
   .exec();
 // [{ id: "123", firstName: "dwight", lastName: "kong" }]
