@@ -13,32 +13,31 @@ yarn add single-table-dynamo zod
 ```typescript
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
+import { Repository, InferObjectType, InferIdType } from "single-table-dynamo";
 
-// create a repository that can be used for CRUD/Query operations
+
 const repo = new Repository(
   {
     // a unique type name to distinguish this entity type from other types
-    typeName: "User",
+    typeName: "Note",
 
     // create a schema for the entity
     schema: z.object({
       id: z.string().default(() => uuid()),
-      firstName: "harold",
-      lastName: "kong",
+      owner: z.string(),
+      text: z.string().min(0).max(1000).default(""),
     }),
 
-    // define the id fields for this object
+    // primary index fields are required to get this object
     primaryIndex: {
       fields: ["id"],
     },
 
-    // define secondaryIndexes that can be used for additional queries
+    // can be used query by other ids
     secondaryIndexes: {
-      byFirstName: {
-        fields: ["firstName", "lastName"],
-      },
-      byLastName: {
-        fields: ["lastName", "firstName"],
+      byOwner: {
+        fields: ["owner"],
+        indexName: "gsi1"
       },
     },
 
@@ -48,30 +47,29 @@ const repo = new Repository(
 );
 
 // write
-const user = await repo.put({ firstName: "harold", lastName: "kong" });
-// { id: "123", firstName: "harold", lastName: "kong" }
+const note = await repo.put({ owner: "harold" });
+// { id: "123", owner: "harold", text: "" }
 
 // read
-const user = await repo.get({ id: "123" });
+const note = await repo.get({ id: "123" });
+// { id: "123", owner: "harold", text: "" }
 
 // update
-const user = await repo.mutate({ id: "123", firstName: "dwight" });
+const note = await repo.mutate({ id: "123", text: "this is my note" });
+// { id: "123", owner: "harold", text: "this is my note" }
 
 // query
-const { Items } = await repo
-  .query("byFirstName")
-  .where({ firstName: "dwight" })
-  .exec();
-// [{ id: "123", firstName: "dwight", lastName: "kong" }]
+const { Items } = await repo.query("byOwner").where({ owner: "harold" }).exec();
+// [{ id: "123", owner: "harold", text: "this is my note" }]
 
 // delete
 await repo.delete({ id: "123" });
 
 // infer object type from repo
-type UserObject = InferObjectType<typeof repo>;
-// { id: string, firstName: string, lastName: string }
+type NoteObject = InferObjectType<typeof repo>;
+// { id: string, owner: string, text: string }
 
-type UserId = InferIdType<typeof repo>;
+type NoteId = InferIdType<typeof repo>;
 // {id: string}
 
 var TableConfig = {
