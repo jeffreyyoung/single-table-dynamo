@@ -17,61 +17,59 @@ import { z } from "zod";
 // create a repository that can be used for CRUD/Query operations
 const repo = new Repository(
   {
-    // add a name for the entity to be stored in dynamodb
+    // a unique type name for this entity
     typeName: "User",
 
     // create a schema for the entity
     schema: z.object({
-      id: z.string(),
-      country: z.enums(["usa", "canada", "mexico"]),
-      state: string(),
-      city: string(),
+      id: z.string().default(() => uuid()),
+      firstName: "harold",
+      lastName: "kong",
     }),
 
     // define the id fields for this object
     primaryIndex: {
-      fields: ["id"],
-      ...TableConfig.primaryIndex,
+      fields: ["page"],
     },
 
     // define secondaryIndexes that can be used for additional queries
     secondaryIndexes: {
-      byCountryByStateByCity: {
-        fields: ["country", "state", "city"],
-        ...TableConfig.secondaryIndexes[0],
+      byfirstName: {
+        fields: ["firstName", "lastName"],
+      },
+      byLastName: {
+        fields: ["lastName", "firstName"],
       },
     },
 
-    tableName: TableConfig.tableName,
+    tableConfig: TableConfig,
   },
   new DocumentClient()
 );
 
-// get an object
-const user = await repo.get({ id: "user1" });
+const user = await repo.put({ firstName: "harold", lastName: "kong" });
+// { id: "123", firstName: "harold", lastName: "kong" }
 
-// delete
-await repo.delete({ id: "user1" });
+const user = await repo.get({ id: "123" });
+// { id: "123", firstName: "harold", lastName: "kong" }
 
-// create
-const newUser = await repo.put({
-  id: "user1",
-  city: "otis",
-  state: "kansas",
-  country: "usa",
-});
+const user = await repo.mutate({ id: "123", firstName: "dwight" });
+// { id: "123", firstName: "dwight", lastName: "kong" }
 
-// query
-const results = await repo
-  .query("byCountryByStateByCity")
-  .where({ country: "usa" })
+const { Items } = await repo
+  .query("byfirstName")
+  .where({ firstName: "dwight" })
   .exec();
+// [{ id: "123", firstName: "dwight", lastName: "kong" }]
+
+await repo.delete({ id: "123" });
 
 // infer object type from repo
-type O = InferObjectType<typeof repo>; // {id: string, country: string, city: string, state: string }
+type O = InferObjectType<typeof repo>;
+// { id: string, firstName: string, lastName: string }
 
-// infer id type from repo
-type Id = InferIdType<typeof repo>; // {id: string}
+type Id = InferIdType<typeof repo>;
+// {id: string}
 
 var TableConfig = {
   tableName: "GenericTable",
