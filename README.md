@@ -47,28 +47,31 @@ const repo = new Repository(
   new DocumentClient()
 );
 
+// write
 const user = await repo.put({ firstName: "harold", lastName: "kong" });
 // { id: "123", firstName: "harold", lastName: "kong" }
 
+// read
 const user = await repo.get({ id: "123" });
-// { id: "123", firstName: "harold", lastName: "kong" }
 
+// update
 const user = await repo.mutate({ id: "123", firstName: "dwight" });
-// { id: "123", firstName: "dwight", lastName: "kong" }
 
+// query
 const { Items } = await repo
   .query("byFirstName")
   .where({ firstName: "dwight" })
   .exec();
 // [{ id: "123", firstName: "dwight", lastName: "kong" }]
 
+// delete
 await repo.delete({ id: "123" });
 
 // infer object type from repo
-type O = InferObjectType<typeof repo>;
+type UserObject = InferObjectType<typeof repo>;
 // { id: string, firstName: string, lastName: string }
 
-type Id = InferIdType<typeof repo>;
+type UserId = InferIdType<typeof repo>;
 // {id: string}
 
 var TableConfig = {
