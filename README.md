@@ -29,7 +29,7 @@ const repo = new Repository(
 
     // define the id fields for this object
     primaryIndex: {
-      fields: ["page"],
+      fields: ["id"],
     },
 
     // define secondaryIndexes that can be used for additional queries
