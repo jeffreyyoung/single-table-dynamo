@@ -1,6 +1,6 @@
 # Single Table Dynamodb
 
-There are a few other dynamodb clients that help simplify using dynamodb in a node environment, but most encourage the use of multiple tables. This client is built with the idea of storing all data in a single table. It is built with typescript and is strongly typed https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+A simple strongly typed dynamodb client that stores all items in a single table
 
 ## Getting started
 
@@ -17,7 +17,7 @@ import { z } from "zod";
 // create a repository that can be used for CRUD/Query operations
 const repo = new Repository(
   {
-    // a unique type name for this entity
+    // a unique type name to distinguish this entity type from other types
     typeName: "User",
 
     // create a schema for the entity
