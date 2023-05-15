@@ -121,22 +121,40 @@ export class IndexQueryBuilder<Src extends object> {
     });
   }
 
-  async execOne() {
+  /**
+   * Executes the query and returns the first item in the result set.
+   * @returns The first item in the result set.
+   */
+  async execOne(): Promise<Src | undefined> {
     const res = await this.limit(1).exec();
     return res.Items?.[0];
   }
 
-  async *execAll() {
+  /**
+   * Iterater over the query result set in batches
+   *
+   *
+   *
+   * @returns An async iterator that yields the result set in batches.
+   * @example
+   *    for await (const items of queryBuilder.execAll()) {
+   *      console.log(items);
+   *    }
+   */
+  async *execAll(): AsyncGenerator<Src[]> {
     let cursor: string | null = null;
+    type Page = {
+      Items: Src[];
+      lastCursor?: string;
+    };
     do {
-      // @ts-ignore
-      const { Items, lastCursor } = await (cursor
+      const page: Page = await (cursor
         ? this.cursor(cursor).exec()
         : this.exec());
-      if (Items?.length) {
-        yield Items;
+      if (page.Items?.length) {
+        yield page.Items;
       }
-      cursor = lastCursor;
+      cursor = page.lastCursor || null;
     } while (cursor);
   }
 

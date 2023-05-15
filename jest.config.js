@@ -6,6 +6,7 @@ module.exports = {
     // Optional (but recommended)
     "jest-dynalite/clearAfterEach",
   ],
+  modulePathIgnorePatterns: ["<rootDir>/dist/"],
   testTimeout: 20000,
   //preset: "jest-dynalite"
 };

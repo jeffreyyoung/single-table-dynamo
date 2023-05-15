@@ -546,6 +546,54 @@ test("execAll should work", async () => {
     .execAll()) {
     expect(res[i++]).toMatchObject(batch[0]);
   }
+
+  expect(i).toBe(3);
+});
+
+test("execAll should work with sort", async () => {
+  const wordRepo = getWordRepo();
+  const res = await Promise.all([
+    wordRepo.put({
+      lang: "en",
+      word: "a",
+    }),
+    wordRepo.put({
+      lang: "en",
+      word: "b",
+    }),
+    wordRepo.put({
+      lang: "en",
+      word: "c",
+    }),
+  ]);
+
+  const iter = wordRepo
+    .query("primary")
+    .where({ lang: "en" })
+    .sort("desc")
+    .limit(1)
+    .execAll();
+
+  await expect(iter.next()).resolves.toMatchObject({
+    done: false,
+    value: [{ word: "c" }],
+  });
+  await expect(iter.next()).resolves.toMatchObject({
+    done: false,
+    value: [{ word: "b" }],
+  });
+  await expect(iter.next()).resolves.toMatchObject({
+    done: false,
+    value: [{ word: "a" }],
+  });
+  await expect(iter.next()).resolves.toMatchObject({
+    done: true,
+    value: undefined,
+  });
+  await expect(iter.next()).resolves.toMatchObject({
+    done: true,
+    value: undefined,
+  });
 });
 
 test("update should work", async () => {
