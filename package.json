@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "8.3.15",
+  "version": "8.3.16",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -41,7 +41,7 @@
     "zod": "^3.21.0"
   },
   "peerDependencies": {
-    "zod": "^3.21.0",
-    "dataloader": "2.2.2"
+    "dataloader": "2.2.2",
+    "zod": "^3.21.0"
   }
 }
