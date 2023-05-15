@@ -12,7 +12,7 @@
     "project": "./tsconfig.json"
   },
   "plugins": ["@typescript-eslint"],
-  "ignorePatterns": ["dist", "node_modules", "*.js"],
+  "ignorePatterns": ["dist", "node_modules", "*.js", "example/**/*"],
   "rules": {
     "prefer-const": "warn",
     "@typescript-eslint/ban-ts-comment": "warn"
