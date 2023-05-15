@@ -28,7 +28,7 @@ export type IndexBase<T, Field extends IndexField<T> = any> = {
 
 type SecondaryIndex<T> = {
   indexName: string;
-  onlyWriteWhenAllFieldsPresent?: boolean;
+  sparse?: boolean;
   shouldWriteIndex?: (src: T) => boolean;
 };
 
@@ -334,7 +334,7 @@ export class Mapper<
 function shouldWriteIndex<T extends object>(obj: T, index: IndexBase<T>) {
   if (isSecondaryIndex(index) && index.shouldWriteIndex) {
     return index.shouldWriteIndex(obj);
-  } else if (isSecondaryIndex(index) && index.onlyWriteWhenAllFieldsPresent) {
+  } else if (isSecondaryIndex(index) && index.sparse) {
     return index.fields.every((f) => hasProperty(obj, f));
   } else {
     return true;
