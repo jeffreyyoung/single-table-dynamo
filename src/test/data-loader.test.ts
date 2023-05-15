@@ -17,7 +17,7 @@ describe("DataLoader", () => {
 
       schema: z.object({
         id: z.string(),
-        text: z.string(),
+        text: z.string().default("This is a note"),
         createdAt: z.string().default(() => new Date().toISOString()),
         owner: z.string(),
       }),
@@ -355,6 +355,30 @@ Object {
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
+    expect(batchGet).toBeCalledTimes(1);
+  });
+
+  test("force fetch should work", async () => {
+    const docClient = getDocumentClient();
+    const loader = createDataLoader(docClient);
+    const repo = createRepo(loader);
+    const batchGet = jest.spyOn(docClient, "batchGet");
+    // item is cached after put
+    await expect(repo.put({ id: "123", owner: "me" })).resolves.toMatchObject({
+      id: "123",
+    });
+    await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
+    expect(batchGet).toBeCalledTimes(0);
+
+    // force fetch should work
+    await expect(
+      repo.get({ id: "123" }, { forceFetch: true })
+    ).resolves.toMatchObject({ id: "123" });
+    expect(batchGet).toBeCalledTimes(1);
+
+    // item is cached after force fetch
+    await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
+    await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
     expect(batchGet).toBeCalledTimes(1);
   });
 });

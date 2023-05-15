@@ -71,7 +71,7 @@ export class Repository<
       TableName: this.args.tableName,
       Key: this.mapper.getKey(id),
     };
-    let res = { Item: null };
+    const res = { Item: null };
     if (this.args.dataLoader) {
       return this.args.dataLoader.load(args).then((res) => res.Item || null);
     } else {
@@ -103,15 +103,19 @@ export class Repository<
   }
 
   /**
-   * Get a single item by id
+   * Retrieves an item from the repository by its ID.
    *
-   * Returns null if the item does not exist
-   *
-   * @param id
-   * @returns
+   * @param id The ID of the item to retrieve.
+   * @param options An optional object containing additional options:
+   *   - `forceFetch`: This param is only relevant when using dataLoader. A boolean indicating whether to force the item to be fetched from the database and not from the cache.
+   * @returns A promise that resolves to the retrieved item, or `undefined` if the item does not exist.
+   * @throws A `SingleTableError` if there was an error retrieving the item.
    */
-  async get(id: ID) {
+  async get(id: ID, { forceFetch = false } = {}) {
     try {
+      if (forceFetch) {
+        this.mapper.dataLoaderClear(id);
+      }
       const res = await this.doGet(id);
 
       const item: Output | null = res ? await this.parseAndMigrate(res) : null;
