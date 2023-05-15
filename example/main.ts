@@ -1,7 +1,26 @@
-//@ts-ignore-all
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
 import { Repository, InferObjectType, InferIdType } from "../src";
+
+const TableConfig = {
+  tableName: "GenericTable",
+  primaryIndex: {
+    pk: "pk1",
+    sk: "sk0",
+  },
+  secondaryIndexes: [
+    {
+      indexName: "gsi1",
+      pk: "pk1",
+      sk: "sk1",
+    },
+    {
+      indexName: "gsi2",
+      pk: "pk2",
+      sk: "sk2",
+    },
+  ],
+};
 
 // create a repository that can be used for CRUD/Query operations
 const repo = new Repository(
@@ -35,13 +54,13 @@ const repo = new Repository(
 );
 
 // get an object
-const user = await repo.get({ id: "user1" });
+const user = repo.get({ id: "user1" });
 
 // delete
-await repo.delete({ id: "user1" });
+repo.delete({ id: "user1" });
 
 // create
-const newUser = await repo.put({
+const newUser = repo.put({
   id: "user1",
   city: "otis",
   state: "kansas",
@@ -49,30 +68,10 @@ const newUser = await repo.put({
 });
 
 // query
-const results = await repo.query("fasdlkf").where({ country: "usa" }).exec();
+const results = repo.query("fasdlkf").where({ country: "usa" }).exec();
 
 // extract entity type from repo
 type O = InferObjectType<typeof repo>; // {id: string, country: string, city: string, state: string }
 
 // extract id type from repo
 type Id = InferIdType<typeof repo>; // {id: string}
-
-var TableConfig = {
-  tableName: "GenericTable",
-  primaryIndex: {
-    pk: "pk1",
-    sk: "sk0",
-  },
-  secondaryIndexes: [
-    {
-      indexName: "gsi1",
-      pk: "pk1",
-      sk: "sk1",
-    },
-    {
-      indexName: "gsi2",
-      pk: "pk2",
-      sk: "sk2",
-    },
-  ],
-};

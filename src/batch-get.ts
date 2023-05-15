@@ -62,6 +62,7 @@ export async function batchGet<Requests extends readonly GetRequest[]>(
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-expect-error
   return stringKeys.map((r) => stringKeyToResult[r]);
 }

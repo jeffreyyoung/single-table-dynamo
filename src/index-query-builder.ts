@@ -8,7 +8,7 @@ import {
 import { QueryBuilder } from "./query-builder";
 import { AnyRepository } from "./repository";
 
-export function getCursorEncoder<Src>(args: {
+export function getCursorEncoder<Src extends object>(args: {
   primaryIndex: IndexBase<Src>;
   secondaryIndex: IndexBase<Src>;
   mapper: Mapper;
@@ -31,7 +31,7 @@ type IndexQueryBuilderArgs<T> = {
   ddb: DocumentClient;
 };
 
-export class IndexQueryBuilder<Src> {
+export class IndexQueryBuilder<Src extends object> {
   tableName: string;
   mapper: AnyRepository["mapper"];
   index: IndexBase<Src>;
@@ -167,9 +167,9 @@ export class IndexQueryBuilder<Src> {
   }
 }
 
-function hasOwn(thing: any, field: string) {
-  if (typeof thing === "object" && thing.hasOwnProperty) {
-    return thing.hasOwnProperty(field);
+function hasOwn(thing: object, field: string) {
+  if (typeof thing === "object") {
+    return Object.prototype.hasOwnProperty.call(thing, field);
   }
   return false;
 }

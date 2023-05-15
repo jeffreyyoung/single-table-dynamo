@@ -2,7 +2,7 @@ import { BatchWriteItemOutput, DocumentClient } from "aws-sdk/clients/dynamodb";
 
 export type WriteRequest = PutRequest | DeleteRequest;
 
-export type PutRequest<T = any> = {
+export type PutRequest<T = object> = {
   TableName: string;
   Operation: {
     PutRequest: {
@@ -11,7 +11,7 @@ export type PutRequest<T = any> = {
   };
 };
 
-export type DeleteRequest<T = any> = {
+export type DeleteRequest<T = object> = {
   TableName: string;
   Operation: {
     DeleteRequest: {

@@ -33,11 +33,11 @@ type UpdateExpression<T> = {
 
 export class Repository<
   Schema extends z.AnyZodObject = z.AnyZodObject,
-  Output = z.infer<Schema>,
+  Output extends object = z.infer<Schema>,
   PrimaryKeyField extends IndexField<Output> = IndexField<Output>,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
-  ID = Pick<Output, PrimaryKeyField>,
+  ID extends object = Pick<Output, PrimaryKeyField>,
   Input = z.input<Schema>
 > {
   args: RepositoryArgs<

@@ -67,7 +67,9 @@ const _getCommunityRepo = () => {
         fields: ["communityId"],
       },
       on: {
-        get: () => {},
+        get: () => {
+          return;
+        },
       },
     },
     getDocumentClient()

@@ -6,6 +6,7 @@ import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
 import { createSTDError } from "./utils/errors";
 import { z } from "zod";
+import { hasProperty } from "./utils/hasProperty";
 
 export type IndexField<T> = Extract<keyof T, string>;
 
@@ -63,15 +64,13 @@ export type onHooks = {
 export type identity<T> = T;
 export type flatten<T extends object> = identity<{ [k in keyof T]: T[k] }>;
 
-export type noNeverKeys<T extends any> = {
+export type noNeverKeys<T extends object> = {
   [k in keyof T]: [T[k]] extends [never] ? never : k;
 }[keyof T];
 
-export type noNever<T extends any> = identity<{
+export type noNever<T extends object> = identity<{
   [k in noNeverKeys<T>]: k extends keyof T ? T[k] : never;
 }>;
-
-export type ZodesqueSchema<Ouput = unknown, Input = unknown> = z.AnyZodObject;
 
 export type RepositoryArgs<
   Schema extends z.AnyZodObject = z.AnyZodObject,
@@ -105,7 +104,7 @@ export type RepositoryArgs<
 
 export class Mapper<
   Schema extends z.AnyZodObject = z.AnyZodObject,
-  Output = z.infer<Schema>,
+  Output extends object = z.infer<Schema>,
   PrimaryKeyField extends IndexField<Output> = any,
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
@@ -276,10 +275,10 @@ export class Mapper<
     ] as IndexBase<Output>[];
   }
 
-  getIndexKey<IdOrT>(
+  getIndexKey<IdOrT extends object>(
     thing: Partial<IdOrT>,
     index: IndexBase<IdOrT>,
-    options: { partial?: boolean; debugInfo?: any } = {}
+    options: { partial?: boolean; debugInfo?: object } = {}
   ): Record<string, string> {
     if (!options.partial && !shouldWriteIndex(thing as IdOrT, index)) {
       return {};
@@ -290,11 +289,11 @@ export class Mapper<
     let skFields = index.fields.slice(numPkFields);
 
     if (options.partial || isSparseIndex(index)) {
-      skFields = takeWhile(skFields, (f) => !Object(thing).hasOwnProperty(f));
+      skFields = takeWhile(skFields, (f) => !hasProperty(thing, f));
     }
 
     [...pkFields, ...skFields].forEach((f) => {
-      if (!Object(thing).hasOwnProperty(f)) {
+      if (!hasProperty(thing, f)) {
         throw new Error(
           `To query index (${index.pk}, ${
             index.sk
@@ -324,7 +323,7 @@ export class Mapper<
     };
   }
 
-  getHookResultInfo(id: Id, rawResult: Record<string, any> | null): RawResult {
+  getHookResultInfo(id: Id, rawResult: object | null): RawResult {
     return {
       ...this.getHookKeyInfo(id),
       Item: rawResult,
@@ -332,11 +331,11 @@ export class Mapper<
   }
 }
 
-function shouldWriteIndex<T>(obj: T, index: IndexBase<T>) {
+function shouldWriteIndex<T extends object>(obj: T, index: IndexBase<T>) {
   if (isSecondaryIndex(index) && index.shouldWriteIndex) {
     return index.shouldWriteIndex(obj);
   } else if (isSecondaryIndex(index) && index.onlyWriteWhenAllFieldsPresent) {
-    return index.fields.every((f) => Object(obj).hasOwnProperty(f));
+    return index.fields.every((f) => hasProperty(obj, f));
   } else {
     return true;
   }
@@ -346,7 +345,7 @@ function isSparseIndex(index: IndexBase<any, any>) {
   return Boolean((index as any)?.sparse);
 }
 
-function isSecondaryIndex<T = any>(
+function isSecondaryIndex<T = object>(
   index: IndexBase<T>
 ): index is IndexBase<T> & SecondaryIndex<T> {
   return Boolean((index as any as SecondaryIndex<T>).indexName);
