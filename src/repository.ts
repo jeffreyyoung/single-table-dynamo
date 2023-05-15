@@ -1,11 +1,5 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import {
-  IndexBase,
-  IndexField,
-  Mapper,
-  RawResult,
-  RepositoryArgs,
-} from "./mapper";
+import { IndexBase, IndexField, Mapper, RepositoryArgs } from "./mapper";
 import { getCursorEncoder, IndexQueryBuilder } from "./index-query-builder";
 import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
 import { BatchArgsHandler } from "./batch-args-handler";
@@ -16,7 +10,6 @@ import { AttributeRegistry } from "./utils/AttributeRegistry";
 import { getConditionExpression } from "./utils/getKeyCondition";
 import { omit } from "./utils/omit";
 import { batchWrite } from "./batch-write";
-import { GetRequest } from "./batch-get";
 
 type ModeOption = {
   mode?: "create" | "upsert" | "update";
@@ -299,7 +292,7 @@ export class Repository<
       .filter((i) => i)
       .join(" ");
 
-    let ConditionExpression = getConditionExpression(
+    const ConditionExpression = getConditionExpression(
       [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
       mode
     );
@@ -314,7 +307,7 @@ export class Repository<
 
     const res = await this.ddb.update(updateArgs).promise();
 
-    let updated = res.Attributes
+    const updated = res.Attributes
       ? this.mapper.parse(res.Attributes, "output")
       : null;
 

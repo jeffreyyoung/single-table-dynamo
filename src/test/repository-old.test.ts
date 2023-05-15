@@ -33,7 +33,7 @@ describe("Repository", () => {
   let { repo, stub } = getRepoAndStub();
 
   beforeEach(() => {
-    let args = getRepoAndStub();
+    const args = getRepoAndStub();
     repo = args.repo;
     stub = args.stub;
   });

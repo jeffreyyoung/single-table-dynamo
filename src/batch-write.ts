@@ -49,7 +49,7 @@ export async function batchWrite<
 
   while (unprocessed.length > 0) {
     //take off 25
-    let requests = unprocessed.splice(0, BATCH_WRITE_REQUEST_LIMIT);
+    const requests = unprocessed.splice(0, BATCH_WRITE_REQUEST_LIMIT);
 
     const res = await ddb
       .batchWrite(_convertRequestsToWriteInput(requests))
@@ -71,7 +71,7 @@ export async function batchWrite<
 }
 
 function isPutRequest(r: WriteRequest): r is PutRequest {
-  let temp = r as PutRequest;
+  const temp = r as PutRequest;
   return Boolean(temp?.Operation?.PutRequest?.Item);
 }
 

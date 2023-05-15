@@ -42,7 +42,7 @@ export async function batchGet<Requests extends readonly GetRequest[]>(
 
   while (unprocessed.length > 0) {
     //take off 25
-    let requests = unprocessed.splice(0, BATCH_GET_REQUEST_LIMIT);
+    const requests = unprocessed.splice(0, BATCH_GET_REQUEST_LIMIT);
     const res = await ddb
       .batchGet(
         convertRequestsToBatchGetInput(requests, tableToProjectionFields)

@@ -133,10 +133,10 @@ export class Mapper<
   }
 
   validateIndexes() {
-    let seen = new Map();
+    const seen = new Map();
     if (this.args.secondaryIndexes) {
       Object.entries(this.args.secondaryIndexes).forEach(([key, idx]) => {
-        let index = idx as any as SecondaryIndex<any>;
+        const index = idx as any as SecondaryIndex<any>;
         if (seen.has(index.indexName)) {
           throw new Error(
             `SingleTableIndexValidationError: indexes ${key} and ${seen.get(
@@ -170,7 +170,7 @@ export class Mapper<
     type: "input" | "output"
   ) {
     try {
-      let mask: any = {};
+      const mask: any = {};
       fields.forEach((field) => (mask[field] = true));
       return this.args.schema.pick(mask).parse(obj);
     } catch (error: any) {

@@ -89,7 +89,7 @@ export class IndexQueryBuilder<Src extends object> {
     const expression = this.builder.build();
     this.mapper.args.on?.queryStart?.(expression);
     const _res = await this.ddb.query(expression as any).promise();
-    let res = {
+    const res = {
       ..._res,
       Items: (await Promise.all(
         (_res.Items || []).map((item) => {

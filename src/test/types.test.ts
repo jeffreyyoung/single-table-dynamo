@@ -1,7 +1,7 @@
 import { expectTypeOf } from "expect-type";
 import { z } from "zod";
 import { Repository } from "..";
-let j = z.object({
+const j = z.object({
   id: z.string(),
 });
 
