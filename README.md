@@ -15,36 +15,34 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
 import { Repository, InferObjectType, InferIdType } from "single-table-dynamo";
 
+const repo = new Repository({
+  // a unique type name to distinguish this entity type from other types
+  typeName: "Note",
 
-const repo = new Repository(
-  {
-    // a unique type name to distinguish this entity type from other types
-    typeName: "Note",
+  // create a schema for the entity
+  schema: z.object({
+    id: z.string().default(() => uuid()),
+    owner: z.string(),
+    text: z.string().min(0).max(1000).default(""),
+  }),
 
-    // create a schema for the entity
-    schema: z.object({
-      id: z.string().default(() => uuid()),
-      owner: z.string(),
-      text: z.string().min(0).max(1000).default(""),
-    }),
-
-    // primary index fields are required to get this object
-    primaryIndex: {
-      fields: ["id"],
-    },
-
-    // can be used query by other ids
-    secondaryIndexes: {
-      byOwner: {
-        fields: ["owner"],
-        indexName: "gsi1"
-      },
-    },
-
-    tableConfig: TableConfig,
+  // primary index fields are required to get this object
+  primaryIndex: {
+    fields: ["id"],
   },
-  new DocumentClient()
-);
+
+  // can be used query by other ids
+  secondaryIndexes: {
+    byOwner: {
+      fields: ["owner"],
+      indexName: "gsi1",
+    },
+  },
+
+  tableConfig: TableConfig,
+
+  documentClient: new DocumentClient(),
+});
 
 // write
 const note = await repo.put({ owner: "harold" });
