@@ -10,58 +10,57 @@ const ddb = new DocumentClient({
     region: "local",
   }),
 });
-const personRepo = new Repository(
-  {
-    schema: z.object({
-      personId: z.string().default(() => Math.random() + ""),
-      name: z.string().default("jimmy"),
-    }),
-    tableName: "table1",
-    typeName: "Person",
-    primaryIndex: {
-      tag: "primary",
-      pk: "pk1",
-      sk: "sk1",
-      fields: ["personId"],
-    },
+const personRepo = new Repository({
+  schema: z.object({
+    personId: z.string().default(() => Math.random() + ""),
+    name: z.string().default("jimmy"),
+  }),
+  tableName: "table1",
+  typeName: "Person",
+  primaryIndex: {
+    tag: "primary",
+    pk: "pk1",
+    sk: "sk1",
+    fields: ["personId"],
   },
-  ddb
-);
+  documentClient: ddb,
+});
 
-const thingRepo = new Repository(
-  {
-    schema: z.object({
-      id: z.string(),
-      name: z.string(),
-    }),
-    tableName: "table1",
-    typeName: "Thing",
-    primaryIndex: {
-      tag: "primary",
-      pk: "pk1",
-      sk: "sk1",
-      fields: ["id"],
-    },
+const thingRepo = new Repository({
+  schema: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  tableName: "table1",
+  typeName: "Thing",
+  primaryIndex: {
+    tag: "primary",
+    pk: "pk1",
+    sk: "sk1",
+    fields: ["id"],
   },
-  ddb
-);
+  documentClient: ddb,
+});
 
 test("should handle custom fieldsToProject <deprecated/>", async () => {
-  await batchPut(ddb, [
-    thingRepo.batch.put({ id: "1", name: "yes" }),
-    thingRepo.batch.put({ id: "2", name: "no" }),
-    thingRepo.batch.put({ id: "3", name: "maybe" }),
-    personRepo.batch.put({ personId: "hello?", name: "ok" }),
-  ]);
+  await batchPut({
+    ddb,
+    requests: [
+      thingRepo.batch.put({ id: "1", name: "yes" }),
+      thingRepo.batch.put({ id: "2", name: "no" }),
+      thingRepo.batch.put({ id: "3", name: "maybe" }),
+      personRepo.batch.put({ personId: "hello?", name: "ok" }),
+    ],
+  });
 
   expect(
-await batchGet(ddb, [
-thingRepo.batch.get({ id: "1" }),
-thingRepo.batch.get({ id: "1" }),
-thingRepo.batch.get({ id: "1" }),
-personRepo.batch.get({ personId: "hello?" })])).
-
-toMatchInlineSnapshot(`
+    await batchGet(ddb, [
+      thingRepo.batch.get({ id: "1" }),
+      thingRepo.batch.get({ id: "1" }),
+      thingRepo.batch.get({ id: "1" }),
+      personRepo.batch.get({ personId: "hello?" }),
+    ])
+  ).toMatchInlineSnapshot(`
 Array [
   Object {
     "id": "1",
@@ -158,10 +157,13 @@ test("batch write should work with one table", async () => {
   const ids = [...Array(35).keys()].map((id) => String(id));
 
   await expect(
-    batchWrite(ddb, [
-      ...ids.map((id) => thingRepo.batch.put({ id, name: "meow" })),
-      ...ids.map((id) => personRepo.batch.put({ personId: id, name: "yo" })),
-    ])
+    batchWrite({
+      ddb,
+      requests: [
+        ...ids.map((id) => thingRepo.batch.put({ id, name: "meow" })),
+        ...ids.map((id) => personRepo.batch.put({ personId: id, name: "yo" })),
+      ],
+    })
   ).resolves.toHaveLength(70);
 
   await expect(
@@ -177,10 +179,13 @@ test("batch write should work with one table", async () => {
 
 test("should handle duplicates and maintain order", async () => {
   await expect(
-    batchWrite(ddb, [
-      thingRepo.batch.put({ id: "1", name: "yay" }),
-      thingRepo.batch.put({ id: "2", name: "yay" }),
-    ])
+    batchWrite({
+      ddb,
+      requests: [
+        thingRepo.batch.put({ id: "1", name: "yay" }),
+        thingRepo.batch.put({ id: "2", name: "yay" }),
+      ],
+    })
   ).resolves.toHaveLength(2);
 
   await expect(

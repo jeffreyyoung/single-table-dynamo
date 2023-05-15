@@ -7,23 +7,21 @@ const j = z.object({
 
 type meow = z.TypeOf<typeof j>;
 
-const repository = new Repository(
-  {
-    schema: z.object({
-      id: z.string(),
-      name: z.string(),
-      age: z.number().min(18).max(120),
-    }),
-    tableName: "meow",
-    primaryIndex: {
-      fields: ["id"],
-      pk: "pk0",
-      sk: "sk0",
-    },
-    typeName: "person",
+const repository = new Repository({
+  schema: z.object({
+    id: z.string(),
+    name: z.string(),
+    age: z.number().min(18).max(120),
+  }),
+  tableName: "meow",
+  primaryIndex: {
+    fields: ["id"],
+    pk: "pk0",
+    sk: "sk0",
   },
-  {} as any
-);
+  typeName: "person",
+  documentClient: {} as any,
+});
 
 test("main repo methods should be correctly typed", () => {
   expectTypeOf(repository.get).parameter(0).toMatchTypeOf<{ id: string }>();

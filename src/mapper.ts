@@ -61,6 +61,17 @@ export type onHooks = {
   query?: (args: any, results: RawResult[]) => any;
 };
 
+type GetDocArg = Parameters<DocumentClient["get"]>[0];
+type GetDocResult = Awaited<
+  ReturnType<ReturnType<DocumentClient["get"]>["promise"]>
+>;
+
+export type DataLoader = {
+  load: (key: GetDocArg) => Promise<GetDocResult>;
+  prime: (key: GetDocArg, value: GetDocResult) => void;
+  clear: (key: GetDocArg) => DataLoader;
+};
+
 export type identity<T> = T;
 export type flatten<T extends object> = identity<{ [k in keyof T]: T[k] }>;
 
@@ -82,10 +93,9 @@ export type RepositoryArgs<
   schema: Schema;
   tableName: string;
   typeName: string;
-  getDocument?: (
-    args: Parameters<DocumentClient["get"]>[0]
-  ) => ReturnType<ReturnType<DocumentClient["get"]>["promise"]>;
   on?: onHooks;
+  dataLoader?: DataLoader;
+  documentClient: DocumentClient;
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
   };
@@ -313,6 +323,35 @@ export class Mapper<
       [index.sk]: [this.args.typeName, ...skFields.map(stringifyField)].join(
         "#"
       ),
+    };
+  }
+
+  dataLoaderClear(id: Id) {
+    if (this.args.dataLoader) {
+      const key = this.getGetDocArg(id);
+      this.args.dataLoader.clear(key);
+    }
+  }
+
+  dataLoaderPrime(id: Id, rawResult: object | null) {
+    if (this.args.dataLoader) {
+      const key = this.getGetDocArg(id);
+      const res = this.getGetDocResult(id, rawResult);
+      this.args.dataLoader.clear(key).prime(key, res);
+    }
+  }
+
+  private getGetDocArg(thing: Output | Id): GetDocArg {
+    return {
+      TableName: this.args.tableName,
+      Key: this.getKey(thing),
+    };
+  }
+
+  private getGetDocResult(id: Id, rawResult: object | null): GetDocResult {
+    return {
+      $response: {} as any,
+      Item: rawResult || undefined,
     };
   }
 

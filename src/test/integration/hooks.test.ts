@@ -18,24 +18,22 @@ test("hooks should get called", async () => {
     query: jest.fn(),
     mutate: jest.fn(),
   };
-  const thingRepo = new Repository(
-    {
-      schema: z.object({
-        id: z.string(),
-        name: z.string(),
-      }),
-      tableName: "table1",
-      typeName: "Thing",
-      primaryIndex: {
-        tag: "primary",
-        pk: "pk1",
-        sk: "sk1",
-        fields: ["id"],
-      },
-      on: spies,
+  const thingRepo = new Repository({
+    schema: z.object({
+      id: z.string(),
+      name: z.string(),
+    }),
+    tableName: "table1",
+    typeName: "Thing",
+    primaryIndex: {
+      tag: "primary",
+      pk: "pk1",
+      sk: "sk1",
+      fields: ["id"],
     },
-    ddb
-  );
+    on: spies,
+    documentClient: ddb,
+  });
 
   await thingRepo.put({ id: "1", name: "meow" });
   await thingRepo.get({ id: "1" });

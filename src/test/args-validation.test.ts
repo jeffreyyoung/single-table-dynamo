@@ -8,34 +8,32 @@ test("validation error should throw", () => {
 });
 
 function getRepository() {
-  new Repository(
-    {
-      tableName: "meow",
-      typeName: "User",
-      schema: z.object({
-        id: z.string(),
-      }),
-      primaryIndex: {
-        tag: "primary",
-        pk: "yay",
-        sk: "meow",
+  new Repository({
+    tableName: "meow",
+    typeName: "User",
+    schema: z.object({
+      id: z.string(),
+    }),
+    primaryIndex: {
+      tag: "primary",
+      pk: "yay",
+      sk: "meow",
+      fields: ["id"],
+    },
+    secondaryIndexes: {
+      one: {
+        indexName: "gsi1",
+        pk: "pk1",
+        sk: "sk1",
         fields: ["id"],
       },
-      secondaryIndexes: {
-        one: {
-          indexName: "gsi1",
-          pk: "pk1",
-          sk: "sk1",
-          fields: ["id"],
-        },
-        two: {
-          indexName: "gsi1",
-          pk: "pk1",
-          sk: "sk1",
-          fields: ["id"],
-        },
+      two: {
+        indexName: "gsi1",
+        pk: "pk1",
+        sk: "sk1",
+        fields: ["id"],
       },
     },
-    {} as any
-  );
+    documentClient: {} as any,
+  });
 }

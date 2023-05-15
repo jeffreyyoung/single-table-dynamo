@@ -17,12 +17,15 @@ export class BatchArgsHandler<
     this.mapper = mapper;
   }
 
-  put(item: Input): PutRequest<Input> {
+  put(item: Input): PutRequest<Output> {
+    const result = this.mapper.parse(item);
+
     return {
       TableName: this.tableName,
       Operation: {
         PutRequest: {
-          Item: this.mapper.decorateWithKeys(this.mapper.parse(item)) as any,
+          Item: this.mapper.decorateWithKeys(result) as any,
+          Key: this.mapper.getKey(result),
         },
       },
     };

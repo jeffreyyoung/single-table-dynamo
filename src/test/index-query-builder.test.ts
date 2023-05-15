@@ -26,6 +26,7 @@ const mapper = new Mapper({
       sk: "sk2",
       fields: ["state", "country", "count"],
     },
+
     // {
     //   indexName: 'countryByUpdatedAt',
     //   tag: 'meowowow',
@@ -33,6 +34,7 @@ const mapper = new Mapper({
     //   sortKey: 'country',
     // },
   },
+  documentClient: {} as any,
 });
 
 const getBuilder = <T>(index: IndexBase<T>) =>

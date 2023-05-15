@@ -23,35 +23,33 @@ const TableConfig = {
 };
 
 // create a repository that can be used for CRUD/Query operations
-const repo = new Repository(
-  {
-    // create a schema for the objects to store in dynamodb
-    schema: z.object({
-      id: z.string(),
-      country: z.string(),
-      state: z.string(),
-      city: z.string(),
-    }),
+const repo = new Repository({
+  // create a schema for the objects to store in dynamodb
+  schema: z.object({
+    id: z.string(),
+    country: z.string(),
+    state: z.string(),
+    city: z.string(),
+  }),
 
-    // define the id fields for this object
-    primaryIndex: {
-      fields: ["id"],
-      ...TableConfig.primaryIndex,
-    },
-
-    // define secondaryIndexes that can be used for additional queries
-    secondaryIndexes: {
-      byCountryByStateByCity: {
-        fields: ["country", "state", "city"],
-        ...TableConfig.secondaryIndexes[0],
-      },
-    },
-
-    tableName: TableConfig.tableName,
-    typeName: "User",
+  // define the id fields for this object
+  primaryIndex: {
+    fields: ["id"],
+    ...TableConfig.primaryIndex,
   },
-  new DocumentClient()
-);
+
+  // define secondaryIndexes that can be used for additional queries
+  secondaryIndexes: {
+    byCountryByStateByCity: {
+      fields: ["country", "state", "city"],
+      ...TableConfig.secondaryIndexes[0],
+    },
+  },
+
+  tableName: TableConfig.tableName,
+  typeName: "User",
+  documentClient: new DocumentClient(),
+});
 
 // get an object
 const user = repo.get({ id: "user1" });

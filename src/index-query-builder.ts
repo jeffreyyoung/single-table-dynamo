@@ -103,7 +103,14 @@ export class IndexQueryBuilder<Src extends object> {
           ? [this.mapper.getHookResultInfo(this.mapper.parseId(Item), Item)]
           : []
       ) ?? [];
-
+    if (this.mapper.args.dataLoader) {
+      for (const result of hookInfo) {
+        this.mapper.args.dataLoader.clear(result).prime(result, {
+          Item: result.Item || undefined,
+          $response: {} as any,
+        });
+      }
+    }
     this.mapper.args.on?.query?.(expression, hookInfo);
 
     return Object.assign(res, {

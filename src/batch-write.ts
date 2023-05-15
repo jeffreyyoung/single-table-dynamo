@@ -1,4 +1,5 @@
 import { BatchWriteItemOutput, DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DataLoader } from "./mapper";
 
 export type WriteRequest = PutRequest | DeleteRequest;
 
@@ -7,6 +8,7 @@ export type PutRequest<T = object> = {
   Operation: {
     PutRequest: {
       Item: T;
+      Key: any;
     };
   };
 };
@@ -23,26 +25,32 @@ export type DeleteRequest<T = object> = {
 const BATCH_WRITE_REQUEST_LIMIT = 25;
 
 // https://stackoverflow.com/questions/51674820/generics-for-arrays-in-typescript-3-0
-export async function batchPut<Requests extends Array<PutRequest>>(
-  ddb: DocumentClient,
-  requests: Requests
-): Promise<{
+export async function batchPut<Requests extends Array<PutRequest>>(ops: {
+  requests: Requests;
+  ddb: DocumentClient;
+  dataLoader?: DataLoader;
+}): Promise<{
   [K in keyof Requests]: Requests[K] extends PutRequest<infer R>
     ? R
     : Requests[K];
 }> {
-  await batchWrite(ddb, requests);
+  await batchWrite(ops);
 
   //@ts-ignore
-  return requests.map((r) => r.Operation.PutRequest.Item);
+  return ops.requests.map((r) => r.Operation.PutRequest.Item);
 }
 
 export async function batchWrite<
   Requests extends Array<PutRequest | DeleteRequest>
->(
-  ddb: DocumentClient,
-  requestsIn: Requests
-): Promise<{
+>({
+  ddb,
+  requests: requestsIn,
+  dataLoader,
+}: {
+  ddb: DocumentClient;
+  requests: Requests;
+  dataLoader?: DataLoader;
+}): Promise<{
   [K in keyof Requests]: Requests[K] extends PutRequest<infer R> ? R : true;
 }> {
   let unprocessed = requestsIn.slice(0);
@@ -54,6 +62,30 @@ export async function batchWrite<
     const res = await ddb
       .batchWrite(_convertRequestsToWriteInput(requests))
       .promise();
+    if (dataLoader) {
+      requests.map((r) => {
+        if (isPutRequest(r)) {
+          const key = {
+            TableName: r.TableName,
+            Key: r.Operation.PutRequest.Key,
+          };
+          dataLoader.clear(key);
+          dataLoader.prime(key, r.Operation.PutRequest as any);
+        } else {
+          const key = {
+            TableName: r.TableName,
+            Key: r.Operation.DeleteRequest.Key,
+          };
+          dataLoader.clear({
+            TableName: r.TableName,
+            Key: r.Operation.DeleteRequest.Key,
+          });
+          dataLoader.prime(key, {
+            $response: {} as any,
+          });
+        }
+      });
+    }
 
     unprocessed = unprocessed.concat(
       _unprocessedItemsToRequests(res.UnprocessedItems)

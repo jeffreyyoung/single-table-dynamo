@@ -15,6 +15,7 @@ const schema = z.object({
 const mapper = new Mapper({
   typeName: "User",
   tableName: "Yeehaw",
+  documentClient: {} as any,
   schema,
   primaryIndex: {
     ...tableConfig.primaryIndex,

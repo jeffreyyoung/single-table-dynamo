@@ -5,26 +5,24 @@ import { z } from "zod";
 
 function getRepoAndStub() {
   const stub = sinon.stub(new DocumentClient());
-  const repo = new Repository(
-    {
-      tableName: "meow",
-      typeName: "User",
-      schema: z.object({
-        id: z.string(),
-        followers: z.array(z.string()).default([]),
-        country: z.string(),
-        city: z.string(),
-        state: z.string(),
-      }),
-      primaryIndex: {
-        tag: "primary",
-        pk: "yay",
-        sk: "meow",
-        fields: ["id"],
-      },
+  const repo = new Repository({
+    tableName: "meow",
+    typeName: "User",
+    schema: z.object({
+      id: z.string(),
+      followers: z.array(z.string()).default([]),
+      country: z.string(),
+      city: z.string(),
+      state: z.string(),
+    }),
+    primaryIndex: {
+      tag: "primary",
+      pk: "yay",
+      sk: "meow",
+      fields: ["id"],
     },
-    stub
-  );
+    documentClient: stub,
+  });
 
   return { repo, stub };
 }

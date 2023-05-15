@@ -9,34 +9,32 @@ const ddb = new DocumentClient({
   }),
 });
 const getUserRepo = () =>
-  new Repository(
-    {
-      tableName: "table1",
-      typeName: "User",
-      schema: z.object({
-        id: z.string(),
-        followers: z.array(z.string()),
-        country: z.string(),
-        city: z.string(),
-        state: z.string().nullable(),
-      }),
-      primaryIndex: {
-        tag: "primary",
-        pk: "pk1",
-        sk: "sk1",
-        fields: ["id"],
-      },
-      secondaryIndexes: {
-        byCountryByStateByCity: {
-          pk: "pk2",
-          sk: "sk2",
-          fields: ["country", "state", "city"],
-          indexName: "gsi1",
-        },
+  new Repository({
+    tableName: "table1",
+    typeName: "User",
+    schema: z.object({
+      id: z.string(),
+      followers: z.array(z.string()),
+      country: z.string(),
+      city: z.string(),
+      state: z.string().nullable(),
+    }),
+    primaryIndex: {
+      tag: "primary",
+      pk: "pk1",
+      sk: "sk1",
+      fields: ["id"],
+    },
+    secondaryIndexes: {
+      byCountryByStateByCity: {
+        pk: "pk2",
+        sk: "sk2",
+        fields: ["country", "state", "city"],
+        indexName: "gsi1",
       },
     },
-    ddb
-  );
+    documentClient: ddb,
+  });
 
 function rawPut(obj: { id: string } & any) {
   const repo = getUserRepo();

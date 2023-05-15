@@ -27,7 +27,6 @@ export async function batchGet<Requests extends readonly GetRequest[]>(
         tableToKeyFields[r.TableName]
       );
     }
-
     return getStringKey(r);
   });
 

@@ -3,21 +3,19 @@ import { Repository } from "../repository";
 import { getDocumentClient } from "./utils/getDocumentClient";
 import { tableConfig } from "./utils/tableConfig";
 
-const repo = new Repository(
-  {
-    schema: z.object({
-      name: z.string().default("tammy"),
-      id: z.string().default(() => "id" + Math.random() + ""),
-    }),
-    primaryIndex: {
-      fields: ["id"],
-      ...tableConfig.primaryIndex,
-    },
-    tableName: tableConfig.tableName,
-    typeName: "person",
+const repo = new Repository({
+  schema: z.object({
+    name: z.string().default("tammy"),
+    id: z.string().default(() => "id" + Math.random() + ""),
+  }),
+  primaryIndex: {
+    fields: ["id"],
+    ...tableConfig.primaryIndex,
   },
-  getDocumentClient()
-);
+  tableName: tableConfig.tableName,
+  typeName: "person",
+  documentClient: getDocumentClient(),
+});
 
 test("id should be generated", async () => {
   const res = await repo.put({});

@@ -28,11 +28,6 @@ export class AttributeRegistry {
     const entries = thing.entries();
     const arr = Array.from(entries);
     const obj = Object.fromEntries(arr.map(([key, value]) => [value, key]));
-    // console.log({
-    //   entries,
-    //   arr,
-    //   obj,
-    // });
     return obj;
   }
 

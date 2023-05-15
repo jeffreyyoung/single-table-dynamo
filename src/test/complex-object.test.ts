@@ -48,21 +48,20 @@ const ddb = new DocumentClient({
   }),
 });
 
-const repo = new Repository(
-  {
-    typeName: "User",
+const repo = new Repository({
+  typeName: "User",
 
-    schema,
+  schema,
 
-    tableName: tableConfig.tableName,
+  tableName: tableConfig.tableName,
 
-    primaryIndex: {
-      ...tableConfig.primaryIndex,
-      fields: ["id"],
-    },
+  primaryIndex: {
+    ...tableConfig.primaryIndex,
+    fields: ["id"],
   },
-  ddb
-);
+
+  documentClient: ddb,
+});
 
 type O = InferObjectType<typeof repo>;
 type Id = InferIdType<typeof repo>;

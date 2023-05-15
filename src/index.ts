@@ -8,4 +8,5 @@ export * from "./repository";
 export * from "./batch-args-handler";
 export * from "./batch-write";
 export * from "./batch-get";
+export * from "./data-loader";
 export { isSingleTableDynamoError };

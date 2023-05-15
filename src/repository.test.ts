@@ -5,34 +5,32 @@ import { tableConfig } from "./test/utils/tableConfig";
 const ddb = getDocumentClient();
 
 const getUserRepo = () =>
-  new Repository(
-    {
-      tableName: "table1",
-      typeName: "User",
-      schema: z.object({
-        id: z.string(),
-        followers: z.array(z.string()),
-        country: z.string(),
-        city: z.string(),
-        state: z.string(),
-      }),
-      primaryIndex: {
-        tag: "primary",
-        pk: "pk1",
-        sk: "sk1",
-        fields: ["id"],
-      },
-      secondaryIndexes: {
-        byCountryByStateByCity: {
-          pk: "pk2",
-          sk: "sk2",
-          fields: ["country", "state", "city"],
-          indexName: "gsi1",
-        },
+  new Repository({
+    tableName: "table1",
+    typeName: "User",
+    schema: z.object({
+      id: z.string(),
+      followers: z.array(z.string()),
+      country: z.string(),
+      city: z.string(),
+      state: z.string(),
+    }),
+    primaryIndex: {
+      tag: "primary",
+      pk: "pk1",
+      sk: "sk1",
+      fields: ["id"],
+    },
+    secondaryIndexes: {
+      byCountryByStateByCity: {
+        pk: "pk2",
+        sk: "sk2",
+        fields: ["country", "state", "city"],
+        indexName: "gsi1",
       },
     },
-    ddb
-  );
+    documentClient: ddb,
+  });
 
 test("projection expression should work", async () => {
   const repo = getUserRepo();
@@ -208,14 +206,11 @@ Object {
   });
 });
 
-test("getDocument works as expected", async () => {
-  const repo = new Repository(
-    {
-      ...getUserRepo().args,
-      getDocument: (args) => ddb.get(args).promise(),
-    },
-    ddb
-  );
+test("works as expected", async () => {
+  const repo = new Repository({
+    ...getUserRepo().args,
+    documentClient: ddb,
+  });
 
   await repo.put({
     city: "gump",
@@ -389,23 +384,21 @@ test("curosr pagination should work", async () => {
 });
 
 const getWordRepo = () => {
-  return new Repository(
-    {
-      schema: z.object({
-        lang: z.string(),
-        word: z.string(),
-      }),
-      primaryIndex: {
-        fields: ["lang", "word"],
-        tag: "primary",
-        pk: "pk1",
-        sk: "sk1",
-      },
-      tableName: "table1",
-      typeName: "word",
+  return new Repository({
+    schema: z.object({
+      lang: z.string(),
+      word: z.string(),
+    }),
+    primaryIndex: {
+      fields: ["lang", "word"],
+      tag: "primary",
+      pk: "pk1",
+      sk: "sk1",
     },
-    ddb
-  );
+    tableName: "table1",
+    typeName: "word",
+    documentClient: ddb,
+  });
 };
 
 test("merge should throw if not exists", async () => {
@@ -556,22 +549,20 @@ test("execAll should work", async () => {
 });
 
 test("update should work", async () => {
-  const repo = new Repository(
-    {
-      tableName: tableConfig.tableName,
-      schema: z.object({
-        id: z.string(),
-        age: z.number().default(0),
-        name: z.string(),
-      }),
-      typeName: "UserV5",
-      primaryIndex: {
-        fields: ["id"],
-        ...tableConfig.primaryIndex,
-      },
+  const repo = new Repository({
+    tableName: tableConfig.tableName,
+    schema: z.object({
+      id: z.string(),
+      age: z.number().default(0),
+      name: z.string(),
+    }),
+    typeName: "UserV5",
+    primaryIndex: {
+      fields: ["id"],
+      ...tableConfig.primaryIndex,
     },
-    ddb
-  );
+    documentClient: ddb,
+  });
 
   expect(
     await repo.putExpression({
@@ -611,21 +602,19 @@ test("update should work", async () => {
 });
 
 test("putExpression with mode = update should work", async () => {
-  const repo = new Repository(
-    {
-      tableName: tableConfig.tableName,
-      schema: z.object({
-        id: z.string(),
-        age: z.number(),
-      }),
-      typeName: "UserV9",
-      primaryIndex: {
-        fields: ["id"],
-        ...tableConfig.primaryIndex,
-      },
+  const repo = new Repository({
+    tableName: tableConfig.tableName,
+    schema: z.object({
+      id: z.string(),
+      age: z.number(),
+    }),
+    typeName: "UserV9",
+    primaryIndex: {
+      fields: ["id"],
+      ...tableConfig.primaryIndex,
     },
-    ddb
-  );
+    documentClient: ddb,
+  });
 
   await expect(() =>
     repo.putExpression(
@@ -683,23 +672,21 @@ Object {
 });
 
 test("update should work with multiple add expressions", async () => {
-  const repo = new Repository(
-    {
-      tableName: tableConfig.tableName,
-      schema: z.object({
-        id: z.string(),
-        age: z.number(),
-        faveNumber: z.number(),
-        name: z.string(),
-      }),
-      typeName: "UserV5",
-      primaryIndex: {
-        fields: ["id"],
-        ...tableConfig.primaryIndex,
-      },
+  const repo = new Repository({
+    tableName: tableConfig.tableName,
+    schema: z.object({
+      id: z.string(),
+      age: z.number(),
+      faveNumber: z.number(),
+      name: z.string(),
+    }),
+    typeName: "UserV5",
+    primaryIndex: {
+      fields: ["id"],
+      ...tableConfig.primaryIndex,
     },
-    ddb
-  );
+    documentClient: ddb,
+  });
 
   expect(
     await repo.putExpression({
@@ -745,29 +732,27 @@ test("update should work with multiple add expressions", async () => {
 });
 
 test("query only return correct data", async () => {
-  const repo = new Repository(
-    {
-      tableName: tableConfig.tableName,
-      schema: z.object({
-        id: z.string(),
-        firstName: z.string(),
-        lastName: z.string(),
-      }),
-      primaryIndex: {
-        ...tableConfig.primaryIndex,
-        fields: ["id"],
-        tag: "id",
-      },
-      typeName: "users",
-      secondaryIndexes: {
-        "lastName,firstName": {
-          ...tableConfig.secondaryIndexes[0],
-          fields: ["lastName", "firstName"],
-        },
+  const repo = new Repository({
+    tableName: tableConfig.tableName,
+    schema: z.object({
+      id: z.string(),
+      firstName: z.string(),
+      lastName: z.string(),
+    }),
+    primaryIndex: {
+      ...tableConfig.primaryIndex,
+      fields: ["id"],
+      tag: "id",
+    },
+    typeName: "users",
+    secondaryIndexes: {
+      "lastName,firstName": {
+        ...tableConfig.secondaryIndexes[0],
+        fields: ["lastName", "firstName"],
       },
     },
-    getDocumentClient()
-  );
+    documentClient: getDocumentClient(),
+  });
 
   await repo.put({
     id: "1",

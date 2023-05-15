@@ -2,24 +2,22 @@ import { Repository } from "../repository";
 import { getDocumentClient } from "./utils/getDocumentClient";
 import { tableConfig } from "./utils/tableConfig";
 import { z } from "zod";
-const repository = new Repository(
-  {
-    schema: z.object({
-      state: z.string(),
-      country: z.string(),
-      createdAt: z.string(),
-    }),
-    tableName: tableConfig.tableName,
-    typeName: "User",
-    primaryIndex: {
-      ...tableConfig.primaryIndex,
-      tag: "byCountryByState",
-      fields: ["country", "state", "createdAt"],
-      partitionKeyFieldCount: 2,
-    },
+const repository = new Repository({
+  schema: z.object({
+    state: z.string(),
+    country: z.string(),
+    createdAt: z.string(),
+  }),
+  tableName: tableConfig.tableName,
+  typeName: "User",
+  primaryIndex: {
+    ...tableConfig.primaryIndex,
+    tag: "byCountryByState",
+    fields: ["country", "state", "createdAt"],
+    partitionKeyFieldCount: 2,
   },
-  getDocumentClient()
-);
+  documentClient: getDocumentClient(),
+});
 
 const mapper = repository.mapper;
 
@@ -69,10 +67,12 @@ test("should format partial index properly", () => {
 
 test("should throw when not all partition keys are provided", () => {
   expect(() =>
-mapper.getIndexKey({ country: "USA" }, mapper.args.primaryIndex, {
-  partial: true })).
-
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk0, sk0), field: state is required, recieved {\\"country\\":\\"USA\\"}"`);
+    mapper.getIndexKey({ country: "USA" }, mapper.args.primaryIndex, {
+      partial: true,
+    })
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk0, sk0), field: state is required, recieved {\\"country\\":\\"USA\\"}"`
+  );
 });
 
 test("query should work", async () => {
@@ -169,24 +169,22 @@ Object {
 });
 
 test("should work when partitionKeyFieldCount > fields.length", async () => {
-  const repository = new Repository(
-    {
-      schema: z.object({
-        state: z.string(),
-        country: z.string(),
-        createdAt: z.string(),
-      }),
-      tableName: tableConfig.tableName,
-      typeName: "User1",
-      primaryIndex: {
-        ...tableConfig.primaryIndex,
-        tag: "pk",
-        fields: ["country", "state", "createdAt"],
-        partitionKeyFieldCount: 100,
-      },
+  const repository = new Repository({
+    schema: z.object({
+      state: z.string(),
+      country: z.string(),
+      createdAt: z.string(),
+    }),
+    tableName: tableConfig.tableName,
+    typeName: "User1",
+    primaryIndex: {
+      ...tableConfig.primaryIndex,
+      tag: "pk",
+      fields: ["country", "state", "createdAt"],
+      partitionKeyFieldCount: 100,
     },
-    getDocumentClient()
-  );
+    documentClient: getDocumentClient(),
+  });
 
   expect(
     repository.mapper.decorateWithKeys({
@@ -241,8 +239,10 @@ Object {
   ).resolves.toMatchInlineSnapshot(`null`);
 
   await expect(() =>
-repository.query("pk").where({ state: "UT" }).exec()).
-toThrowErrorMatchingInlineSnapshot(`"To query index (pk0, sk0), field: country is required, recieved {\\"state\\":\\"UT\\"}"`);
+    repository.query("pk").where({ state: "UT" }).exec()
+  ).toThrowErrorMatchingInlineSnapshot(
+    `"To query index (pk0, sk0), field: country is required, recieved {\\"state\\":\\"UT\\"}"`
+  );
 
   await expect(
     repository

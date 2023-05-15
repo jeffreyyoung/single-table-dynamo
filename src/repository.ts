@@ -58,13 +58,12 @@ export class Repository<
       PrimaryKeyField,
       IndexTag,
       SecondaryIndexTag
-    >,
-    ddb: DocumentClient
+    >
   ) {
     this.args = args;
     this.mapper = new Mapper(args);
     this.batch = new BatchArgsHandler<ID, Schema>(this.mapper as any);
-    this.ddb = ddb;
+    this.ddb = this.args.documentClient;
   }
 
   private async doGet(id: ID): Promise<DocumentClient.AttributeMap | null> {
@@ -72,10 +71,18 @@ export class Repository<
       TableName: this.args.tableName,
       Key: this.mapper.getKey(id),
     };
-
-    const res = await (this.args.getDocument
-      ? this.args.getDocument(args)
-      : this.ddb.get(args).promise());
+    let res = { Item: null };
+    if (this.args.dataLoader) {
+      return this.args.dataLoader.load(args).then((res) => res.Item || null);
+    } else {
+      return this.ddb
+        .get(args)
+        .promise()
+        .then((res) => res.Item || null);
+    }
+    // const res = await (this.args.dataLoader
+    //   ? this.args.dataLoader.load(args)
+    //   : this.ddb.get(args).promise());
 
     if (!res.Item) {
       return null;
@@ -224,6 +231,7 @@ export class Repository<
       if (!updated && options.objectToPutIfNotExists) {
         return this.put(options.objectToPutIfNotExists);
       }
+      this.mapper.dataLoaderPrime(_updates, updated);
       this.args.on?.mutate?.(
         [_updates, options as any],
         updated as any,
@@ -319,6 +327,9 @@ export class Repository<
         this.mapper.getHookResultInfo(expr, res.Attributes ?? null)
       );
     }
+    if (updated) {
+      this.mapper.dataLoaderPrime(updated as any, updated as any);
+    }
 
     return updated;
   }
@@ -342,6 +353,8 @@ export class Repository<
         parsed as any,
         this.mapper.getHookResultInfo(src as any, rawItem)
       );
+      this.mapper.dataLoaderPrime(rawItem as any, rawItem);
+
       return parsed;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {
@@ -356,10 +369,19 @@ export class Repository<
   }
 
   async deleteMany(ids: ID[]): Promise<boolean[]> {
-    return batchWrite(
-      this.ddb,
-      ids.map((id) => this.batch.delete(id))
-    );
+    return batchWrite({
+      ddb: this.ddb,
+      requests: ids.map((id) => this.batch.delete(id)),
+      dataLoader: this.args.dataLoader,
+    });
+  }
+
+  putMany(objs: Input[]): Promise<Output[]> {
+    return batchWrite({
+      ddb: this.ddb,
+      requests: objs.map((obj) => this.batch.put(obj as any)),
+      dataLoader: this.args.dataLoader,
+    }).then((res) => res.map((i) => this.mapper.parse(i, "output")));
   }
 
   async delete(id: ID): Promise<boolean> {
@@ -371,6 +393,7 @@ export class Repository<
         })
         .promise();
       this.args.on?.delete?.([id as any], true, this.mapper.getHookKeyInfo(id));
+      this.mapper.dataLoaderPrime(id, null);
       return true;
     } catch (e: any) {
       if (isSingleTableDynamoError(e)) {

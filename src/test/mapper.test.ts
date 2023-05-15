@@ -2,6 +2,7 @@ import { Mapper } from "../mapper";
 import { z } from "zod";
 
 const mapper = new Mapper({
+  documentClient: null as any,
   schema: z.object({
     state: z.string(),
     country: z.string(),
@@ -151,6 +152,7 @@ test("mapper.updateWithSomeFields should work", () => {
         sk: "sk2",
       },
     },
+    documentClient: {} as any,
   });
 
   expect(

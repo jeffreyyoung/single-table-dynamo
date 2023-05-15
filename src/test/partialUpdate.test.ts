@@ -5,33 +5,31 @@ import { getDocumentClient } from "./utils/getDocumentClient";
 
 describe("repo.merge", () => {
   const ddb = getDocumentClient();
-  const repo = new Repository(
-    {
-      schema: z.object({
-        id: z.string(),
-        name: z.string(),
-        birthDate: z.string(),
-        country: z.string(),
-      }),
-      tableName: tableConfig.tableName,
-      typeName: "User",
-      primaryIndex: {
-        ...tableConfig.primaryIndex,
-        fields: ["id"],
+  const repo = new Repository({
+    schema: z.object({
+      id: z.string(),
+      name: z.string(),
+      birthDate: z.string(),
+      country: z.string(),
+    }),
+    tableName: tableConfig.tableName,
+    typeName: "User",
+    primaryIndex: {
+      ...tableConfig.primaryIndex,
+      fields: ["id"],
+    },
+    secondaryIndexes: {
+      "country,name": {
+        fields: ["country", "name"],
+        ...tableConfig.secondaryIndexes[1],
       },
-      secondaryIndexes: {
-        "country,name": {
-          fields: ["country", "name"],
-          ...tableConfig.secondaryIndexes[1],
-        },
-        "birthDate,name": {
-          fields: ["birthDate", "name"],
-          ...tableConfig.secondaryIndexes[2],
-        },
+      "birthDate,name": {
+        fields: ["birthDate", "name"],
+        ...tableConfig.secondaryIndexes[2],
       },
     },
-    ddb
-  );
+    documentClient: ddb,
+  });
 
   function getRaw(key: any) {
     return ddb

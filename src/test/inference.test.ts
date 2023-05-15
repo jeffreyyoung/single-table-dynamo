@@ -24,56 +24,54 @@ export type CommunityInput = InferInputType<
 const hooks = {};
 
 const _getCommunityRepo = () => {
-  return new Repository(
-    {
-      typeName: "Community",
-      tableName: tableConfig.tableName,
-      schema: z.object({
-        communityId: z.string(),
-        name: z
-          .string()
-          .min(1)
-          .max(256)
-          .transform((s) => s.trim()),
-        description: z
-          .string()
-          .min(0)
-          .max(2000)
-          .transform((s) => s.trim()),
-        prompts: z.array(
-          z.object({
-            id: z.string(),
-            name: z.string(),
-          })
-        ),
-        visibility: z.enum(["LISTED", "UNLISTED"]).default("UNLISTED"),
-        fields: z.array(
-          z.object({
-            id: z.string(),
-            name: z.string(),
-            type: z.nativeEnum(CommunityFieldType),
-            operator: z.nativeEnum(PreferenceOperator),
-          })
-        ),
-        settings: z
-          .object({
-            minPhotos: z.number().int().min(0).max(6).default(1),
-            minPrompts: z.number().int().min(0).max(6).default(1),
-          })
-          .default({}),
-      }),
-      primaryIndex: {
-        ...tableConfig.primaryIndex,
-        fields: ["communityId"],
-      },
-      on: {
-        get: () => {
-          return;
-        },
+  return new Repository({
+    typeName: "Community",
+    tableName: tableConfig.tableName,
+    schema: z.object({
+      communityId: z.string(),
+      name: z
+        .string()
+        .min(1)
+        .max(256)
+        .transform((s) => s.trim()),
+      description: z
+        .string()
+        .min(0)
+        .max(2000)
+        .transform((s) => s.trim()),
+      prompts: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+        })
+      ),
+      visibility: z.enum(["LISTED", "UNLISTED"]).default("UNLISTED"),
+      fields: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          type: z.nativeEnum(CommunityFieldType),
+          operator: z.nativeEnum(PreferenceOperator),
+        })
+      ),
+      settings: z
+        .object({
+          minPhotos: z.number().int().min(0).max(6).default(1),
+          minPrompts: z.number().int().min(0).max(6).default(1),
+        })
+        .default({}),
+    }),
+    primaryIndex: {
+      ...tableConfig.primaryIndex,
+      fields: ["communityId"],
+    },
+    on: {
+      get: () => {
+        return;
       },
     },
-    getDocumentClient()
-  );
+    documentClient: getDocumentClient(),
+  });
 };
 
 const input: CommunityInput = {
