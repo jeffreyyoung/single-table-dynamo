@@ -266,8 +266,8 @@ test("get, put, delete, merge, and query should work", async () => {
   );
 
   await expect(
-    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
-  ).resolves.toMatchInlineSnapshot(`
+repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()).
+resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -281,7 +281,7 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk1\\":\\"User#yay\\",\\"sk1\\":\\"User\\",\\"pk2\\":\\"User#CA\\",\\"sk2\\":\\"User#PA#scranton\\"}",
+  "lastCursor": "eyJwazEiOiJVc2VyI3lheSIsInNrMSI6IlVzZXIiLCJwazIiOiJVc2VyI0NBIiwic2syIjoiVXNlciNQQSNzY3JhbnRvbiJ9",
 }
 `);
 
@@ -302,8 +302,8 @@ Object {
     .rejects;
 
   await expect(
-    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
-  ).resolves.toMatchInlineSnapshot(`
+repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()).
+resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -319,7 +319,7 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk1\\":\\"User#yay\\",\\"sk1\\":\\"User\\",\\"pk2\\":\\"User#CA\\",\\"sk2\\":\\"User#PA#scranton\\"}",
+  "lastCursor": "eyJwazEiOiJVc2VyI3lheSIsInNrMSI6IlVzZXIiLCJwazIiOiJVc2VyI0NBIiwic2syIjoiVXNlciNQQSNzY3JhbnRvbiJ9",
 }
 `);
 

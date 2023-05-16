@@ -78,13 +78,13 @@ test("migrate should work for query", async () => {
   const spy = jest.spyOn(repo.args, "migrate");
 
   await expect(
-    repo
-      .query("primary")
-      .where({
-        id: "meh",
-      })
-      .exec()
-  ).resolves.toMatchInlineSnapshot(`
+repo.
+query("primary").
+where({
+  id: "meh" }).
+
+exec()).
+resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -98,7 +98,7 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk1\\":\\"User#meh\\",\\"sk1\\":\\"User\\"}",
+  "lastCursor": "eyJwazEiOiJVc2VyI21laCIsInNrMSI6IlVzZXIifQ==",
 }
 `);
 

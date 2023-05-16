@@ -115,14 +115,14 @@ test("query should work", async () => {
         `);
 
   await expect(
-    repository
-      .query("byCountryByState")
-      .where({
-        state: "WA",
-        country: "USA",
-      })
-      .exec()
-  ).resolves.toMatchInlineSnapshot(`
+repository.
+query("byCountryByState").
+where({
+  state: "WA",
+  country: "USA" }).
+
+exec()).
+resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 2,
   "Items": Array [
@@ -139,19 +139,19 @@ Object {
   ],
   "ScannedCount": 2,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk0\\":\\"User#USA#WA\\",\\"sk0\\":\\"User#1991\\"}",
+  "lastCursor": "eyJwazAiOiJVc2VyI1VTQSNXQSIsInNrMCI6IlVzZXIjMTk5MSJ9",
 }
 `);
 
   await expect(
-    repository
-      .query("byCountryByState")
-      .where({
-        state: "UT",
-        country: "USA",
-      })
-      .exec()
-  ).resolves.toMatchInlineSnapshot(`
+repository.
+query("byCountryByState").
+where({
+  state: "UT",
+  country: "USA" }).
+
+exec()).
+resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -163,7 +163,7 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk0\\":\\"User#USA#UT\\",\\"sk0\\":\\"User#1990\\"}",
+  "lastCursor": "eyJwazAiOiJVc2VyI1VTQSNVVCIsInNrMCI6IlVzZXIjMTk5MCJ9",
 }
 `);
 });
@@ -245,11 +245,11 @@ Object {
   );
 
   await expect(
-    repository
-      .query("pk")
-      .where({ state: "UT", country: "USA", createdAt: "1990" })
-      .exec()
-  ).resolves.toMatchInlineSnapshot(`
+repository.
+query("pk").
+where({ state: "UT", country: "USA", createdAt: "1990" }).
+exec()).
+resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -261,7 +261,7 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk0\\":\\"User1#USA#UT#1990\\",\\"sk0\\":\\"User1\\"}",
+  "lastCursor": "eyJwazAiOiJVc2VyMSNVU0EjVVQjMTk5MCIsInNrMCI6IlVzZXIxIn0=",
 }
 `);
 });

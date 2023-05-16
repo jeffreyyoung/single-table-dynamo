@@ -8,17 +8,24 @@ import {
 import { QueryBuilder } from "./query-builder";
 import { AnyRepository } from "./repository";
 
+export function decodeCursor(cursor: string): object {
+  const decodedCursor = Buffer.from(cursor, "base64").toString("utf-8");
+  return JSON.parse(decodedCursor);
+}
+
 export function getCursorEncoder<Src extends object>(args: {
   primaryIndex: IndexBase<Src>;
   secondaryIndex: IndexBase<Src>;
   mapper: Mapper;
 }) {
   return (src: Src) => {
-    return JSON.stringify({
+    const json = JSON.stringify({
       ...args.mapper.getIndexKey(src, args.primaryIndex),
       ...(args.secondaryIndex &&
         args.mapper.getIndexKey(src, args.secondaryIndex)),
     });
+
+    return Buffer.from(json).toString("base64");
   };
 }
 
@@ -39,6 +46,7 @@ export class IndexQueryBuilder<Src extends object> {
   builder: QueryBuilder;
   ddb: DocumentClient;
   encodeCursor: (src: Src) => string;
+  decodeCursor = decodeCursor;
 
   constructor(args: IndexQueryBuilderArgs<Src>) {
     this.tableName = args.tableName;
@@ -47,6 +55,7 @@ export class IndexQueryBuilder<Src extends object> {
     this.ddb = args.ddb;
     this.parseAndMigrate = args.parseAndMigrate;
     this.builder = (args.builder || new QueryBuilder()).table(args.tableName);
+
     this.encodeCursor = getCursorEncoder<any>({
       secondaryIndex: args.index,
       primaryIndex: args.mapper.args.primaryIndex,
@@ -78,7 +87,8 @@ export class IndexQueryBuilder<Src extends object> {
   }
 
   cursor(str: string) {
-    return this.clone(this.builder.cursor(JSON.parse(str)));
+    const decoded = this.decodeCursor(str);
+    return this.clone(this.builder.cursor(decoded));
   }
 
   build() {

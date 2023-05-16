@@ -201,8 +201,8 @@ Object {
       owner: "dwight",
     });
 
-    await expect(repo.query("owner").where({ owner: "dwight" }).exec()).resolves
-      .toMatchInlineSnapshot(`
+    await expect(repo.query("owner").where({ owner: "dwight" }).exec()).resolves.
+toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -215,7 +215,7 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "{\\"pk0\\":\\"Note#123\\",\\"sk0\\":\\"Note\\",\\"pk1\\":\\"Note#dwight\\",\\"sk1\\":\\"Note#today\\"}",
+  "lastCursor": "eyJwazAiOiJOb3RlIzEyMyIsInNrMCI6Ik5vdGUiLCJwazEiOiJOb3RlI2R3aWdodCIsInNrMSI6Ik5vdGUjdG9kYXkifQ==",
 }
 `);
 
