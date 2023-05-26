@@ -5,7 +5,7 @@ import {
   IndexBase,
   RawResult,
 } from "./mapper";
-import { QueryBuilder } from "./query-builder";
+import { Operator, QueryBuilder } from "./query-builder";
 import { AnyRepository } from "./repository";
 
 export function decodeCursor(cursor: string): object {
@@ -19,14 +19,18 @@ export function getCursorEncoder<Src extends object>(args: {
   mapper: Mapper;
 }) {
   return (src: Src) => {
-    const json = JSON.stringify({
+    const json = {
       ...args.mapper.getIndexKey(src, args.primaryIndex),
       ...(args.secondaryIndex &&
         args.mapper.getIndexKey(src, args.secondaryIndex)),
-    });
+    };
 
-    return Buffer.from(json).toString("base64");
+    return encodeFromKeys(json);
   };
+}
+
+export function encodeFromKeys(args: Record<string, string>) {
+  return Buffer.from(JSON.stringify(args)).toString("base64");
 }
 
 type IndexQueryBuilderArgs<T> = {
@@ -95,6 +99,14 @@ export class IndexQueryBuilder<Src extends object> {
     return this.builder.build();
   }
 
+  filter<K extends keyof Src>(key: K, op: Operator, value: Src[K]) {
+    if (typeof key === "string") {
+      return this.clone(this.builder.filter(key, op, value as any));
+    } else {
+      throw new Error("key in filter(key, op, value) must be a string");
+    }
+  }
+
   async exec() {
     const expression = this.builder.build();
     this.mapper.args.on?.queryStart?.(expression);
@@ -124,9 +136,10 @@ export class IndexQueryBuilder<Src extends object> {
     this.mapper.args.on?.query?.(expression, hookInfo);
 
     return Object.assign(res, {
+      hasNextPage: !!res.LastEvaluatedKey,
       encodeCursor: this.encodeCursor,
-      lastCursor: res.Items?.length
-        ? this.encodeCursor(res.Items[res.Items.length - 1])
+      lastCursor: res.LastEvaluatedKey
+        ? encodeFromKeys(res.LastEvaluatedKey)
         : undefined,
     });
   }

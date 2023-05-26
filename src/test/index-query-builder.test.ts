@@ -1,6 +1,8 @@
 import { IndexQueryBuilder } from "../index-query-builder";
 import { IndexBase, Mapper } from "../mapper";
 import { z } from "zod";
+import { range } from "./utils/tableConfig";
+import { getNoteRepo } from "./utils/getNoteRepo";
 
 const mapper = new Mapper({
   typeName: "User",
@@ -172,4 +174,95 @@ test("should build non primary index", () => {
     ScanIndexForward: true,
     TableName: "yeehaw",
   });
+});
+
+test("filter expression should work", async () => {
+  const notes = getNoteRepo();
+  await notes.putMany(
+    range(10).map((age) => ({
+      id: "id" + age,
+      name: "note" + age,
+      owner: "jeff",
+      tag: "food",
+      ageInYears: age,
+      body: "yay",
+    }))
+  );
+
+  expect(
+await notes.
+query("tag,owner,name").
+where({ tag: "food" }).
+filter("ageInYears", ">", 3).
+limit(5).
+exec()).
+toMatchInlineSnapshot(`
+Object {
+  "Count": 1,
+  "Items": Array [
+    Object {
+      "ageInYears": 4,
+      "body": "yay",
+      "id": "id4",
+      "name": "note4",
+      "owner": "jeff",
+      "tag": "food",
+    },
+  ],
+  "LastEvaluatedKey": Object {
+    "pk0": "Note#id4",
+    "pk2": "Note#food",
+    "sk0": "Note",
+    "sk2": "Note#jeff#note4",
+  },
+  "ScannedCount": 5,
+  "encodeCursor": [Function],
+  "hasNextPage": true,
+  "lastCursor": "eyJwazAiOiJOb3RlI2lkNCIsInNrMCI6Ik5vdGUiLCJwazIiOiJOb3RlI2Zvb2QiLCJzazIiOiJOb3RlI2plZmYjbm90ZTQifQ==",
+}
+`);
+});
+
+test("last cursor should work with filter expression", async () => {
+  const notes = getNoteRepo();
+  await notes.putMany([
+    {
+      id: "id1",
+      name: "note1",
+      owner: "jeff",
+      tag: "food",
+      ageInYears: 1,
+      body: "yay",
+    },
+    {
+      id: "id2",
+      name: "note2",
+      owner: "jeff",
+      tag: "food",
+      ageInYears: 4,
+      body: "yay",
+    },
+  ]);
+  const res = await notes
+    .query("tag,owner,name")
+    .where({ tag: "food" })
+    .filter("ageInYears", ">", 3)
+    .limit(1)
+    .exec();
+  expect(res).toMatchInlineSnapshot(`
+Object {
+  "Count": 0,
+  "Items": Array [],
+  "LastEvaluatedKey": Object {
+    "pk0": "Note#id1",
+    "pk2": "Note#food",
+    "sk0": "Note",
+    "sk2": "Note#jeff#note1",
+  },
+  "ScannedCount": 1,
+  "encodeCursor": [Function],
+  "hasNextPage": true,
+  "lastCursor": "eyJwazAiOiJOb3RlI2lkMSIsInNrMCI6Ik5vdGUiLCJwazIiOiJOb3RlI2Zvb2QiLCJzazIiOiJOb3RlI2plZmYjbm90ZTEifQ==",
+}
+`);
 });

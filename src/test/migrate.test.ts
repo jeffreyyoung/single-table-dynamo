@@ -98,7 +98,8 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "eyJwazEiOiJVc2VyI21laCIsInNrMSI6IlVzZXIifQ==",
+  "hasNextPage": false,
+  "lastCursor": undefined,
 }
 `);
 

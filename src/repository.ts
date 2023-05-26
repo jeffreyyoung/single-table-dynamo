@@ -260,6 +260,13 @@ export class Repository<
     },
   };
 
+  /**
+   * Puts an item into the DynamoDB table using an update expression.
+   *
+   * @param expr The update expression to use for the put operation.
+   * @param options.mode The mode to use for the put operation. Defaults to "upsert".
+   * @returns A Promise that resolves to the newly created item, or null if the item already exists and the mode is "upsert".
+   */
   async putExpression(
     expr: ID & UpdateExpression<Omit<Input, keyof ID>>,
     { mode = "upsert" }: ModeOption = {}

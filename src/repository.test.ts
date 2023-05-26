@@ -281,7 +281,8 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "eyJwazEiOiJVc2VyI3lheSIsInNrMSI6IlVzZXIiLCJwazIiOiJVc2VyI0NBIiwic2syIjoiVXNlciNQQSNzY3JhbnRvbiJ9",
+  "hasNextPage": false,
+  "lastCursor": undefined,
 }
 `);
 
@@ -319,7 +320,8 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "eyJwazEiOiJVc2VyI3lheSIsInNrMSI6IlVzZXIiLCJwazIiOiJVc2VyI0NBIiwic2syIjoiVXNlciNQQSNzY3JhbnRvbiJ9",
+  "hasNextPage": false,
+  "lastCursor": undefined,
 }
 `);
 

@@ -215,7 +215,8 @@ Object {
   ],
   "ScannedCount": 1,
   "encodeCursor": [Function],
-  "lastCursor": "eyJwazAiOiJOb3RlIzEyMyIsInNrMCI6Ik5vdGUiLCJwazEiOiJOb3RlI2R3aWdodCIsInNrMSI6Ik5vdGUjdG9kYXkifQ==",
+  "hasNextPage": false,
+  "lastCursor": undefined,
 }
 `);
 

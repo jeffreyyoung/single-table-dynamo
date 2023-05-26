@@ -1,6 +1,6 @@
 import { AttributeRegistry } from "./utils/AttributeRegistry";
 
-type Operator =
+export type Operator =
   | "<"
   | "<="
   | "<>"
@@ -22,6 +22,7 @@ type Where = {
  */
 export type QueryData = {
   keyConditions: Where[];
+  filterExpression: Where[];
   sortDirection: "asc" | "desc";
   limit: number;
   indexName?: string;
@@ -37,6 +38,7 @@ export class QueryBuilder {
   constructor(data?: QueryData) {
     this.data = data || {
       keyConditions: [],
+      filterExpression: [],
       sortDirection: "asc",
       limit: 25,
     };
@@ -81,19 +83,62 @@ export class QueryBuilder {
     return this.cloneWith({ keyConditions });
   }
 
+  filter(key: string, op: Operator, value: string | number) {
+    const filterExpression = [
+      ...this.data.filterExpression,
+      {
+        fieldName: key,
+        operator: op,
+        value,
+      },
+    ];
+    return this.cloneWith({ filterExpression });
+  }
+
   build() {
+    const registry = new AttributeRegistry();
     return {
       TableName: this.data.tableName,
       ScanIndexForward: this.data.sortDirection === "asc",
       Limit: this.data.limit || 20,
       ...(this.data.indexName && { IndexName: this.data.indexName }),
-      ...this._buildConditionExpression(),
+      ...this._buildConditionExpression(registry),
       ...this._buildCursor(),
+      ...this._buildFilterExpression(registry),
+      ...registry.get(),
     };
   }
 
-  _buildConditionExpression() {
-    const registry = new AttributeRegistry();
+  _buildFilterExpression(attrs: AttributeRegistry): {
+    FilterExpression?: string;
+  } {
+    const FilterExpression: string[] = [];
+
+    if (this.data.filterExpression.length === 0) {
+      return {};
+    }
+    for (const filter of this.data.filterExpression) {
+      if (filter.operator === "BEGINS_WITH") {
+        FilterExpression.push(
+          `begins_with(${attrs.key(filter.fieldName)}, ${attrs.value(
+            filter.value
+          )})`
+        );
+      } else {
+        FilterExpression.push(
+          `${attrs.key(filter.fieldName)} ${filter.operator} ${attrs.value(
+            filter.value
+          )}`
+        );
+      }
+    }
+
+    return {
+      FilterExpression: FilterExpression.join(" and "),
+    };
+  }
+
+  _buildConditionExpression(registry: AttributeRegistry) {
     const KeyConditionExpression: string[] = [];
     this.data.keyConditions.forEach((condition) => {
       if (condition.operator === "BEGINS_WITH") {
@@ -111,7 +156,6 @@ export class QueryBuilder {
       }
     });
     return {
-      ...registry.get(),
       KeyConditionExpression: KeyConditionExpression.join(" and "),
     };
   }

@@ -255,6 +255,15 @@ export class Mapper<
       .reduce((prev = {}, cur) => ({ ...prev, ...cur }), {});
   }
 
+  /**
+   * Adds the index keys to the given `thing` and returns a new object with the keys added.
+   *
+   * @param {Output} thing - The object to add the index keys to.
+   * @param {Object} [options={}] - An optional object with the following properties:
+   * @param {boolean} [options.assert=false] - If `true`, the `thing` object will be parsed to ensure it conforms to the schema before adding the index keys.
+   *
+   * @returns {Output & Record<string, string>} A new object with the index keys added.
+   */
   decorateWithKeys(
     thing: Output,
     options: { assert?: boolean } = {}
