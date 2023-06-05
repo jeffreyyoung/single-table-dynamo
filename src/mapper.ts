@@ -90,8 +90,18 @@ export type RepositoryArgs<
   IndexTag extends string = "",
   SecondaryIndexTag extends string = string
 > = {
+  /**
+   * Zod schema for the object
+   */
   schema: Schema;
+  /**
+   * The name of the table in dynamodb
+   */
   tableName: string;
+  /**
+   * The name of the type of object being stored
+   * This is used to prefix the primary key
+   */
   typeName: string;
   on?: onHooks;
   dataLoader?: DataLoader;

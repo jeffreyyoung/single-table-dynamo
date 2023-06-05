@@ -266,8 +266,8 @@ test("get, put, delete, merge, and query should work", async () => {
   );
 
   await expect(
-repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()).
-resolves.toMatchInlineSnapshot(`
+    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -303,8 +303,8 @@ Object {
     .rejects;
 
   await expect(
-repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()).
-resolves.toMatchInlineSnapshot(`
+    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -826,4 +826,27 @@ test("query only return correct data", async () => {
   ).resolves.toMatchObject({
     Items: [{ id: "1" }],
   });
+});
+
+test("generated ids should work", () => {
+  const repo = new Repository({
+    typeName: "thingy",
+    schema: z.object({
+      id: z.string().default(() => "yay"),
+    }),
+    primaryIndex: {
+      fields: ["id"],
+      ...tableConfig.primaryIndex,
+    },
+
+    tableName: tableConfig.tableName,
+
+    documentClient: getDocumentClient(),
+  });
+
+  expect(repo.put({})).resolves.toMatchInlineSnapshot(`
+Object {
+  "id": "yay",
+}
+`);
 });
