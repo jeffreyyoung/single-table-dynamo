@@ -850,3 +850,35 @@ Object {
 }
 `);
 });
+
+test("generated ids should work with secondary indexes", () => {
+  const repo = new Repository({
+    typeName: "thingy",
+    schema: z.object({
+      id: z.string().default(() => "yay"),
+      name: z.string().default(() => "jim"),
+    }),
+    primaryIndex: {
+      fields: ["id"],
+      ...tableConfig.primaryIndex,
+    },
+
+    secondaryIndexes: {
+      name: {
+        fields: ["name"],
+        ...tableConfig.secondaryIndexes[1],
+      },
+    },
+
+    tableName: tableConfig.tableName,
+
+    documentClient: getDocumentClient(),
+  });
+
+  expect(repo.put({})).resolves.toMatchInlineSnapshot(`
+Object {
+  "id": "yay",
+  "name": "jim",
+}
+`);
+});
