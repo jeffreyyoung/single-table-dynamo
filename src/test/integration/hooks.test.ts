@@ -1,6 +1,8 @@
 import { Repository } from "../../repository";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
+import { tableConfig } from "../utils/tableConfig";
+import { getDocumentClient } from "../utils/getDocumentClient";
 
 const ddb = new DocumentClient({
   ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
@@ -189,4 +191,40 @@ Array [
       ],
     ]
   `);
+});
+
+test("defaults on primary index works", async () => {
+  const spies = {
+    get: jest.fn(),
+    delete: jest.fn(),
+    put: jest.fn(),
+    query: jest.fn(),
+    mutate: jest.fn(),
+  };
+  const repo = new Repository({
+    typeName: "thingy",
+    schema: z.object({
+      first: z.string().default(() => "henry"),
+      last: z.string().default(() => "jacobs"),
+      age: z.number(),
+    }),
+    primaryIndex: {
+      fields: ["last", "first"],
+      tag: "last,first",
+      ...tableConfig.primaryIndex,
+    },
+
+    tableName: tableConfig.tableName,
+    on: spies,
+
+    documentClient: getDocumentClient(),
+  });
+
+  await expect(repo.put({ age: 5 })).resolves.toMatchInlineSnapshot(`
+Object {
+  "age": 5,
+  "first": "henry",
+  "last": "jacobs",
+}
+`);
 });

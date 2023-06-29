@@ -360,9 +360,9 @@ export class Repository<
         })
         .promise();
       this.args.on?.put?.(
-        [src as any, { mode }],
+        [parsed, { mode }],
         parsed as any,
-        this.mapper.getHookResultInfo(src as any, rawItem)
+        this.mapper.getHookResultInfo(parsed as any, rawItem)
       );
       this.mapper.dataLoaderPrime(rawItem as any, rawItem);
 

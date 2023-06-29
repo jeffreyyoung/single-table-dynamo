@@ -330,6 +330,42 @@ Object {
   await expect(repo.get({ id: "yay" })).resolves.toBeUndefined;
 });
 
+test("note repo works as expected", async () => {
+  const repo = new Repository({
+    tableName: tableConfig.tableName,
+    typeName: "Note",
+    schema: z.object({
+      _v: z.literal("1").default("1"),
+      authorId: z.string(),
+      communityId: z.string(),
+      createdAt: z.string().default(() => new Date().toISOString()),
+      expiresAt: z.string().default(() => new Date().toISOString()),
+      text: z.string().max(100),
+    }),
+    primaryIndex: {
+      tag: "authorId,communityId,noteId",
+      fields: ["authorId", "communityId", "createdAt"],
+      ...tableConfig.primaryIndex,
+    },
+    documentClient: getDocumentClient(),
+  });
+
+  await expect(
+    repo.put({
+      authorId: "1",
+      communityId: "2",
+      text: "yay",
+    })
+  ).resolves.toMatchObject({
+    _v: "1",
+    authorId: "1",
+    communityId: "2",
+    createdAt: expect.any(String),
+    expiresAt: expect.any(String),
+    text: "yay",
+  });
+});
+
 test("curosr pagination should work", async () => {
   const repo = getUserRepo();
   const cities = ["Alphaville", "Betaville", "Canaryville"];
