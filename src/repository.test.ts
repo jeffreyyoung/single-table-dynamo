@@ -950,7 +950,7 @@ Object {
 `);
 });
 
-test("generated ids should work with secondary indexes", () => {
+test("generated ids should work with secondary indexes", async () => {
   const repo = new Repository({
     typeName: "thingy",
     schema: z.object({
@@ -974,7 +974,7 @@ test("generated ids should work with secondary indexes", () => {
     documentClient: getDocumentClient(),
   });
 
-  expect(repo.put({})).resolves.toMatchInlineSnapshot(`
+  await expect(repo.put({})).resolves.toMatchInlineSnapshot(`
 Object {
   "id": "yay",
   "name": "jim",
