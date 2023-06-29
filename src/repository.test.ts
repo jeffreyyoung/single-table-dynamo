@@ -851,6 +851,69 @@ Object {
 `);
 });
 
+test("query on primary index works", async () => {
+  const repo = new Repository({
+    typeName: "thingy",
+    schema: z.object({
+      first: z.string().default(() => "henry"),
+      last: z.string().default(() => "jacobs"),
+    }),
+    primaryIndex: {
+      fields: ["last", "first"],
+      tag: "last,first",
+      ...tableConfig.primaryIndex,
+    },
+
+    tableName: tableConfig.tableName,
+
+    documentClient: getDocumentClient(),
+  });
+
+  await repo.putMany([
+    { first: "a", last: "jacobs" },
+    { first: "b", last: "jacobs" },
+    { first: "c", last: "jac" },
+  ]);
+
+  expect(repo.query("last,first").where({ last: "jacobs" }).exec()).resolves
+    .toMatchInlineSnapshot(`
+Object {
+  "Count": 2,
+  "Items": Array [
+    Object {
+      "first": "a",
+      "last": "jacobs",
+    },
+    Object {
+      "first": "b",
+      "last": "jacobs",
+    },
+  ],
+  "ScannedCount": 2,
+  "encodeCursor": [Function],
+  "hasNextPage": false,
+  "lastCursor": undefined,
+}
+`);
+
+  expect(repo.query("last,first").where({ last: "jac" }).exec()).resolves
+    .toMatchInlineSnapshot(`
+Object {
+  "Count": 1,
+  "Items": Array [
+    Object {
+      "first": "c",
+      "last": "jac",
+    },
+  ],
+  "ScannedCount": 1,
+  "encodeCursor": [Function],
+  "hasNextPage": false,
+  "lastCursor": undefined,
+}
+`);
+});
+
 test("generated ids should work with secondary indexes", () => {
   const repo = new Repository({
     typeName: "thingy",
