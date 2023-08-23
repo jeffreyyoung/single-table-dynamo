@@ -911,8 +911,8 @@ test("query on primary index works", async () => {
     { first: "c", last: "jac" },
   ]);
 
-  expect(repo.query("last,first").where({ last: "jacobs" }).exec()).resolves
-    .toMatchInlineSnapshot(`
+  await expect(repo.query("last,first").where({ last: "jacobs" }).exec())
+    .resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 2,
   "Items": Array [
@@ -932,7 +932,7 @@ Object {
 }
 `);
 
-  expect(repo.query("last,first").where({ last: "jac" }).exec()).resolves
+  await expect(repo.query("last,first").where({ last: "jac" }).exec()).resolves
     .toMatchInlineSnapshot(`
 Object {
   "Count": 1,
