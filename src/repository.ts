@@ -228,7 +228,10 @@ export class Repository<
         .catch((e) => {
           // we expect the ConditionalCheck to fail when
           // the attribut does not exist
-          if (e instanceof ConditionalCheckFailedException) {
+          if (
+            e?.name === "ConditionalCheckFailedException" ||
+            e instanceof ConditionalCheckFailedException
+          ) {
             return null;
           } else {
             throw e;
