@@ -115,14 +115,19 @@ test("query should work", async () => {
         `);
 
   await expect(
-repository.
-query("byCountryByState").
-where({
-  state: "WA",
-  country: "USA" }).
-
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repository
+      .query("byCountryByState")
+      .where({
+        state: "WA",
+        country: "USA",
+      })
+      .exec()
+      .then((r) => {
+        //@ts-ignore
+        delete r.$metadata;
+        return r;
+      })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 2,
   "Items": Array [
@@ -137,6 +142,7 @@ Object {
       "state": "WA",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 2,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -145,14 +151,19 @@ Object {
 `);
 
   await expect(
-repository.
-query("byCountryByState").
-where({
-  state: "UT",
-  country: "USA" }).
-
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repository
+      .query("byCountryByState")
+      .where({
+        state: "UT",
+        country: "USA",
+      })
+      .exec()
+      .then((r) => {
+        //@ts-ignore
+        delete r.$metadata;
+        return r;
+      })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -162,6 +173,7 @@ Object {
       "state": "UT",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -247,12 +259,24 @@ Object {
   );
 
   await expect(
-repository.
-query("pk").
-where({ state: "UT", country: "USA", createdAt: "1990" }).
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repository
+      .query("pk")
+      .where({ state: "UT", country: "USA", createdAt: "1990" })
+      .exec()
+      .then((r) => {
+        r.$metadata.requestId = "yay";
+        return r;
+      })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 1,
   "Items": Array [
     Object {
@@ -261,6 +285,7 @@ Object {
       "state": "UT",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,

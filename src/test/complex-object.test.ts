@@ -1,8 +1,8 @@
 import { InferIdType, InferObjectType, Repository } from "../repository";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
 import { tableConfig } from "./utils/tableConfig";
 import { STDError } from "../utils/errors";
+import { getDocumentClient } from "./utils/getDocumentClient";
 
 enum Role {
   Admin = "Admin",
@@ -40,13 +40,7 @@ const schema = z.object({
   ),
 });
 
-const ddb = new DocumentClient({
-  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-    sslEnabled: false,
-    region: "local",
-  }),
-});
+const ddb = getDocumentClient();
 
 const repo = new Repository({
   typeName: "User",

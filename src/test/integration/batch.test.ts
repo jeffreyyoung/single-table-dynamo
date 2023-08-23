@@ -1,15 +1,10 @@
 import { Repository } from "../../repository";
 import { batchPut, batchWrite } from "../../batch-write";
 import { batchGet } from "../../batch-get";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
-const ddb = new DocumentClient({
-  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-    sslEnabled: false,
-    region: "local",
-  }),
-});
+import { getDocumentClient } from "../utils/getDocumentClient";
+
+const ddb = getDocumentClient();
 const personRepo = new Repository({
   schema: z.object({
     personId: z.string().default(() => Math.random() + ""),

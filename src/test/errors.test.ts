@@ -1,13 +1,8 @@
 import { Repository } from "../repository";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
-const ddb = new DocumentClient({
-  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-    sslEnabled: false,
-    region: "local",
-  }),
-});
+import { getDocumentClient } from "./utils/getDocumentClient";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
+const ddb = getDocumentClient();
 const getUserRepo = () =>
   new Repository({
     tableName: "table1",
@@ -38,15 +33,15 @@ const getUserRepo = () =>
 
 function rawPut(obj: { id: string } & any) {
   const repo = getUserRepo();
-  return ddb
-    .put({
+  return ddb.send(
+    new PutCommand({
       TableName: repo.args.tableName,
       Item: {
         ...obj,
         ...repo.getKey(obj),
       },
     })
-    .promise();
+  );
 }
 
 test("put should work with null values", async () => {

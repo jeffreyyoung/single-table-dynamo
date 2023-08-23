@@ -2,6 +2,7 @@ import { Repository } from "..";
 import { z } from "zod";
 import { tableConfig } from "./utils/tableConfig";
 import { getDocumentClient } from "./utils/getDocumentClient";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 
 describe("repo.merge", () => {
   const ddb = getDocumentClient();
@@ -33,11 +34,12 @@ describe("repo.merge", () => {
 
   function getRaw(key: any) {
     return ddb
-      .get({
-        TableName: tableConfig.tableName,
-        Key: key,
-      })
-      .promise()
+      .send(
+        new GetCommand({
+          TableName: tableConfig.tableName,
+          Key: key,
+        })
+      )
       .then((thing) => {
         return thing.Item;
       });

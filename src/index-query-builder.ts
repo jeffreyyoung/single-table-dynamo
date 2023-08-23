@@ -1,4 +1,7 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import {
+  DynamoDBDocumentClient as DocumentClient,
+  QueryCommand,
+} from "@aws-sdk/lib-dynamodb";
 import {
   Mapper,
   ifSecondaryIndexGetName,
@@ -110,7 +113,7 @@ export class IndexQueryBuilder<Src extends object> {
   async exec() {
     const expression = this.builder.build();
     this.mapper.args.on?.queryStart?.(expression);
-    const _res = await this.ddb.query(expression as any).promise();
+    const _res = await this.ddb.send(new QueryCommand(expression));
     const res = {
       ..._res,
       Items: (await Promise.all(
@@ -129,7 +132,7 @@ export class IndexQueryBuilder<Src extends object> {
       for (const result of hookInfo) {
         this.mapper.args.dataLoader.clear(result).prime(result, {
           Item: result.Item || undefined,
-          $response: {} as any,
+          $metadata: {} as any,
         });
       }
     }

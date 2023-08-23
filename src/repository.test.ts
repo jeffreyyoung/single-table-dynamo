@@ -266,9 +266,24 @@ test("get, put, delete, merge, and query should work", async () => {
   );
 
   await expect(
-    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
+    repo
+      .query("byCountryByStateByCity")
+      .where({ country: "CA" })
+      .exec()
+      .then((r) => {
+        r.$metadata.requestId = "yay";
+        return r;
+      })
   ).resolves.toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 1,
   "Items": Array [
     Object {
@@ -279,6 +294,7 @@ Object {
       "state": "PA",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -303,9 +319,24 @@ Object {
     .rejects;
 
   await expect(
-    repo.query("byCountryByStateByCity").where({ country: "CA" }).exec()
+    repo
+      .query("byCountryByStateByCity")
+      .where({ country: "CA" })
+      .exec()
+      .then((r) => {
+        r.$metadata.requestId = "yay";
+        return r;
+      })
   ).resolves.toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 1,
   "Items": Array [
     Object {
@@ -318,6 +349,7 @@ Object {
       "state": "PA",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -864,7 +896,7 @@ test("query only return correct data", async () => {
   });
 });
 
-test("generated ids should work", () => {
+test("generated ids should work", async () => {
   const repo = new Repository({
     typeName: "thingy",
     schema: z.object({
@@ -880,7 +912,12 @@ test("generated ids should work", () => {
     documentClient: getDocumentClient(),
   });
 
-  expect(repo.put({})).resolves.toMatchInlineSnapshot(`
+  await expect(
+    repo.put({}).catch((e) => {
+      console.log(e);
+      throw e;
+    })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "id": "yay",
 }
@@ -911,8 +948,17 @@ test("query on primary index works", async () => {
     { first: "c", last: "jac" },
   ]);
 
-  await expect(repo.query("last,first").where({ last: "jacobs" }).exec())
-    .resolves.toMatchInlineSnapshot(`
+  await expect(
+    repo
+      .query("last,first")
+      .where({ last: "jacobs" })
+      .exec()
+      .then((r) => {
+        //@ts-ignore
+        delete r.$metadata;
+        return r;
+      })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 2,
   "Items": Array [
@@ -925,6 +971,7 @@ Object {
       "last": "jacobs",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 2,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -932,8 +979,17 @@ Object {
 }
 `);
 
-  await expect(repo.query("last,first").where({ last: "jac" }).exec()).resolves
-    .toMatchInlineSnapshot(`
+  await expect(
+    repo
+      .query("last,first")
+      .where({ last: "jac" })
+      .exec()
+      .then((r) => {
+        //@ts-ignore
+        delete r.$metadata;
+        return r;
+      })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
   "Count": 1,
   "Items": Array [
@@ -942,6 +998,7 @@ Object {
       "last": "jac",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,

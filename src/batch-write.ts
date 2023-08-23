@@ -1,4 +1,9 @@
-import { BatchWriteItemOutput, DocumentClient } from "aws-sdk/clients/dynamodb";
+import {
+  BatchWriteCommand,
+  BatchWriteCommandInput,
+  BatchWriteCommandOutput,
+  DynamoDBDocumentClient as DocumentClient,
+} from "@aws-sdk/lib-dynamodb";
 import { DataLoader } from "./mapper";
 
 export type WriteRequest = PutRequest | DeleteRequest;
@@ -58,10 +63,9 @@ export async function batchWrite<
   while (unprocessed.length > 0) {
     //take off 25
     const requests = unprocessed.splice(0, BATCH_WRITE_REQUEST_LIMIT);
-
-    const res = await ddb
-      .batchWrite(_convertRequestsToWriteInput(requests))
-      .promise();
+    const res = await ddb.send(
+      new BatchWriteCommand(_convertRequestsToWriteInput(requests))
+    );
     if (dataLoader) {
       requests.map((r) => {
         if (isPutRequest(r)) {
@@ -81,7 +85,7 @@ export async function batchWrite<
             Key: r.Operation.DeleteRequest.Key,
           });
           dataLoader.prime(key, {
-            $response: {} as any,
+            $metadata: {} as any,
           });
         }
       });
@@ -107,9 +111,14 @@ function isPutRequest(r: WriteRequest): r is PutRequest {
   return Boolean(temp?.Operation?.PutRequest?.Item);
 }
 
-function _convertRequestsToWriteInput(requests: WriteRequest[]) {
-  return requests.reduce<DocumentClient.BatchWriteItemInput>(
+function _convertRequestsToWriteInput(
+  requests: WriteRequest[]
+): BatchWriteCommandInput {
+  return requests.reduce<BatchWriteCommandInput>(
     (prev, op) => {
+      if (!prev.RequestItems) {
+        prev.RequestItems = {};
+      }
       if (!prev.RequestItems[op.TableName]) {
         prev.RequestItems[op.TableName] = [];
       }
@@ -123,7 +132,7 @@ function _convertRequestsToWriteInput(requests: WriteRequest[]) {
 }
 
 function _unprocessedItemsToRequests(
-  items: BatchWriteItemOutput["UnprocessedItems"]
+  items: BatchWriteCommandOutput["UnprocessedItems"]
 ) {
   const requests: WriteRequest[] = [];
   if (items) {

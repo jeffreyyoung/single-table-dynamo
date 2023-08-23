@@ -190,14 +190,26 @@ test("filter expression should work", async () => {
   );
 
   expect(
-await notes.
-query("tag,owner,name").
-where({ tag: "food" }).
-filter("ageInYears", ">", 3).
-limit(5).
-exec()).
-toMatchInlineSnapshot(`
+    await notes
+      .query("tag,owner,name")
+      .where({ tag: "food" })
+      .filter("ageInYears", ">", 3)
+      .limit(5)
+      .exec()
+      .then((r) => {
+        r.$metadata.requestId = "yay";
+        return r;
+      })
+  ).toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 1,
   "Items": Array [
     Object {
@@ -248,9 +260,21 @@ test("last cursor should work with filter expression", async () => {
     .where({ tag: "food" })
     .filter("ageInYears", ">", 3)
     .limit(1)
-    .exec();
+    .exec()
+    .then((r) => {
+      r.$metadata.requestId = "yay";
+      return r;
+    });
   expect(res).toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 0,
   "Items": Array [],
   "LastEvaluatedKey": Object {

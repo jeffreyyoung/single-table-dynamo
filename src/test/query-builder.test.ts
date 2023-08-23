@@ -87,6 +87,8 @@ test("last cursor should work", async () => {
   ]);
   const query = students.query("last,first").where({ last: "y" }).limit(1);
   const result1 = await query.exec();
+  // @ts-ignore
+  delete result1.$metadata;
   expect(result1).toMatchInlineSnapshot(`
 Object {
   "Count": 1,
@@ -112,6 +114,8 @@ Object {
 `);
 
   const result2 = await query.cursor(result1.lastCursor!).exec();
+  // @ts-ignore
+  delete result2.$metadata;
   expect(result2).toMatchInlineSnapshot(`
 Object {
   "Count": 1,
@@ -137,6 +141,8 @@ Object {
 `);
 
   const result3 = await query.cursor(result2.lastCursor!).limit(2).exec();
+  // @ts-ignore
+  delete result3.$metadata;
   expect(result3).toMatchInlineSnapshot(`
 Object {
   "Count": 1,
@@ -148,6 +154,7 @@ Object {
       "last": "y",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,

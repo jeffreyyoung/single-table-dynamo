@@ -43,7 +43,7 @@ describe("DataLoader", () => {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const sendSpy = jest.spyOn(repo.args.documentClient, "send");
 
     await repo.put({
       text: "hello",
@@ -62,14 +62,14 @@ Object {
 `);
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(getSpy).toBeCalledTimes(0);
+    expect(sendSpy).toBeCalledTimes(1);
   });
 
   test("should get when nothitng is cached", async () => {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const spy = jest.spyOn(docClient, "batchGet");
+    const spy = jest.spyOn(docClient, "send");
 
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
     expect(spy).toBeCalledTimes(1);
@@ -81,7 +81,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     await expect(
       repo.putMany([
@@ -120,7 +120,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     // put item with it getting cached in a dataloader
     await repo.put({
@@ -158,7 +158,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     await repo.put({
       text: "hello",
@@ -191,7 +191,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
     const noCacheRepo = createRepo();
 
     await noCacheRepo.put({
@@ -201,9 +201,25 @@ Object {
       owner: "dwight",
     });
 
-    await expect(repo.query("owner").where({ owner: "dwight" }).exec()).resolves.
-toMatchInlineSnapshot(`
+    await expect(
+      repo
+        .query("owner")
+        .where({ owner: "dwight" })
+        .exec()
+        .then((r) => {
+          r.$metadata.requestId = "yay";
+          return r;
+        })
+    ).resolves.toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 1,
   "Items": Array [
     Object {
@@ -213,6 +229,7 @@ Object {
       "text": "hello",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -240,7 +257,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     await expect(
       repo.putExpression({
@@ -276,7 +293,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     await expect(
       repo.put({
@@ -298,7 +315,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const getSpy = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     await expect(
       repo.put({
@@ -322,8 +339,7 @@ Object {
     const repo1 = createRepo(loader);
     const repo2 = createRepo(loader);
     const repo3 = createRepo(undefined, docClient);
-    const getSpy = jest.spyOn(docClient, "get");
-    const batchGet = jest.spyOn(docClient, "batchGet");
+    const getSpy = jest.spyOn(docClient, "send");
 
     await expect(
       repo1.put({
@@ -343,7 +359,6 @@ Object {
     await expect(repo3.get({ id: "123" })).resolves.toMatchObject({
       id: "123",
     });
-    await expect(batchGet).toBeCalledTimes(0);
     expect(getSpy).toBeCalledTimes(1);
   });
 
@@ -351,7 +366,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const batchGet = jest.spyOn(docClient, "batchGet");
+    const batchGet = jest.spyOn(docClient, "send");
 
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
@@ -363,7 +378,7 @@ Object {
     const docClient = getDocumentClient();
     const loader = createDataLoader(docClient);
     const repo = createRepo(loader);
-    const batchGet = jest.spyOn(docClient, "batchGet");
+    const batchGet = jest.spyOn(docClient, "send");
     // item is cached after put
     await expect(repo.put({ id: "123", owner: "me" })).resolves.toMatchObject({
       id: "123",

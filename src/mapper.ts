@@ -1,4 +1,12 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import {
+  DeleteCommandInput,
+  DeleteCommandOutput,
+  DynamoDBDocumentClient as DocumentClient,
+  GetCommandInput,
+  GetCommandOutput,
+  PutCommandInput,
+  PutCommandOutput,
+} from "@aws-sdk/lib-dynamodb";
 import { GetRequest } from "./batch-get";
 import { Repository } from "./repository";
 import { UnwrapPromise } from "./utils/UnwrapPromise";
@@ -61,10 +69,8 @@ export type onHooks = {
   query?: (args: any, results: RawResult[]) => any;
 };
 
-type GetDocArg = Parameters<DocumentClient["get"]>[0];
-type GetDocResult = Awaited<
-  ReturnType<ReturnType<DocumentClient["get"]>["promise"]>
->;
+type GetDocArg = GetCommandInput;
+type GetDocResult = GetCommandOutput;
 
 export type DataLoader = {
   load: (key: GetDocArg) => Promise<GetDocResult>;
@@ -369,7 +375,7 @@ export class Mapper<
 
   private getGetDocResult(id: Id, rawResult: object | null): GetDocResult {
     return {
-      $response: {} as any,
+      $metadata: {} as any,
       Item: rawResult || undefined,
     };
   }

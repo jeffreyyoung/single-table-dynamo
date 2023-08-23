@@ -1,4 +1,9 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import {
+  DynamoDBDocumentClient as DocumentClient,
+  BatchGetCommand,
+  BatchGetCommandInput,
+  BatchGetCommandOutput,
+} from "@aws-sdk/lib-dynamodb";
 
 export type GetRequest<ReturnType = any> = {
   TableName: string;
@@ -42,11 +47,11 @@ export async function batchGet<Requests extends readonly GetRequest[]>(
   while (unprocessed.length > 0) {
     //take off 25
     const requests = unprocessed.splice(0, BATCH_GET_REQUEST_LIMIT);
-    const res = await ddb
-      .batchGet(
+    const res = await ddb.send(
+      new BatchGetCommand(
         convertRequestsToBatchGetInput(requests, tableToProjectionFields)
       )
-      .promise();
+    );
     if (res.Responses) {
       Object.entries(res.Responses).forEach(([TableName, items]) => {
         items.forEach((item) => {
@@ -94,13 +99,13 @@ function uniqueBy<T>(things: T[], fn: (arg: T) => string) {
 export function convertRequestsToBatchGetInput(
   requests: GetRequest[],
   tableToProjectionFields: Record<string, Set<string>>
-): DocumentClient.BatchGetItemInput {
-  return requests.reduce<DocumentClient.BatchGetItemInput>(
+): BatchGetCommandInput {
+  return requests.reduce<BatchGetCommandInput>(
     (prev, req) => {
-      if (!prev.RequestItems[req.TableName]) {
-        prev.RequestItems[req.TableName] = { Keys: [] };
+      if (!prev.RequestItems![req.TableName]) {
+        prev.RequestItems![req.TableName] = { Keys: [] };
       }
-      prev.RequestItems[req.TableName].Keys.push(req.Key);
+      prev.RequestItems![req.TableName]!.Keys!.push(req.Key);
       // add projection expression to this table
 
       return prev;
@@ -112,13 +117,15 @@ export function convertRequestsToBatchGetInput(
 }
 
 function _unprocessedItemsToRequests(
-  items: DocumentClient.BatchGetItemOutput["UnprocessedKeys"]
+  items: BatchGetCommandOutput["UnprocessedKeys"]
 ) {
   const requests: GetRequest[] = [];
   if (items) {
-    Object.keys(items).forEach((TableName) => {
-      items[TableName].Keys.forEach((Key) => requests.push({ Key, TableName }));
-    });
+    for (const [TableName, Keys] of Object.entries(items)) {
+      for (const Key of Keys?.Keys || []) {
+        requests.push({ TableName, Key });
+      }
+    }
   }
   return requests;
 }

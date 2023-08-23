@@ -1,3 +1,4 @@
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { InferObjectType, Repository } from "../repository";
 import { getDocumentClient } from "./utils/getDocumentClient";
 import { z } from "zod";
@@ -34,15 +35,15 @@ function rawPut(
   obj: { id: string } & Partial<InferObjectType<ReturnType<typeof getUserRepo>>>
 ) {
   const repo = getUserRepo();
-  return getDocumentClient()
-    .put({
+  return getDocumentClient().send(
+    new PutCommand({
       TableName: repo.args.tableName,
       Item: {
         ...obj,
         ...repo.getKey(obj),
       },
     })
-    .promise();
+  );
 }
 
 test("migrate should work for query", async () => {
@@ -78,14 +79,26 @@ test("migrate should work for query", async () => {
   const spy = jest.spyOn(repo.args, "migrate");
 
   await expect(
-repo.
-query("primary").
-where({
-  id: "meh" }).
-
-exec()).
-resolves.toMatchInlineSnapshot(`
+    repo
+      .query("primary")
+      .where({
+        id: "meh",
+      })
+      .exec()
+      .then((result) => {
+        result.$metadata.requestId = "yay";
+        return result;
+      })
+  ).resolves.toMatchInlineSnapshot(`
 Object {
+  "$metadata": Object {
+    "attempts": 1,
+    "cfId": undefined,
+    "extendedRequestId": undefined,
+    "httpStatusCode": 200,
+    "requestId": "yay",
+    "totalRetryDelay": 0,
+  },
   "Count": 1,
   "Items": Array [
     Object {
@@ -96,6 +109,7 @@ Object {
       "state": "wa",
     },
   ],
+  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,

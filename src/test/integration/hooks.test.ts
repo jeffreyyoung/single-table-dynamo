@@ -1,16 +1,9 @@
 import { Repository } from "../../repository";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
 import { tableConfig } from "../utils/tableConfig";
 import { getDocumentClient } from "../utils/getDocumentClient";
 
-const ddb = new DocumentClient({
-  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
-    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-    sslEnabled: false,
-    region: "local",
-  }),
-});
+const ddb = getDocumentClient();
 
 test("hooks should get called", async () => {
   const spies = {

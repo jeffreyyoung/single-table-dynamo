@@ -1,4 +1,11 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import {
+  DeleteCommand,
+  DynamoDBDocumentClient as DocumentClient,
+  GetCommand,
+  GetCommandOutput,
+  PutCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { IndexBase, IndexField, Mapper, RepositoryArgs } from "./mapper";
 import { getCursorEncoder, IndexQueryBuilder } from "./index-query-builder";
 import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
@@ -10,6 +17,7 @@ import { AttributeRegistry } from "./utils/AttributeRegistry";
 import { getConditionExpression } from "./utils/getKeyCondition";
 import { omit } from "./utils/omit";
 import { batchWrite } from "./batch-write";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 
 type ModeOption = {
   mode?: "create" | "upsert" | "update";
@@ -66,7 +74,9 @@ export class Repository<
     this.ddb = this.args.documentClient;
   }
 
-  private async doGet(id: ID): Promise<DocumentClient.AttributeMap | null> {
+  private async doGet(
+    id: ID
+  ): Promise<Exclude<GetCommandOutput["Item"], undefined> | null> {
     const args = {
       TableName: this.args.tableName,
       Key: this.mapper.getKey(id),
@@ -76,18 +86,9 @@ export class Repository<
       return this.args.dataLoader.load(args).then((res) => res.Item || null);
     } else {
       return this.ddb
-        .get(args)
-        .promise()
+        .send(new GetCommand(args))
         .then((res) => res.Item || null);
     }
-    // const res = await (this.args.dataLoader
-    //   ? this.args.dataLoader.load(args)
-    //   : this.ddb.get(args).promise());
-
-    if (!res.Item) {
-      return null;
-    }
-    return res.Item;
   }
 
   async parseAndMigrate(rawObject: NonNullable<any>): Promise<Output> {
@@ -123,7 +124,7 @@ export class Repository<
       this.args.on?.get?.(
         [id as any],
         item as any,
-        this.mapper.getHookResultInfo(id, res)
+        this.mapper.getHookResultInfo(id, res || null)
       );
       return item;
     } catch (e: any) {
@@ -207,25 +208,27 @@ export class Repository<
         this.args.primaryIndex.pk,
         this.args.primaryIndex.sk,
       ]);
+
       const updated = await this.ddb
-        .update({
-          TableName: this.args.tableName,
-          Key: this.mapper.getKey(id),
-          ...getDDBUpdateExpression(withoutPrimaryKeys),
-          ConditionExpression: getConditionExpression(
-            [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
-            "update"
-          ),
-          ReturnValues: "ALL_NEW",
-        })
-        .promise()
+        .send(
+          new UpdateCommand({
+            TableName: this.args.tableName,
+            Key: this.mapper.getKey(id),
+            ...getDDBUpdateExpression(withoutPrimaryKeys),
+            ConditionExpression: getConditionExpression(
+              [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
+              "update"
+            ),
+            ReturnValues: "ALL_NEW",
+          })
+        )
         .then((res) =>
           res.Attributes ? this.mapper.parse(res.Attributes, "output") : null
         )
         .catch((e) => {
           // we expect the ConditionalCheck to fail when
           // the attribut does not exist
-          if (e.code === "ConditionalCheckFailedException") {
+          if (e instanceof ConditionalCheckFailedException) {
             return null;
           } else {
             throw e;
@@ -324,7 +327,7 @@ export class Repository<
       ReturnValues: "ALL_NEW",
     };
 
-    const res = await this.ddb.update(updateArgs).promise();
+    const res = await this.ddb.send(new UpdateCommand(updateArgs));
 
     const updated = res.Attributes
       ? this.mapper.parse(res.Attributes, "output")
@@ -349,8 +352,8 @@ export class Repository<
     try {
       const parsed = this.mapper.parse(src, "input");
       const rawItem = this.mapper.decorateWithKeys(parsed);
-      await this.ddb
-        .put({
+      await this.ddb.send(
+        new PutCommand({
           TableName: this.args.tableName,
           Item: rawItem,
           ConditionExpression: getConditionExpression(
@@ -358,7 +361,7 @@ export class Repository<
             mode
           ),
         })
-        .promise();
+      );
       this.args.on?.put?.(
         [parsed, { mode }],
         parsed as any,
@@ -397,12 +400,12 @@ export class Repository<
 
   async delete(id: ID): Promise<boolean> {
     try {
-      await this.ddb
-        .delete({
+      await this.ddb.send(
+        new DeleteCommand({
           TableName: this.args.tableName,
           Key: this.mapper.getKey(id),
         })
-        .promise();
+      );
       this.args.on?.delete?.([id as any], true, this.mapper.getHookKeyInfo(id));
       this.mapper.dataLoaderPrime(id, null);
       return true;

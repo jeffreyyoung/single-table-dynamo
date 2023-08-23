@@ -1,4 +1,4 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DynamoDBDocumentClient as DocumentClient } from "@aws-sdk/lib-dynamodb";
 import { z } from "zod";
 import { Repository, InferObjectType, InferIdType } from "../src";
 
