@@ -1,6 +1,6 @@
 {
   "name": "single-table-dynamo",
-  "version": "9.0.0",
+  "version": "9.0.1",
   "license": "MIT",
   "author": "",
   "homepage": "http://github.com/jeffreyyoung/single-table-dynamo",
@@ -23,13 +23,13 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.395.0",
+    "@aws-sdk/lib-dynamodb": "^3.395.0",
     "@types/jest": "^28",
     "@types/node": "^18",
     "@types/sinon": "^9.0.9",
     "@typescript-eslint/eslint-plugin": "^5.59.5",
     "@typescript-eslint/parser": "^5.59.5",
-    "@aws-sdk/client-dynamodb": "^3.395.0",
-    "@aws-sdk/lib-dynamodb": "^3.395.0",
     "dataloader": "^2.2.2",
     "eslint": "^8.40.0",
     "expect-type": "^0.13.0",
