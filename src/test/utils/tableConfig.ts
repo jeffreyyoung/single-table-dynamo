@@ -6,7 +6,7 @@ export const tableConfig = {
     pk: "pk0",
     sk: "sk0",
   },
-  secondaryIndexes: range(24).map((i) => ({
+  secondaryIndexes: range(19).map((i) => ({
     indexName: "gsi" + (i + 1),
     pk: "pk" + (i + 1),
     sk: "sk" + (i + 1),
