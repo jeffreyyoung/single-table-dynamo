@@ -35,6 +35,9 @@ test("create factory works", async () => {
 
   expect(sendSpy).toHaveBeenCalledTimes(1);
 
+  let id: typeof createRepo.$idType = { id: "1" };
+  // @ts-expect-error
+  let id1: typeof createRepo.$idType = { id1: "1" };
   expect(await createRepo().get({ id: "1" })).toEqual({
     id: "1",
     name: "test",

@@ -32,6 +32,11 @@ type UpdateExpression<T> = {
   [Property in keyof T]: T[Property] | [typeof AddExpr, T[Property]];
 };
 
+type VerifyAgeFunc = {
+  (age: number): boolean;
+  usedBy: string;
+};
+
 export function createFactory<
   Schema extends z.AnyZodObject = z.AnyZodObject,
   Output extends object = z.infer<Schema>,
@@ -48,17 +53,23 @@ export function createFactory<
     IndexTag,
     SecondaryIndexTag
   >
-) {
-  return (partialArgs: Partial<typeof args> = {}) =>
-    new Repository<
-      Schema,
-      Output,
-      PrimaryKeyField,
-      IndexTag,
-      SecondaryIndexTag,
-      ID,
-      Input
-    >(Object.assign({}, args, partialArgs));
+): {
+  (partialArgs?: Partial<typeof args>): Repository<
+    Schema,
+    Output,
+    PrimaryKeyField,
+    IndexTag,
+    SecondaryIndexTag,
+    ID,
+    Input
+  >;
+  $idType: ID;
+  $outputType: Output;
+  $inputType: Input;
+} {
+  const createRepo = (partialArgs: Partial<typeof args> = {}) =>
+    new Repository(Object.assign({}, args, partialArgs));
+  return createRepo as any;
 }
 
 export class Repository<
