@@ -32,6 +32,35 @@ type UpdateExpression<T> = {
   [Property in keyof T]: T[Property] | [typeof AddExpr, T[Property]];
 };
 
+export function createFactory<
+  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Output extends object = z.infer<Schema>,
+  PrimaryKeyField extends IndexField<Output> = IndexField<Output>,
+  IndexTag extends string = string,
+  SecondaryIndexTag extends string = string,
+  ID extends object = Pick<Output, PrimaryKeyField>,
+  Input = z.input<Schema>
+>(
+  args: RepositoryArgs<
+    Schema,
+    Output,
+    PrimaryKeyField,
+    IndexTag,
+    SecondaryIndexTag
+  >
+) {
+  return (partialArgs: Partial<typeof args> = {}) =>
+    new Repository<
+      Schema,
+      Output,
+      PrimaryKeyField,
+      IndexTag,
+      SecondaryIndexTag,
+      ID,
+      Input
+    >(Object.assign({}, args, partialArgs));
+}
+
 export class Repository<
   Schema extends z.AnyZodObject = z.AnyZodObject,
   Output extends object = z.infer<Schema>,
