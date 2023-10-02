@@ -24,6 +24,8 @@ test("create factory works", async () => {
     typeName: "Test",
   });
 
+  expect(createRepo.args.typeName).toBe("Test");
+
   const repo = createRepo({ dataLoader });
 
   await repo.put({ id: "1", name: "test" });

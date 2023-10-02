@@ -171,7 +171,7 @@ export class IndexQueryBuilder<Src extends object> {
   }
 
   /**
-   * Iterater over the query result set in batches
+   * iterates over the query result set in batches
    *
    *
    *

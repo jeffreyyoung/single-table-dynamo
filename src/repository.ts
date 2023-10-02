@@ -66,10 +66,17 @@ export function createFactory<
   $idType: ID;
   $outputType: Output;
   $inputType: Input;
+  args: typeof args;
 } {
   const createRepo = (partialArgs: Partial<typeof args> = {}) =>
     new Repository(Object.assign({}, args, partialArgs));
-  return createRepo as any;
+  // @ts-ignore
+  return Object.assign(createRepo, {
+    $idType: {} as ID,
+    $outputType: {} as Output,
+    $inputType: {} as Input,
+    args,
+  });
 }
 
 export class Repository<
