@@ -123,11 +123,6 @@ export class IndexQueryBuilder<Src extends object> {
       Items: (await Promise.all(
         (_res.Items || []).map((item) => {
           return this.parseAndMigrate(item).catch((error) => {
-            console.log("parse and migrate error", {
-              parseExceptionBehavior,
-              error,
-              item,
-            });
             if (parseExceptionBehavior === "throw") {
               throw error;
             }

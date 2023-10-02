@@ -916,7 +916,6 @@ test("generated ids should work", async () => {
 
   await expect(
     repo.put({}).catch((e) => {
-      console.log(e);
       throw e;
     })
   ).resolves.toMatchInlineSnapshot(`
