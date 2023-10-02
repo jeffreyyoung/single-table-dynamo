@@ -2,6 +2,8 @@ import { Repository } from "./repository";
 import { z } from "zod";
 import { getDocumentClient } from "./test/utils/getDocumentClient";
 import { tableConfig } from "./test/utils/tableConfig";
+import { PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
 const ddb = getDocumentClient();
 
 const getUserRepo = () =>
@@ -922,6 +924,87 @@ Object {
   "id": "yay",
 }
 `);
+});
+
+test("parseExceptionBehavior works", async () => {
+  const repo = new Repository({
+    typeName: "thing",
+    schema: z.object({
+      lastName: z.string(),
+      firstName: z.string(),
+      favoriteChar: z.enum(["a", "b", "c"]),
+    }),
+    primaryIndex: {
+      fields: ["lastName", "firstName"],
+      tag: "primary",
+      ...tableConfig.primaryIndex,
+    },
+
+    tableName: tableConfig.tableName,
+
+    documentClient: getDocumentClient(),
+  });
+
+  await repo.put({
+    favoriteChar: "a",
+    firstName: "joe",
+    lastName: "meyer",
+  });
+
+  const toWrite = repo.mapper.decorateWithKeys({
+    lastName: "meyer",
+    firstName: "jim",
+    favoriteChar: "a",
+  });
+
+  // @ts-expect-error
+  toWrite.favoriteChar = "d";
+
+  await repo.args.documentClient.send(
+    new PutCommand({
+      TableName: repo.args.tableName,
+      Item: toWrite,
+    })
+  );
+
+  await expect(
+    repo.get({ lastName: "meyer", firstName: "jim" })
+  ).rejects.toMatchInlineSnapshot(
+    `[single-table-OutputValidationError: Unable to parse thing output]`
+  );
+
+  await expect(
+    repo.query("primary").where({ lastName: "meyer" }).exec()
+  ).rejects.toMatchInlineSnapshot(
+    `[single-table-OutputValidationError: Unable to parse thing output]`
+  );
+
+  await expect(
+    repo
+      .query("primary")
+      .where({ lastName: "meyer" })
+      .exec({ parseExceptionBehavior: "ignore" })
+  ).resolves.toMatchObject({
+    Count: 2,
+    Items: [
+      {
+        favoriteChar: "d",
+        firstName: "jim",
+        lastName: "meyer",
+        pk0: "thing#meyer",
+        sk0: "thing#jim",
+      },
+      {
+        favoriteChar: "a",
+        firstName: "joe",
+        lastName: "meyer",
+      },
+    ],
+    LastEvaluatedKey: undefined,
+    ScannedCount: 2,
+    hasNextPage: false,
+    lastCursor: undefined,
+  });
 });
 
 test("query on primary index works", async () => {
