@@ -10,7 +10,7 @@ import { IndexBase, IndexField, Mapper, RepositoryArgs } from "./mapper";
 import { getCursorEncoder, IndexQueryBuilder } from "./index-query-builder";
 import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
 import { BatchArgsHandler } from "./batch-args-handler";
-import { createSTDError, isSingleTableDynamoError } from "./utils/errors";
+import { STDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
 import { goTry } from "./utils/goTry";
 import { AttributeRegistry } from "./utils/AttributeRegistry";
@@ -178,10 +178,14 @@ export class Repository<
       if (isSingleTableDynamoError(e)) {
         throw e;
       }
-      throw createSTDError({
+      throw new STDError({
         message: `Error getting ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
+        meta: {
+          id,
+          typeName: this.args.typeName,
+        },
       });
     }
   }
@@ -220,9 +224,13 @@ export class Repository<
       return this.put(options.objectToPutIfNotExists, { mode: "create" });
     }
     if (!existing) {
-      throw createSTDError({
+      throw new STDError({
         name: "single-table-Error",
         message: "Cannot merge into item that does not exist",
+        meta: {
+          id,
+          typeName: this.args.typeName,
+        },
       });
     }
 
@@ -299,10 +307,15 @@ export class Repository<
       if (isSingleTableDynamoError(e)) {
         throw e;
       }
-      throw createSTDError({
+      throw new STDError({
         message: `There was an error merge: ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
+        meta: {
+          updates: _updates,
+          typeName: this.args.typeName,
+          action: "mutate",
+        },
       });
     }
   }
@@ -424,10 +437,15 @@ export class Repository<
       if (isSingleTableDynamoError(e)) {
         throw e;
       }
-      throw createSTDError({
+      throw new STDError({
         message: `There was an error putting ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
+        meta: {
+          src,
+          typeName: this.args.typeName,
+          mode,
+        },
       });
     }
   }
@@ -463,10 +481,14 @@ export class Repository<
       if (isSingleTableDynamoError(e)) {
         throw e;
       }
-      throw createSTDError({
+      throw new STDError({
         message: `There was an error deleting ${this.args.typeName}`,
         cause: e,
         name: "single-table-Error",
+        meta: {
+          id,
+          typeName: this.args.typeName,
+        },
       });
     }
   }

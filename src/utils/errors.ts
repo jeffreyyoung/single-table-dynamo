@@ -1,40 +1,37 @@
 export function isSingleTableDynamoError(thing: any): thing is STDError {
   return thing?.name?.startsWith("single-table-") || false;
 }
-export interface STDError extends Error {
-  message: string;
-  cause?: Error;
+
+export class STDError extends Error {
   name:
     | "single-table-InputValidationError"
     | "single-table-OutputValidationError"
     | "single-table-IdValidationError"
     | "single-table-Error";
-}
 
-export function createSTDError(args: {
-  message: string;
-  cause?: Error;
-  name:
-    | "single-table-InputValidationError"
-    | "single-table-OutputValidationError"
-    | "single-table-IdValidationError"
-    | "single-table-Error";
-}) {
-  const error = new CausedError(args.message, { cause: args.cause });
-  error.name = args.name;
-  return error;
-}
+  meta?: Record<string, any>;
+  constructor(options: {
+    message: string;
+    cause?: any;
+    name:
+      | "single-table-InputValidationError"
+      | "single-table-OutputValidationError"
+      | "single-table-IdValidationError"
+      | "single-table-Error";
+    meta?: Record<string, any>;
+  }) {
+    super(options.message, { cause: options.cause });
 
-class CausedError extends Error {
-  cause?: Error;
-  constructor(message: string, options: { cause?: Error } = {}) {
-    super(message);
-    if (options.cause) {
-      const cause = options.cause;
-      this.cause = cause;
-      if (cause.stack) {
-        this.stack = this.stack + "\nCAUSE: " + cause.stack;
-      }
-    }
+    this.name = options.name;
+    this.meta = options.meta;
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      meta: this.meta,
+      cause: this.cause,
+    };
   }
 }

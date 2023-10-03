@@ -12,7 +12,7 @@ import { Repository } from "./repository";
 import { UnwrapPromise } from "./utils/UnwrapPromise";
 import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
-import { createSTDError } from "./utils/errors";
+import { STDError } from "./utils/errors";
 import { z } from "zod";
 import { hasProperty } from "./utils/hasProperty";
 
@@ -179,15 +179,18 @@ export class Mapper<
 
   parseId(id: Id): Id {
     try {
-      return id;
+      return id; // todo update this?
     } catch (error: any) {
-      throw createSTDError({
+      throw new STDError({
         cause: error,
         message: `Unable to parse ${this.args.typeName} id`,
         name: "single-table-IdValidationError",
+        meta: {
+          objectType: this.args.typeName,
+          itemId: id,
+        },
       });
     }
-    return id;
   }
 
   pickedParse<Mask extends keyof Output>(
@@ -200,13 +203,18 @@ export class Mapper<
       fields.forEach((field) => (mask[field] = true));
       return this.args.schema.pick(mask).parse(obj);
     } catch (error: any) {
-      throw createSTDError({
+      throw new STDError({
         cause: error,
         name:
           type === "input"
             ? "single-table-InputValidationError"
             : "single-table-OutputValidationError",
         message: `Unable to picked parse ${this.args.typeName} ${type}`,
+        meta: {
+          objectType: this.args.typeName,
+          fields,
+          obj,
+        },
       });
     }
   }
@@ -221,13 +229,18 @@ export class Mapper<
       //@ts-ignore
       return removeUndefined(parsedPartial);
     } catch (error: any) {
-      throw createSTDError({
+      throw new STDError({
         cause: error,
         name:
           type === "input"
             ? "single-table-InputValidationError"
             : "single-table-OutputValidationError",
         message: `Unable to partially parse ${this.args.typeName} ${type}`,
+        meta: {
+          objectType: this.args.typeName,
+          fields,
+          obj,
+        },
       });
     }
   }
@@ -242,13 +255,17 @@ export class Mapper<
       // @ts-ignore
       return this.args.schema.parse(obj);
     } catch (error: any) {
-      throw createSTDError({
+      throw new STDError({
         cause: error,
         name:
           type === "input"
             ? "single-table-InputValidationError"
             : "single-table-OutputValidationError",
         message: `Unable to parse ${this.args.typeName} ${type}`,
+        meta: {
+          objectType: this.args.typeName,
+          obj,
+        },
       });
     }
   }
