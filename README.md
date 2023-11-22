@@ -1,6 +1,6 @@
 # single-table-dynamo
 
-A simple strongly typed dynamodb client that stores all items in a single table
+A dynamodb client that stores all items in a single table
 
 ## Getting started
 
