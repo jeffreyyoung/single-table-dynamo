@@ -23,9 +23,14 @@ const repository = new Repository({
   documentClient: {} as any,
 });
 
+repository.args;
+
 test("main repo methods should be correctly typed", () => {
   expectTypeOf(repository.get).parameter(0).toMatchTypeOf<{ id: string }>();
-
+  expectTypeOf(repository.get)
+    .parameter(0)
+    .not.toMatchTypeOf<{ name: string }>();
+  repository.get({ id: "yay" });
   expectTypeOf(repository.get).returns.toMatchTypeOf<
     Promise<{
       id: string;
