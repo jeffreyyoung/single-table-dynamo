@@ -146,7 +146,7 @@ export class Repository<
     if (err) {
       if (this.args.migrate) {
         return this.mapper.parse(
-          await this.args.migrate(rawObject, this as any),
+          await this.args.migrate(rawObject, this),
           "output"
         );
       }
