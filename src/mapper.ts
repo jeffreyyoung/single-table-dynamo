@@ -121,7 +121,10 @@ export type RepositoryArgs<
    * error.  The returned value from migrate will be validated against
    * the object schema
    */
-  migrate?: (rawObjectRetrievedFromDb: unknown) => Promise<T> | T;
+  migrate?: (
+    rawObjectRetrievedFromDb: unknown,
+    repo: Repository<any>
+  ) => Promise<T> | T;
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>

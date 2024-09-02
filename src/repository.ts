@@ -145,7 +145,10 @@ export class Repository<
     // we got a parse error :O
     if (err) {
       if (this.args.migrate) {
-        return this.mapper.parse(await this.args.migrate(rawObject), "output");
+        return this.mapper.parse(
+          await this.args.migrate(rawObject, this as any),
+          "output"
+        );
       }
       throw err;
     }

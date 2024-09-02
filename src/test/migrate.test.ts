@@ -117,19 +117,15 @@ Object {
 }
 `);
 
-  expect(spy.mock.calls).toMatchInlineSnapshot(`
-Array [
-  Array [
-    Object {
-      "country": "usa",
-      "followers": Array [],
-      "id": "meh",
-      "oldState": "wa",
-      "pk1": "User#meh",
-      "sk1": "User",
-    },
-  ],
-]
+  expect(spy.mock.calls[0][0]).toMatchInlineSnapshot(`
+Object {
+  "country": "usa",
+  "followers": Array [],
+  "id": "meh",
+  "oldState": "wa",
+  "pk1": "User#meh",
+  "sk1": "User",
+}
 `);
 });
 
