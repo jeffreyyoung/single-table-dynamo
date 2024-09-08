@@ -124,7 +124,7 @@ export type RepositoryArgs<
   migrate?: (
     rawObjectRetrievedFromDb: unknown,
     repo: Repository<any>
-  ) => Promise<T> | T;
+  ) => Promise<unknown> | unknown;
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
