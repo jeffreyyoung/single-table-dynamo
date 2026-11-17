@@ -60,6 +60,12 @@ const note = await repo.mutate({ id: "123", text: "this is my note" });
 const { Items } = await repo.query("byOwner").where({ owner: "harold" }).exec();
 // [{ id: "123", owner: "harold", text: "this is my note" }]
 
+// where() is type-checked against the index's fields: partition key fields
+// are required, and sort key fields must be given in order with no gaps.
+// e.g. for fields ["owner", "name", "title"]:
+repo.query("byOwnerNameTitle").where({ owner: "harold", name: "x" }); // ok
+repo.query("byOwnerNameTitle").where({ owner: "harold", title: "y" }); // type error: missing `name`
+
 // delete
 await repo.delete({ id: "123" });
 

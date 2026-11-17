@@ -12,3 +12,4 @@ export * from "./data-loader";
 export * from "./table-config";
 
 export { isSingleTableDynamoError };
+export * from "./where-args";

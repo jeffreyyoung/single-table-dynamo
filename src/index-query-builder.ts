@@ -45,7 +45,10 @@ type IndexQueryBuilderArgs<T> = {
   ddb: DocumentClient;
 };
 
-export class IndexQueryBuilder<Src extends object> {
+export class IndexQueryBuilder<
+  Src extends object,
+  Where extends object = Partial<Src>
+> {
   tableName: string;
   mapper: AnyRepository["mapper"];
   index: IndexBase<Src>;
@@ -75,7 +78,7 @@ export class IndexQueryBuilder<Src extends object> {
   }
 
   clone(builder: QueryBuilder = this.builder) {
-    return new IndexQueryBuilder<Src>({
+    return new IndexQueryBuilder<Src, Where>({
       tableName: this.tableName,
       mapper: this.mapper,
       index: this.index,
@@ -193,9 +196,14 @@ export class IndexQueryBuilder<Src extends object> {
     } while (cursor);
   }
 
-  where(src: Partial<Src>) {
+  /**
+   * Narrow the query by index fields. Every partition key field is required;
+   * sort key fields must be given in index order with no gaps. When the index
+   * definition is known literally, this is enforced by the types.
+   */
+  where(src: Where) {
     let builder = this.builder;
-    const indexedKeyToValue = this.mapper.getIndexKey(src as Src, this.index, {
+    const indexedKeyToValue = this.mapper.getIndexKey(src as unknown as Src, this.index, {
       partial: true,
     }) as any;
     const hasEveryField = this.index.fields.every((f) => hasOwn(src, f));

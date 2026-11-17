@@ -256,12 +256,14 @@ test("get, put, delete, merge, and query should work", async () => {
         `);
 
   await expect(() =>
+    // @ts-expect-error -- missing partition key field `id`
     repo.query("primary").where({ city: "scranton" }).exec()
   ).toThrowErrorMatchingInlineSnapshot(
     `"To query index (pk1, sk1), field: id is required, recieved {\\"city\\":\\"scranton\\"}"`
   );
 
   await expect(() =>
+    // @ts-expect-error -- missing partition key field `country`
     repo.query("byCountryByStateByCity").where({ city: "scranton" }).exec()
   ).toThrowErrorMatchingInlineSnapshot(
     `"To query index (pk2, sk2), field: country is required, recieved {\\"city\\":\\"scranton\\"}"`

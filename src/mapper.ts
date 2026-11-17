@@ -8,7 +8,7 @@ import {
   PutCommandOutput,
 } from "@aws-sdk/lib-dynamodb";
 import { GetRequest } from "./batch-get";
-import { Repository } from "./repository";
+import type { AnyRepository, Repository } from "./repository";
 import { UnwrapPromise } from "./utils/UnwrapPromise";
 import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
@@ -34,6 +34,20 @@ export type IndexBase<T, Field extends IndexField<T> = any> = {
    * partitionKeyFields
    */
   partitionKeyFieldCount?: number;
+};
+
+/**
+ * The parts of an index definition that determine which `where()` arguments
+ * are valid. Captured as literal types (via `const` generics on Repository)
+ * so queries can be checked at compile time.
+ */
+export type IndexFieldsDef = {
+  fields: string[];
+  partitionKeyFieldCount?: number;
+};
+
+export type SecondaryIndexFieldsDefs = {
+  [tag: string]: IndexFieldsDef;
 };
 
 type SecondaryIndex<T> = {
@@ -96,7 +110,9 @@ export type RepositoryArgs<
   T = z.infer<Schema>,
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = "",
-  SecondaryIndexTag extends string = string
+  SecondaryIndexTag extends string = string,
+  PrimaryIndexDef extends IndexFieldsDef = IndexFieldsDef,
+  SecondaryIndexDefs extends SecondaryIndexFieldsDefs = Record<never, never>
 > = {
   /**
    * Zod schema for the object
@@ -116,7 +132,7 @@ export type RepositoryArgs<
   documentClient: DocumentClient;
   primaryIndex: IndexBase<T, PrimaryKeyField> & {
     tag?: IndexTag;
-  };
+  } & PrimaryIndexDef;
   /**
    * Called when zod throws a validation error after retrieving an object
    * from the database.  In migrate, an attempt should be made to fix the
@@ -125,12 +141,13 @@ export type RepositoryArgs<
    */
   migrate?: (
     rawObjectRetrievedFromDb: unknown,
-    repo: Repository<any>
+    repo: AnyRepository
   ) => Promise<unknown> | unknown;
   secondaryIndexes?: Record<
     SecondaryIndexTag,
     IndexBase<T> & SecondaryIndex<T>
-  >;
+  > &
+    SecondaryIndexDefs;
 };
 
 export class Mapper<
