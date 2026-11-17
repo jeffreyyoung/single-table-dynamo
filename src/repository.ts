@@ -6,7 +6,15 @@ import {
   PutCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { IndexBase, IndexField, Mapper, RepositoryArgs } from "./mapper";
+import {
+  IndexBase,
+  IndexField,
+  IndexFieldsDef,
+  Mapper,
+  RepositoryArgs,
+  SecondaryIndexFieldsDefs,
+} from "./mapper";
+import type { WhereArgsForTag } from "./where-args";
 import { getCursorEncoder, IndexQueryBuilder } from "./index-query-builder";
 import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
 import { BatchArgsHandler } from "./batch-args-handler";
@@ -47,14 +55,18 @@ export function createFactory<
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
   ID extends object = Pick<Output, PrimaryKeyField>,
-  Input = z.input<Schema>
+  Input = z.input<Schema>,
+  const PrimaryIndexDef extends IndexFieldsDef = IndexFieldsDef,
+  const SecondaryIndexDefs extends SecondaryIndexFieldsDefs = Record<never, never>
 >(
   args: RepositoryArgs<
     Schema,
     Output,
     PrimaryKeyField,
     IndexTag,
-    SecondaryIndexTag
+    SecondaryIndexTag,
+    PrimaryIndexDef,
+    SecondaryIndexDefs
   >
 ): {
   (partialArgs?: Partial<typeof args>): Repository<
@@ -64,7 +76,9 @@ export function createFactory<
     IndexTag,
     SecondaryIndexTag,
     ID,
-    Input
+    Input,
+    PrimaryIndexDef,
+    SecondaryIndexDefs
   >;
   $idType: ID;
   $outputType: Output;
@@ -72,7 +86,7 @@ export function createFactory<
   args: typeof args;
 } {
   const createRepo = (partialArgs: Partial<typeof args> = {}) =>
-    new Repository(Object.assign({}, args, partialArgs));
+    new Repository(Object.assign({}, args, partialArgs) as any);
   // @ts-ignore
   return Object.assign(createRepo, {
     $idType: {} as ID,
@@ -89,14 +103,18 @@ export class Repository<
   IndexTag extends string = string,
   SecondaryIndexTag extends string = string,
   ID extends object = Pick<Output, PrimaryKeyField>,
-  Input = z.input<Schema>
+  Input = z.input<Schema>,
+  const PrimaryIndexDef extends IndexFieldsDef = IndexFieldsDef,
+  const SecondaryIndexDefs extends SecondaryIndexFieldsDefs = Record<never, never>
 > {
   args: RepositoryArgs<
     Schema,
     Output,
     PrimaryKeyField,
     IndexTag,
-    SecondaryIndexTag
+    SecondaryIndexTag,
+    PrimaryIndexDef,
+    SecondaryIndexDefs
   >;
   mapper: Mapper<
     Schema,
@@ -115,11 +133,13 @@ export class Repository<
       Output,
       PrimaryKeyField,
       IndexTag,
-      SecondaryIndexTag
+      SecondaryIndexTag,
+      PrimaryIndexDef,
+      SecondaryIndexDefs
     >
   ) {
     this.args = args;
-    this.mapper = new Mapper(args);
+    this.mapper = new Mapper(args as any);
     this.batch = new BatchArgsHandler<ID, Schema>(this.mapper as any);
     this.ddb = this.args.documentClient;
   }
@@ -511,8 +531,19 @@ export class Repository<
     return index;
   }
 
-  query(indexTag: IndexTag | SecondaryIndexTag): IndexQueryBuilder<Output> {
-    const builder = new IndexQueryBuilder<Output>({
+  query<Tag extends IndexTag | SecondaryIndexTag>(
+    indexTag: Tag
+  ): IndexQueryBuilder<
+    Output,
+    WhereArgsForTag<
+      Output,
+      Tag,
+      IndexTag,
+      PrimaryIndexDef,
+      SecondaryIndexDefs
+    >
+  > {
+    const builder = new IndexQueryBuilder<Output, any>({
       tableName: this.args.tableName,
       index: this.getIndexByTag(indexTag),
       mapper: this.mapper as AnyRepository["mapper"],
@@ -531,7 +562,17 @@ export class Repository<
   }
 }
 
-export type AnyRepository = Repository<any, any, any, any, any, any, any>;
+export type AnyRepository = Repository<
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any
+>;
 
 export type InferInputType<Repo extends AnyRepository> =
   Repo extends Repository<any, any, any, any, any, any, infer Input>

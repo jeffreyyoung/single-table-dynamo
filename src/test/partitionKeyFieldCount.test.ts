@@ -251,6 +251,7 @@ Object {
   ).resolves.toMatchInlineSnapshot(`null`);
 
   await expect(() =>
+    // @ts-expect-error -- missing partition key field `country`
     repository.query("pk").where({ state: "UT" }).exec()
   ).toThrowErrorMatchingInlineSnapshot(
     `"To query index (pk0, sk0), field: country is required, recieved {\\"state\\":\\"UT\\"}"`
