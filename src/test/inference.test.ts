@@ -59,7 +59,7 @@ const _getCommunityRepo = () => {
           minPhotos: z.number().int().min(0).max(6).default(1),
           minPrompts: z.number().int().min(0).max(6).default(1),
         })
-        .default({}),
+        .prefault({}),
     }),
     primaryIndex: {
       ...tableConfig.primaryIndex,

@@ -62,7 +62,7 @@ Object {
 `);
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(sendSpy).toBeCalledTimes(1);
+    expect(sendSpy).toHaveBeenCalledTimes(1);
   });
 
   test("should get when nothitng is cached", async () => {
@@ -72,9 +72,9 @@ Object {
     const spy = jest.spyOn(docClient, "send");
 
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
-    expect(spy).toBeCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(1);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
-    expect(spy).toBeCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   test("batch put should be cached", async () => {
@@ -113,7 +113,7 @@ Object {
 `);
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("merge should be cached", async () => {
@@ -151,7 +151,7 @@ Object {
 
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("invoking put should cache items", async () => {
@@ -167,7 +167,7 @@ Object {
       createdAt: "today",
     });
 
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
 
     expect(
       await repo.get({
@@ -184,7 +184,7 @@ Object {
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("query should cache items", async () => {
@@ -229,7 +229,6 @@ Object {
       "text": "hello",
     },
   ],
-  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,
@@ -246,11 +245,11 @@ Object {
 }
 `);
 
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("putExpression should cache items", async () => {
@@ -286,7 +285,7 @@ Object {
 
     await repo.get({ id: "123" });
     await repo.get({ id: "123" });
-    expect(getSpy).toBeCalledTimes(0);
+    expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("delete should clear cache", async () => {
@@ -305,10 +304,10 @@ Object {
     ).resolves.toMatchObject({ id: "123" });
 
     await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
-    await expect(getSpy).toBeCalledTimes(0);
+    await expect(getSpy).toHaveBeenCalledTimes(0);
     await expect(repo.delete({ id: "123" })).resolves.toBe(true);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
-    await expect(getSpy).toBeCalledTimes(0);
+    await expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("deleteMany should be cached", async () => {
@@ -327,10 +326,10 @@ Object {
     ).resolves.toMatchObject({ id: "123" });
 
     await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
-    await expect(getSpy).toBeCalledTimes(0);
+    await expect(getSpy).toHaveBeenCalledTimes(0);
     await expect(repo.deleteMany([{ id: "123" }])).resolves.toEqual([true]);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
-    await expect(getSpy).toBeCalledTimes(0);
+    await expect(getSpy).toHaveBeenCalledTimes(0);
   });
 
   test("multiple repos can share loader", async () => {
@@ -359,7 +358,7 @@ Object {
     await expect(repo3.get({ id: "123" })).resolves.toMatchObject({
       id: "123",
     });
-    expect(getSpy).toBeCalledTimes(1);
+    expect(getSpy).toHaveBeenCalledTimes(1);
   });
 
   test("should cache when no item exists", async () => {
@@ -371,7 +370,7 @@ Object {
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
     await expect(repo.get({ id: "123" })).resolves.toBe(null);
-    expect(batchGet).toBeCalledTimes(1);
+    expect(batchGet).toHaveBeenCalledTimes(1);
   });
 
   test("force fetch should work", async () => {
@@ -384,17 +383,17 @@ Object {
       id: "123",
     });
     await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
-    expect(batchGet).toBeCalledTimes(0);
+    expect(batchGet).toHaveBeenCalledTimes(0);
 
     // force fetch should work
     await expect(
       repo.get({ id: "123" }, { forceFetch: true })
     ).resolves.toMatchObject({ id: "123" });
-    expect(batchGet).toBeCalledTimes(1);
+    expect(batchGet).toHaveBeenCalledTimes(1);
 
     // item is cached after force fetch
     await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
     await expect(repo.get({ id: "123" })).resolves.toMatchObject({ id: "123" });
-    expect(batchGet).toBeCalledTimes(1);
+    expect(batchGet).toHaveBeenCalledTimes(1);
   });
 });

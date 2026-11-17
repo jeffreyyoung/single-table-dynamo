@@ -77,7 +77,7 @@ Object {
         },
         "input"
       )
-    ).toThrowErrorMatchingInlineSnapshot(`"Unable to parse User input"`);
+    ).toThrow("Unable to parse User input");
 
     expect(
       repo.mapper.parse({

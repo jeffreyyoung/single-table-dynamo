@@ -14,6 +14,8 @@ import { removeUndefined } from "./utils/removeUndefined";
 import { takeWhile } from "./utils/takeWhile";
 import { STDError } from "./utils/errors";
 import { z } from "zod";
+
+export type AnyZodObject = z.ZodObject;
 import { hasProperty } from "./utils/hasProperty";
 
 export type IndexField<T> = Extract<keyof T, string>;
@@ -90,7 +92,7 @@ export type noNever<T extends object> = identity<{
 }>;
 
 export type RepositoryArgs<
-  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Schema extends z.ZodObject = z.ZodObject,
   T = z.infer<Schema>,
   PrimaryKeyField extends IndexField<T> = any,
   IndexTag extends string = "",
@@ -132,7 +134,7 @@ export type RepositoryArgs<
 };
 
 export class Mapper<
-  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Schema extends z.ZodObject = z.ZodObject,
   Output extends object = z.infer<Schema>,
   PrimaryKeyField extends IndexField<Output> = any,
   IndexTag extends string = string,
@@ -228,9 +230,20 @@ export class Mapper<
     fields?: (keyof Output)[]
   ): Partial<Output> {
     try {
-      const parsedPartial = this.args.schema.partial().parse(obj);
+      const parsedPartial: Record<string, unknown> = this.args.schema
+        .partial()
+        .parse(obj);
+      // Zod 4 applies `.default()` values even inside `.partial()`, which would
+      // overwrite stored fields on partial updates. Only keep keys the caller
+      // actually provided.
+      const provided: Record<string, unknown> = {};
+      for (const key of Object.keys(parsedPartial)) {
+        if (obj?.[key] !== undefined) {
+          provided[key] = parsedPartial[key];
+        }
+      }
       //@ts-ignore
-      return removeUndefined(parsedPartial);
+      return removeUndefined(provided);
     } catch (error: any) {
       throw new STDError({
         cause: error,
