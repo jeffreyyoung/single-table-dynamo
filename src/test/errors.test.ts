@@ -76,7 +76,7 @@ Object {
 
 test("output error should be thrown", async () => {
   await rawPut({ id: "meow", invalidField: "wat" });
-  expect(getUserRepo().get({ id: "meow" })).rejects.toMatchObject({
+  await expect(getUserRepo().get({ id: "meow" })).rejects.toMatchObject({
     message: `Unable to parse User output`,
     name: "single-table-OutputValidationError",
     cause: {
@@ -84,30 +84,26 @@ test("output error should be thrown", async () => {
         {
           code: "invalid_type",
           expected: "array",
-          received: "undefined",
           path: ["followers"],
-          message: "Required",
+          message: "Invalid input: expected array, received undefined",
         },
         {
           code: "invalid_type",
           expected: "string",
-          received: "undefined",
           path: ["country"],
-          message: "Required",
+          message: "Invalid input: expected string, received undefined",
         },
         {
           code: "invalid_type",
           expected: "string",
-          received: "undefined",
           path: ["city"],
-          message: "Required",
+          message: "Invalid input: expected string, received undefined",
         },
         {
           code: "invalid_type",
           expected: "string",
-          received: "undefined",
           path: ["state"],
-          message: "Required",
+          message: "Invalid input: expected string, received undefined",
         },
       ],
     },

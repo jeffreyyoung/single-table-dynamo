@@ -1,6 +1,16 @@
+/** @type {import('jest').Config} */
 module.exports = {
-  preset: "ts-jest",
   testEnvironment: "jest-dynalite/environment",
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        // TS151002: ts-jest wants isolatedModules for module=node20, but that
+        // would disable type-checking in tests (types.test.ts relies on it).
+        diagnostics: { ignoreCodes: [151002] },
+      },
+    ],
+  },
   setupFilesAfterEnv: [
     "jest-dynalite/setupTables",
     // Optional (but recommended)
@@ -8,5 +18,6 @@ module.exports = {
   ],
   modulePathIgnorePatterns: ["<rootDir>/dist/"],
   testTimeout: 20000,
-  //preset: "jest-dynalite"
+  // Keep the pre-Jest-29 snapshot style so existing inline snapshots stay stable.
+  snapshotFormat: { escapeString: true, printBasicPrototype: true },
 };

@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig",
-  "exclude": ["src/test/**", "src/**.test.ts"]
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "exclude": ["src/test/**", "src/**/*.test.ts"]
 }

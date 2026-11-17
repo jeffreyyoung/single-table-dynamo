@@ -12,6 +12,7 @@ import { getDDBUpdateExpression } from "./utils/getDDBUpdateExpression";
 import { BatchArgsHandler } from "./batch-args-handler";
 import { STDError, isSingleTableDynamoError } from "./utils/errors";
 import { z } from "zod";
+import type { AnyZodObject } from "./mapper";
 import { goTry } from "./utils/goTry";
 import { AttributeRegistry } from "./utils/AttributeRegistry";
 import { getConditionExpression } from "./utils/getKeyCondition";
@@ -40,7 +41,7 @@ type VerifyAgeFunc = {
 };
 
 export function createFactory<
-  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Schema extends z.ZodObject = z.ZodObject,
   Output extends object = z.infer<Schema>,
   PrimaryKeyField extends IndexField<Output> = IndexField<Output>,
   IndexTag extends string = string,
@@ -82,7 +83,7 @@ export function createFactory<
 }
 
 export class Repository<
-  Schema extends z.AnyZodObject = z.AnyZodObject,
+  Schema extends z.ZodObject = z.ZodObject,
   Output extends object = z.infer<Schema>,
   PrimaryKeyField extends IndexField<Output> = IndexField<Output>,
   IndexTag extends string = string,
@@ -279,7 +280,7 @@ export class Repository<
               [this.args.primaryIndex.pk, this.args.primaryIndex.sk],
               "update"
             ),
-            ReturnValues: "ALL_NEW",
+            ReturnValues: "ALL_NEW" as const,
           })
         )
         .then((res) =>
@@ -392,7 +393,7 @@ export class Repository<
       ...registry.get(),
       UpdateExpression,
       ConditionExpression,
-      ReturnValues: "ALL_NEW",
+      ReturnValues: "ALL_NEW" as const,
     };
 
     const res = await this.ddb.send(new UpdateCommand(updateArgs));
@@ -404,8 +405,8 @@ export class Repository<
     if (updated) {
       // todo
       this.args.on?.put?.(
-        [updated],
-        updated,
+        [updated as any],
+        updated as any,
         this.mapper.getHookResultInfo(expr, res.Attributes ?? null)
       );
     }
@@ -431,7 +432,7 @@ export class Repository<
         })
       );
       this.args.on?.put?.(
-        [parsed, { mode }],
+        [parsed as any, { mode }],
         parsed as any,
         this.mapper.getHookResultInfo(parsed as any, rawItem)
       );

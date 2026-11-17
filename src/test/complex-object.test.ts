@@ -88,9 +88,9 @@ test("trim should work", async () => {
         {
           code: "too_big",
           maximum: 120,
-          type: "number",
+          origin: "number",
           inclusive: true,
-          message: "Number must be less than or equal to 120",
+          message: "Too big: expected number to be <=120",
           path: ["age"],
         },
       ],

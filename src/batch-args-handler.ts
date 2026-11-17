@@ -2,10 +2,11 @@ import { GetRequest } from "./batch-get";
 import { DeleteRequest, PutRequest } from "./batch-write";
 import { Mapper } from "./mapper";
 import { z } from "zod";
+import type { AnyZodObject } from "./mapper";
 
 export class BatchArgsHandler<
   Id,
-  Schema extends z.AnyZodObject,
+  Schema extends z.ZodObject,
   Input = z.input<Schema>,
   Output = z.output<Schema>
 > {

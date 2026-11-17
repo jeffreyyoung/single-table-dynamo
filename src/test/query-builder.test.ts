@@ -154,7 +154,6 @@ Object {
       "last": "y",
     },
   ],
-  "LastEvaluatedKey": undefined,
   "ScannedCount": 1,
   "encodeCursor": [Function],
   "hasNextPage": false,
